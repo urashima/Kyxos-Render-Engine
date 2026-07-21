@@ -889,3 +889,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement validated indexed Mesh data with deterministic Plane, Cube, and UV Sphere builders plus caller-owned Custom Mesh construction.
 - Derive all Mesh bounds through `@kyxos/render-math` and cover winding, normal direction, index width, and malformed data.
+
+## 2026-07-21 08:29 PDT — P2-02 Geometry contract complete
+
+### Completed
+
+- Added `@kyxos/render-geometry` above the Math layer with copied, frozen positions, normalized normals, optional UV0, validated triangle indices, immutable bounds, and conservative Bounding Spheres.
+- Implemented automatic normals for caller-owned Custom Mesh data, deterministic 16/32-bit index-format selection, and validation for nonfinite attributes, malformed counts, out-of-range indices, and degenerate triangles.
+- Added Y-up Plane, six-face/24-vertex sharp-normal Cube, and seam-safe UV Sphere builders with polar degenerate triangles omitted.
+- Kept Geometry CPU-only and backend-neutral; GPU Buffer, material, Scene, Renderer, and product responsibilities do not enter the package. Recorded this ownership choice in ED-024.
+
+### Validation
+
+- Geometry suite: 2 files / 8 tests PASS, including a 65,537-vertex 32-bit-index case.
+- Full unit suite: 20 files / 89 tests PASS.
+- Primitive winding agrees with every outward normal; Plane, Cube, and Sphere counts and bounds match their analytic references.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS.
+- P2-01 official PR CI Run `29843776139`: PASS; no active blockers.
+
+### Next
+
+- Implement Entity handles, parent/child ownership, safe reparent/removal behavior, local TRS, cached world matrices, visibility/layers, and deep dirty propagation.
+- Prove cycle rejection, parent-before-child world updates, unchanged-tree cache stability, and aggregate world bounds before adding Camera behavior.
