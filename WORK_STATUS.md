@@ -4,15 +4,15 @@
 | ------------------- | ---------------------------------------------------------------------------------- |
 | Current Phase       | Phase 0 — Repository and Architecture Baseline                                     |
 | Current Branch      | `agent/phase-00-foundation`                                                        |
-| Current Commit      | `8ff21532f5bcdf0a2a1f7f98003aa8a349b204c2` (last verified remote checkpoint)       |
+| Current Commit      | `e73397b533cd239ac2a4089061594469eb83b1d4` (last verified remote checkpoint)       |
 | Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                     |
-| Current Task        | P0-05 — Implement backend capability contracts and an accounting mock backend      |
-| Last Completed Task | P0-04 — Core contracts pass 12 unit tests and all local quality gates              |
-| Next Action         | Commit P0-04, then implement backend lifecycle and resource-baseline tests         |
+| Current Task        | P0-06 — Implement renderer shell, scheduler, registrations, and public SDK factory |
+| Last Completed Task | P0-05 — Backend contract and accounting mock pass 21 total unit tests              |
+| Next Action         | Commit P0-05, then implement SDK-only create, invalidate, and dispose flow         |
 | CI Status           | Not configured; local format, lint, typecheck, unit tests, and package builds pass |
 | Acceptance Status   | In Development                                                                     |
 | Known Blockers      | No active blockers                                                                 |
-| Last Updated        | 2026-07-21 03:44 PDT                                                               |
+| Last Updated        | 2026-07-21 03:51 PDT                                                               |
 
 ## Phase Progress
 

@@ -114,3 +114,36 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-04 checkpoint.
 - Implement backend capabilities, lifecycle state, resource creation/destruction contracts, and a deterministic accounting mock.
+
+## 2026-07-21 03:51 PDT — P0-05 backend contract and mock checkpoint
+
+### Completed
+
+- Added a backend-neutral lifecycle and event contract that does not expose `GPUDevice`, WebGL contexts, or other native objects.
+- Added immutable capability reports with explicit backend availability, conservative feature defaults, and normalized limits.
+- Added opaque resource handle kinds and active/total count plus estimated-byte diagnostics.
+- Added a deterministic Mock Backend with initialization, state transitions, resource ownership, idempotent destruction, loss simulation, reinitialization, and disposal.
+- Added backend contract and Mock Backend regression tests, including unavailable backend and active-resource baseline checks.
+
+### Validation
+
+- Clean `pnpm clean` followed by `pnpm test:unit`: PASS.
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS for package source and test source.
+- `pnpm test:unit`: PASS — 6 files and 21 tests.
+- All seven packages built successfully before the test run.
+- Mock resource baseline after explicit destruction, device loss, and backend disposal: 0 active resources and 0 active estimated bytes.
+
+### Issues and resolution
+
+- Running package compilation and unit tests concurrently allowed Vitest to resolve stale workspace `dist` output. The test command now builds packages first, and a clean-build regression run proves it has no hidden dependency on previous artifacts.
+
+### Performance
+
+- No frame loop or GPU work was added. Resource statistics scan active mock records only when diagnostics are requested.
+
+### Next
+
+- Commit and remotely verify the P0-05 checkpoint.
+- Implement the dirty-driven scheduler shell, renderer registrations, and SDK-only factory/consumer flow.

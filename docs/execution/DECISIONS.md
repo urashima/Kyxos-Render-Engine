@@ -39,3 +39,13 @@
 - **Reason:** GPU resource owners need predictable cleanup order, safe subscription mutation, and stale-handle protection without introducing a global singleton or asynchronous teardown into every API.
 - **Impact:** Resource destruction can be audited and tested independently. Long-running allocators consume a monotonically increasing safe-integer space, whose practical limit is far beyond a browser session. The policy is backend-neutral.
 - **ADR required:** No; the public lifecycle contract will be captured by ADR-003 while these are internal deterministic primitives.
+
+## ED-005 — Keep backend capabilities and resource accounting backend-neutral
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** The backend boundary exposes immutable capability reports, opaque typed resource handles, lifecycle events, and estimated active resource counts. Concrete `GPUDevice`, WebGL contexts, and native resources stay inside backend implementations.
+- **Candidates:** Expose WebGPU objects through the SDK; postpone the backend contract until Phase 1; define a minimal backend-neutral contract and executable mock in Phase 0.
+- **Reason:** The renderer and tests need a real replaceable seam before WebGPU code arrives. Conservative capability defaults and active-count baselines make unsupported features and leaks observable without coupling callers to one API.
+- **Impact:** WebGPU and WebGL2 may implement different capabilities behind one contract. Estimated bytes are diagnostics rather than an assertion of exact driver allocation.
+- **ADR required:** Yes; ADR-002 will freeze backend abstraction and fallback responsibilities.
