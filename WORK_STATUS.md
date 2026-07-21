@@ -1,35 +1,35 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                    |
-| Current Branch      | `agent/phase-01-webgpu-core`                                                |
-| Current Commit      | `e7a5183dff48f12e90b72faf52f4ce1cacfcb946` (CPU timing checkpoint)          |
-| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                              |
-| Current Task        | P1-08 — Visual, performance, resource, and integration evidence             |
-| Last Completed Task | P1-07 — Independent Playground and real WebGPU browser acceptance           |
-| Next Action         | Verify CPU/timestamp metrics in CI, then finalize the Phase 1 evidence pack |
-| CI Status           | Canonical visual run 29840128868 PASS; CPU timing checkpoint pending CI     |
-| Acceptance Status   | In Development                                                              |
-| Known Blockers      | No active blockers                                                          |
-| Last Updated        | 2026-07-21 07:43 PDT                                                        |
+| Field               | Value                                                                     |
+| ------------------- | ------------------------------------------------------------------------- |
+| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                  |
+| Current Branch      | `agent/phase-01-webgpu-core`                                              |
+| Current Commit      | `58644e2399d549fe0be8efd01daab096177ccaa7` (evidence-gate checkpoint)     |
+| Overall Progress    | 1 / 15 phases accepted; Phase 1 Owner Acceptance Passed                   |
+| Current Task        | P1-09 — Final evidence CI, immutable freeze, merge, and accepted tag      |
+| Last Completed Task | P1-08 — Canonical visual, performance, resource, and integration evidence |
+| Next Action         | Push the evidence pack, inspect CI, then add the immutable Phase 1 freeze |
+| CI Status           | Source run 29840589848 PASS; complete evidence-pack head pending CI       |
+| Acceptance Status   | Owner Acceptance Passed — Autonomous Evidence Review                      |
+| Known Blockers      | No active blockers                                                        |
+| Last Updated        | 2026-07-21 07:56 PDT                                                      |
 
 ## Phase Progress
 
-| Phase | Status         | Branch                               | PR  | CI   | Acceptance     | Tag                 |
-| ----: | -------------- | ------------------------------------ | --- | ---- | -------------- | ------------------- |
-|    00 | Phase Accepted | `agent/phase-00-foundation`          | #1  | PASS | Phase Accepted | `phase-00-accepted` |
-|    01 | In Development | `agent/phase-01-webgpu-core`         | #2  | PASS | In Development | —                   |
-|    02 | Planned        | `agent/phase-02-scene-camera`        | —   | —    | Planned        | —                   |
-|    03 | Planned        | `agent/phase-03-pbr-ibl`             | —   | —    | Planned        | —                   |
-|    04 | Planned        | `agent/phase-04-temporal`            | —   | —    | Planned        | —                   |
-|    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —    | Planned        | —                   |
-|    06 | Planned        | `agent/phase-06-assets`              | —   | —    | Planned        | —                   |
-|    07 | Planned        | `agent/phase-07-animation`           | —   | —    | Planned        | —                   |
-|    08 | Planned        | `agent/phase-08-material-extensions` | —   | —    | Planned        | —                   |
-|    09 | Planned        | `agent/phase-09-sss`                 | —   | —    | Planned        | —                   |
-|    10 | Planned        | `agent/phase-10-webgl2`              | —   | —    | Planned        | —                   |
-|    11 | Planned        | `agent/phase-11-texture-lab`         | —   | —    | Planned        | —                   |
-|    12 | Planned        | `agent/phase-12-advanced-features`   | —   | —    | Planned        | —                   |
-|    13 | Planned        | `agent/phase-13-production`          | —   | —    | Planned        | —                   |
-|    14 | Planned        | `agent/phase-14-release`             | —   | —    | Planned        | —                   |
+| Phase | Status                  | Branch                               | PR  | CI      | Acceptance              | Tag                 |
+| ----: | ----------------------- | ------------------------------------ | --- | ------- | ----------------------- | ------------------- |
+|    00 | Phase Accepted          | `agent/phase-00-foundation`          | #1  | PASS    | Phase Accepted          | `phase-00-accepted` |
+|    01 | Owner Acceptance Passed | `agent/phase-01-webgpu-core`         | #2  | Pending | Owner Acceptance Passed | —                   |
+|    02 | Planned                 | `agent/phase-02-scene-camera`        | —   | —       | Planned                 | —                   |
+|    03 | Planned                 | `agent/phase-03-pbr-ibl`             | —   | —       | Planned                 | —                   |
+|    04 | Planned                 | `agent/phase-04-temporal`            | —   | —       | Planned                 | —                   |
+|    05 | Planned                 | `agent/phase-05-lighting-postfx`     | —   | —       | Planned                 | —                   |
+|    06 | Planned                 | `agent/phase-06-assets`              | —   | —       | Planned                 | —                   |
+|    07 | Planned                 | `agent/phase-07-animation`           | —   | —       | Planned                 | —                   |
+|    08 | Planned                 | `agent/phase-08-material-extensions` | —   | —       | Planned                 | —                   |
+|    09 | Planned                 | `agent/phase-09-sss`                 | —   | —       | Planned                 | —                   |
+|    10 | Planned                 | `agent/phase-10-webgl2`              | —   | —       | Planned                 | —                   |
+|    11 | Planned                 | `agent/phase-11-texture-lab`         | —   | —       | Planned                 | —                   |
+|    12 | Planned                 | `agent/phase-12-advanced-features`   | —   | —       | Planned                 | —                   |
+|    13 | Planned                 | `agent/phase-13-production`          | —   | —       | Planned                 | —                   |
+|    14 | Planned                 | `agent/phase-14-release`             | —   | —       | Planned                 | —                   |

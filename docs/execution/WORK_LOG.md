@@ -803,3 +803,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 ### Next
 
 - Run CPU/timestamp evidence in official Chromium, replace the preliminary metric JSON with canonical values, and complete the Phase 1 acceptance/QA documents.
+
+## 2026-07-21 07:56 PDT — P1-08 evidence and owner review complete
+
+### Completed
+
+- CPU/timestamp Run `29840589848`, job `88668170176`, passed the complete pipeline with 62 unit tests and 7 browser tests.
+- Replaced preliminary runtime records with canonical CPU p95 2.3 ms / 16.7 ms and static-to-sleep p95 59.9 ms / 250 ms measurements.
+- Recorded that the adapter exposes `timestamp-query` while Phase 1 does not expose query instrumentation; GPU frame time remains explicitly unavailable.
+- Added Phase 1 bundle, dependency graph, automated summary, lifecycle, render, benchmark, technical QA, owner acceptance, visual metadata, and three acceptance documents.
+- Added a fail-closed acceptance checker covering 20 required evidence files, source CI, package boundaries, exact geometry/resource metrics, both timing budgets, image hashes/dimensions, three byte-identical attempts, and the rejected aspect regression.
+- Marked P1-08 complete and P1-09 in development after Technical QA and Owner Acceptance Passed — Autonomous Evidence Review.
+
+### Validation
+
+- `pnpm check:acceptance:phase-01`: 20 evidence files PASS.
+- All local non-GPU gates PASS: format, zero-warning lint, strict typecheck, 15 unit files / 62 tests, dependency boundaries, architecture, both phase acceptance schemas, Shader validation, all builds, and bundle budgets.
+- Phase 0 sandbox browser regression remains 5 / 5 PASS with its exact profile baseline.
+- No active blockers; the only remaining Phase 1 gates are evidence-head CI, immutable freeze automation, merge, and tag verification.
+
+### Next
+
+- Push and inspect the complete evidence-pack CI.
+- Add the narrowly scoped immutable `phase-01-accepted` main-push workflow, pass final CI, merge PR #2, and verify the tag target.

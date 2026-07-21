@@ -11,8 +11,8 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 | P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | Completed      |
 | P1-06 | Connect Renderer and public SDK Canvas options without exposing `GPUDevice`                   | P1-03,P1-05 | SDK-only consumer; create/dispose/recreate; clear fallback errors                            | Completed      |
 | P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | Completed      |
-| P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | In Development |
-| P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | Planned        |
+| P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Completed      |
+| P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | In Development |
 
 ### P1-05 checkpoints
 
@@ -30,6 +30,16 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 - [x] Backend, Shader, Surface, frame, Draw, triangle, vertex, Pipeline, resource, memory, Canvas, and viewport diagnostics.
 - [x] Strict browser tests for compiler/render output and full lifecycle recovery without skips.
 - [x] Official Playwright Chromium CI proves the real WebGPU adapter/compiler/render path.
+
+### P1-08 checkpoints
+
+- [x] Full-page, triangle, and sphere canonical snapshots enforce 0 differing pixels.
+- [x] Initial aspect-deformed sphere rejected, fixed, and retained with a 208,525-pixel Difference.
+- [x] Three official Chromium attempts produce the identical canonical full-page hash.
+- [x] CPU frame and static-to-sleep budgets pass with ten samples each.
+- [x] Draw, triangle, vertex, Pipeline, Buffer-memory, Device Lost, recovery, and disposal metrics are versioned.
+- [x] Phase 0 accepted-tag performance and initial-entry bundle comparison is recorded.
+- [x] Technical QA and autonomous owner evidence review pass with no blockers.
 
 ## Required architecture boundaries
 
