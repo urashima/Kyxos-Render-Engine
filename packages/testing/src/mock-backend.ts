@@ -415,6 +415,13 @@ export class MockBackend implements GraphicsBackend {
             });
           }
         }
+        if (draw.indexBuffer !== undefined && !this.#buffers.has(draw.indexBuffer.buffer)) {
+          throw new KyxosEngineError('Mock Index Buffer Handle is stale or foreign.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
         const count = draw.indexCount ?? draw.vertexCount ?? 0;
         const drawInstances = draw.instanceCount ?? 1;
         const topology = pipeline.primitive?.topology ?? 'triangle-list';

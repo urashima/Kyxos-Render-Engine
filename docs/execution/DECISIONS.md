@@ -169,3 +169,13 @@
 - **Reason:** A stateful or native API would leak WebGPU ordering and object types into Renderer Core and complicate WebGL2 mapping. Complete descriptions can be validated deterministically before mutation, mocked without a GPU, and translated by each backend.
 - **Impact:** Phase 1 supports clear, non-indexed, and indexed geometry while preserving backend isolation. Command Encoders cannot be accidentally resubmitted; failed pre-encode validation leaves them explicitly disposable. Later Render Graph compilation can emit the same contract without changing product integrations.
 - **ADR required:** No; this extends the portable Backend API under ADR-004 without changing dependency direction.
+
+## ED-018 — Give Render Features explicit backend lifecycle hooks
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** A Render Feature may asynchronously initialize backend-neutral resources after the backend is ready, synchronously emit a frame submission, and discard invalid Handle state on Device Lost. Renderer initializes registered features, aggregates their immutable statistics, disposes features before the backend, and reinitializes them after backend recovery.
+- **Candidates:** Hard-code basic geometry in one Renderer method; let every product own resources and issue backend commands; use registered features with explicit lifecycle hooks.
+- **Reason:** A monolithic Renderer would make later SSDO, SSR, SSS, and indoor mapping invasive, while product-owned resources would break the SDK boundary. Lifecycle-aware features preserve registration-based extensibility and deterministic ownership without exposing native GPU objects.
+- **Impact:** Phase 1 basic geometry is a replaceable feature. Zero-area surfaces return zero statistics without submitting work; unexpected feature errors become typed Renderer events; Device Lost clears stale handles and recovery creates a fresh resource set. WebGL2 features can implement the same contract in Phase 10.
+- **ADR required:** No; this realizes the registration architecture already mandated by the development plan.

@@ -666,3 +666,27 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-05a checkpoint.
 - Add canonical WGSL, generated triangle/sphere geometry, a Renderer-owned basic-geometry feature, and compiler-backed Shader validation.
+
+## 2026-07-21 06:43 PDT — P1-05b WGSL and basic geometry feature
+
+### Completed
+
+- Added canonical `phase-01-basic.wgsl` vertex/fragment source and an exact generated TypeScript runtime mirror; the Shader gate now fails stale mirrors, missing entry points, unsupported Shader kinds, and unbalanced syntax.
+- Added deterministic interleaved position/normal/color triangle geometry and configurable Uint16 UV-sphere generation with segment, radius, safe-count, and index-limit validation.
+- Extended Render Features with explicit initialize, frame render, and device-loss hooks while keeping only the backend-neutral `GraphicsBackend` contract in Renderer Core.
+- Added Renderer feature execution and immutable aggregate per-frame Draw Call, instance, triangle, and submitted-vertex statistics.
+- Implemented `BasicGeometryFeature` ownership of Surface, Shader, Pipeline, triangle/sphere Vertex Buffers, sphere Index Buffer, uploads, clear pass, non-indexed/indexed Draw selection, Resize suspension, disposal, and full resource recreation after Device Lost.
+- Strengthened Mock Backend indexed-buffer ownership checks so unit acceptance exercises the same opaque-handle boundary.
+
+### Validation
+
+- Full unit suite: 14 files / 59 tests PASS.
+- Geometry tests prove deterministic counts, normalized normals, Uint16 limits, aligned Index uploads, triangle metrics, sphere metrics, zero-area no-submit behavior, loss cleanup, six-resource recreation, and disposal baseline.
+- Static Shader validation: 1 canonical WGSL source PASS with exact runtime mirror. Runtime `getCompilationInfo()` is mandatory during feature initialization; real-browser compiler evidence remains the P1-06/P1-07 integration gate.
+- Full sandbox verification PASS: format, lint, strict typecheck, unit, dependency boundaries, architecture docs, Phase 0 freeze, Shader gate, builds, bundle budgets, and 5 / 5 Playwright acceptance tests.
+- Playground JavaScript is 26,863 raw / 8,142 gzip bytes; total output is 83,639 raw / 59,278 gzip bytes, within the existing Phase 0 budgets.
+
+### Next
+
+- Commit and remotely verify the P1-05b checkpoint.
+- Add public SDK WebGPU Canvas selection and controller lifecycle, then exercise the canonical Shader through a real browser adapter/device/compiler/render smoke.

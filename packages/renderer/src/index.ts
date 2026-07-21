@@ -1,6 +1,19 @@
 /** Stable package identity for diagnostics and boundary tests. */
 export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 
+export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
+export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
+export type {
+  BasicGeometryData,
+  BasicGeometryPrimitive,
+  SphereGeometryOptions,
+} from './basic-geometry.js';
+export {
+  BASIC_GEOMETRY_VERTEX_FLOATS,
+  BASIC_GEOMETRY_VERTEX_STRIDE,
+  createSphereGeometry,
+  createTriangleGeometry,
+} from './basic-geometry.js';
 export type {
   AssetDecoder,
   EngineExtension,
@@ -8,6 +21,8 @@ export type {
   MaterialExtension,
   PreviewPreset,
   RenderFeature,
+  RenderFeatureFrameContext,
+  RenderFeatureInitializationContext,
 } from './extensions.js';
 export type {
   KyxosRendererOptions,

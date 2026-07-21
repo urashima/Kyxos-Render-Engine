@@ -1,3 +1,9 @@
+import type {
+  BackendLossInfo,
+  BackendRenderPassStatistics,
+  GraphicsBackend,
+} from '@kyxos/render-backend-api';
+import type { DirtyFlag } from '@kyxos/render-frame-scheduler';
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 
@@ -6,7 +12,22 @@ export interface EngineExtension {
   dispose?(): void;
 }
 
-export type RenderFeature = EngineExtension;
+export interface RenderFeatureInitializationContext {
+  readonly backend: GraphicsBackend;
+}
+
+export interface RenderFeatureFrameContext extends RenderFeatureInitializationContext {
+  readonly dirtyFlags: readonly DirtyFlag[];
+  readonly frameIndex: number;
+  readonly timestamp: number;
+}
+
+export interface RenderFeature extends EngineExtension {
+  initialize?(context: RenderFeatureInitializationContext): Promise<void> | void;
+  onBackendLost?(loss: BackendLossInfo): void;
+  render?(context: RenderFeatureFrameContext): BackendRenderPassStatistics | undefined;
+}
+
 export type MaterialExtension = EngineExtension;
 export type AssetDecoder = EngineExtension;
 export type PreviewPreset = EngineExtension;
@@ -29,6 +50,10 @@ export class ExtensionRegistry<Extension extends EngineExtension> implements Dis
 
   get size(): number {
     return this.#extensions.size;
+  }
+
+  values(): readonly Extension[] {
+    return Object.freeze([...this.#extensions.values()]);
   }
 
   register(extension: Extension): Unsubscribe {

@@ -27,6 +27,7 @@ describe('KyxosRenderer foundation shell', () => {
     expect(onFrame).toHaveBeenCalledExactlyOnceWith({
       dirtyFlags: ['camera', 'material'],
       frameIndex: 1,
+      statistics: { drawCalls: 0, instances: 0, triangles: 0, vertices: 0 },
       timestamp: 20,
     });
     expect(onSleep).toHaveBeenCalledOnce();

@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                          |
-| ------------------- | ------------------------------------------------------------------------------ |
-| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                       |
-| Current Branch      | `agent/phase-01-webgpu-core`                                                   |
-| Current Commit      | `bdcf00c83721414b74d23ee6f6869d42d50634ec` (last verified remote checkpoint)   |
-| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                 |
-| Current Task        | P1-05b — Validated WGSL plus generated triangle and sphere geometry            |
-| Last Completed Task | P1-05a — Upload, render-pass, indexed-draw, submission, and command validation |
-| Next Action         | Add canonical WGSL, generated geometry, Renderer feature, and Shader gate      |
-| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                   |
-| Acceptance Status   | In Development                                                                 |
-| Known Blockers      | No active blockers                                                             |
-| Last Updated        | 2026-07-21 06:30 PDT                                                           |
+| Field               | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                      |
+| Current Branch      | `agent/phase-01-webgpu-core`                                                  |
+| Current Commit      | `fde093861468a277fe1c2bef530185fd7062f57b` (last verified remote checkpoint)  |
+| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                |
+| Current Task        | P1-06 — Public SDK Canvas integration and browser WGSL compiler gate          |
+| Last Completed Task | P1-05b — Canonical WGSL, generated geometry, feature execution, loss recovery |
+| Next Action         | Add SDK WebGPU selection, Canvas controller, resize, and real browser smoke   |
+| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                  |
+| Acceptance Status   | In Development                                                                |
+| Known Blockers      | No active blockers                                                            |
+| Last Updated        | 2026-07-21 06:43 PDT                                                          |
 
 ## Phase Progress
 
