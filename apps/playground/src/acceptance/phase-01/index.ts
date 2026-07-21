@@ -47,7 +47,6 @@ function acceptanceMarkup(): string {
         <nav class="phase-nav" aria-label="Acceptance phases">
           <a href="/acceptance/phase-00">Phase 00</a>
           <a href="/acceptance/phase-01" aria-current="page">Phase 01</a>
-          <a href="/acceptance/phase-02">Phase 02</a>
         </nav>
       </header>
 
