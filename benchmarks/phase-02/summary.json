@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "status": "PASS_WITH_DECLARED_UNAVAILABLE_GPU_TIMING",
+  "previousAcceptedTagComparison": {
+    "tag": "phase-01-accepted",
+    "sourceCiRunId": 29842315735,
+    "cpuFrameTimeP95": {
+      "previousMs": 2.3,
+      "currentMs": 2.9,
+      "deltaMs": 0.6,
+      "deltaPercent": 26.087,
+      "status": "PASS_WITHIN_PHASE_02_BUDGET",
+      "context": "Phase 2 submits six sorted Scene draws, per-object Uniforms, and depth state; the absolute p95 remains below one 60 Hz frame budget."
+    },
+    "staticToSleepP95": {
+      "previousMs": 59.9,
+      "currentMs": 61.1,
+      "deltaMs": 1.2,
+      "deltaPercent": 2.003,
+      "status": "PASS_WITHIN_PHASE_02_BUDGET"
+    },
+    "routeJavaScript": {
+      "previousRawBytes": 85801,
+      "currentRawBytes": 125160,
+      "rawDeltaPercent": 45.872,
+      "previousGzipBytes": 26221,
+      "currentGzipBytes": 37668,
+      "gzipDeltaPercent": 43.656,
+      "status": "PASS_WITHIN_PHASE_02_BUDGET"
+    },
+    "routeTotal": {
+      "previousRawBytes": 145817,
+      "currentRawBytes": 185176,
+      "rawDeltaPercent": 26.992,
+      "previousGzipBytes": 78195,
+      "currentGzipBytes": 89642,
+      "gzipDeltaPercent": 14.639,
+      "status": "PASS_WITHIN_PHASE_02_BUDGET"
+    }
+  },
+  "environment": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "backend": "webgpu-swiftshader",
+    "viewport": "1440x1000",
+    "devicePixelRatio": 1
+  },
+  "metrics": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 2.9,
+      "medianMs": 0.5,
+      "minMs": 0.3,
+      "p95Ms": 2.9,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "status": "NOT_AVAILABLE",
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 2 public diagnostics contract."
+    },
+    "staticToSleep": {
+      "budgetMs": 250,
+      "maxMs": 61.1,
+      "medianMs": 42,
+      "minMs": 9.2,
+      "p95Ms": 61.1,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "drawCalls": { "status": "PASS", "value": 6 },
+    "triangles": { "status": "PASS", "value": 690 },
+    "submittedVertices": { "status": "PASS", "value": 2070 },
+    "visibleObjects": { "status": "PASS", "value": 6 },
+    "activeResourcesReady": { "status": "PASS", "value": 25 },
+    "activeResourceCountAfterDeviceLoss": { "status": "PASS", "value": 0 },
+    "activeResourceCountAfterDispose": { "status": "PASS", "value": 0 },
+    "phase2RouteRawBytes": { "budget": 196608, "status": "PASS", "value": 185176 },
+    "phase2RouteGzipBytes": { "budget": 98304, "status": "PASS", "value": 89642 },
+    "assetLoadTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The asset system begins in Phase 6; Phase 2 uses deterministic generated Geometry."
+    },
+    "disposeResourceDelta": {
+      "activeEstimatedBytes": 0,
+      "activeResources": 0,
+      "status": "PASS"
+    }
+  }
+}

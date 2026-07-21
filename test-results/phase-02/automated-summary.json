@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "sourceCheckpoint": "390b1ecc3bfb1e94c5155470b6abec7b1fc4202c",
+  "generatedAt": "2026-07-21T10:53:00-07:00",
+  "localStatus": "PASS",
+  "remoteCiStatus": "PASS",
+  "remoteCi": {
+    "runId": 29854505862,
+    "jobId": 88715390559,
+    "sourceCommit": "390b1ecc3bfb1e94c5155470b6abec7b1fc4202c",
+    "conclusion": "success",
+    "artifactId": 8504813925,
+    "artifactDigest": "sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33"
+  },
+  "visualSource": {
+    "runId": 29852642508,
+    "jobId": 88709155622,
+    "sourceCommit": "947163ae975b98e056f5e2210491bb6e9903bb26",
+    "conclusion": "success",
+    "artifactId": 8504096148,
+    "artifactDigest": "sha256:16c31f9b776e1984ee3afbdb04b1082395a929c2fa88fce4508e21909249b086"
+  },
+  "gates": [
+    { "id": "format", "status": "PASS", "command": "pnpm format:check" },
+    { "id": "lint", "status": "PASS", "command": "pnpm lint", "warnings": 0 },
+    { "id": "typecheck", "status": "PASS", "command": "pnpm typecheck" },
+    {
+      "id": "unit",
+      "status": "PASS",
+      "command": "pnpm test:unit",
+      "testFiles": 31,
+      "tests": 136
+    },
+    {
+      "id": "boundaries",
+      "status": "PASS",
+      "command": "pnpm check:boundaries",
+      "cycles": 0,
+      "violations": 0,
+      "deliberateFixtureRejected": true
+    },
+    {
+      "id": "shaders",
+      "status": "PASS",
+      "command": "pnpm validate:shaders",
+      "canonicalWgslModules": 2,
+      "runtimeCompilerVerified": true
+    },
+    { "id": "build", "status": "PASS", "command": "pnpm build", "apps": 1, "packages": 12 },
+    {
+      "id": "bundle",
+      "status": "PASS",
+      "command": "pnpm check:bundle",
+      "rawBytes": 208453,
+      "gzipBytes": 97066
+    },
+    {
+      "id": "pages-build",
+      "status": "PASS",
+      "command": "pnpm build:pages:verify && pnpm check:pages",
+      "routes": ["phase-0", "phase-1", "phase-2", "latest"]
+    },
+    {
+      "id": "browser",
+      "status": "PASS",
+      "command": "pnpm test:e2e",
+      "browser": "Chrome Headless Shell 149.0.7827.55",
+      "tests": 10,
+      "phase02Tests": 3
+    },
+    {
+      "id": "visual",
+      "status": "PASS",
+      "actualDiffPixels": 0,
+      "maximumDiffPixels": 0,
+      "canonicalAttemptHash": "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "canonicalAttemptsByteIdentical": true,
+      "snapshots": 2
+    },
+    {
+      "id": "performance",
+      "status": "PASS",
+      "cpuFrameBudgetMs": 16.7,
+      "cpuFrameP95Ms": 2.9,
+      "staticToSleepBudgetMs": 250,
+      "staticToSleepP95Ms": 61.1
+    },
+    {
+      "id": "resources",
+      "status": "PASS",
+      "readyResources": 25,
+      "readyEstimatedBytesAtDpr2": 7658788,
+      "afterLoss": 0,
+      "afterLossEstimatedBytes": 0,
+      "afterDispose": 0,
+      "afterDisposeEstimatedBytes": 0
+    }
+  ],
+  "deploymentGate": {
+    "status": "PENDING",
+    "workflow": "Deploy accepted Playgrounds",
+    "reason": "Phase 2 cannot be marked Accepted until the verified evidence head merges to main, GitHub Pages deploys, and public Chromium/WebGPU interactions pass.",
+    "requiredRoutes": ["/latest/", "/phase-0/", "/phase-1/", "/phase-2/"]
+  },
+  "requiredFailures": [],
+  "notes": [
+    "Run 29854505862 passed the authoritative pipeline with pointer/wheel Camera input, exact lifecycle memory, two zero-pixel Phase 2 snapshots, and all 10 browser tests.",
+    "Run 29852642508 supplied the directly inspected first capture; Runs 29853253312 and 29854505862 produced byte-identical full-page and Scene images.",
+    "The canonical adapter reports timestamp-query support, but Phase 2 declares GPU duration unavailable rather than fabricating a value.",
+    "GitHub Pages deployment and public online verification remain a mandatory post-merge gate."
+  ]
+}

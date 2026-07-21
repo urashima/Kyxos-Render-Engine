@@ -11,8 +11,8 @@ Phase 2 starts from accepted tag `phase-01-accepted` and branch base `1244a06f9c
 | P2-05 | Implement layer/frustum visibility and opaque/transparent Render Queues           | P2-01,P2-02,P2-03       | Offscreen exclusion; stable opaque keys; predictable transparency ordering        | Completed      |
 | P2-06 | Connect Scene submission to Renderer and the public SDK                           | P2-02,P2-03,P2-04,P2-05 | Backend-neutral Draw List tests; no native GPU or private package exposure        | Completed      |
 | P2-07 | Add the independent `/acceptance/phase-02` Playground route                       | P2-06                   | Primitive, hierarchy, orbit/framing, culling, ordering, and diagnostic flows      | Completed      |
-| P2-08 | Add deterministic visual, behavior, performance, and lifecycle evidence           | P2-07                   | Reference/Current/Difference; draw/visible counts; Phase 1 budget comparison      | In Development |
-| P2-09 | Complete CI, technical QA, autonomous owner review, PR, merge, and accepted tag   | P2-08                   | All gates green; `phase-02-accepted` resolves to the accepted merge               | Planned        |
+| P2-08 | Add deterministic visual, behavior, performance, and lifecycle evidence           | P2-07                   | Reference/Current/Difference; draw/visible counts; Phase 1 budget comparison      | Completed      |
+| P2-09 | Complete CI, technical QA, autonomous owner review, PR, merge, and accepted tag   | P2-08                   | All gates green; `phase-02-accepted` resolves to the accepted merge               | In Development |
 
 ## Required architecture boundaries
 

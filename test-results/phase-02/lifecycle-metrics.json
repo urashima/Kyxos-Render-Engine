@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "devicePixelRatio": 2,
+  "estimatedBytesReady": 7658788,
+  "estimatedBytesAfterDeviceLoss": 0,
+  "estimatedBytesAfterRecovery": 7658788,
+  "estimatedBytesAfterDispose": 0,
+  "estimatedBytesAfterRecreate": 7658788,
+  "estimatedBytesAfterFinalDispose": 0,
+  "initialSurface": "1708×1120",
+  "resourceBaseline": 25,
+  "resourcesAfterDeviceLoss": 0,
+  "resourcesAfterDispose": 0,
+  "resourcesAfterFinalDispose": 0,
+  "resourcesAfterRecovery": 25,
+  "resourcesAfterRecreate": 25,
+  "status": "PASS"
+}

@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "budgets": {
+    "css": { "gzipBytes": 12288, "rawBytes": 32768 },
+    "font": { "gzipBytes": 65536, "rawBytes": 65536 },
+    "html": { "gzipBytes": 4096, "rawBytes": 8192 },
+    "javascript": { "gzipBytes": 49152, "rawBytes": 163840 },
+    "phase0InitialJavascript": { "gzipBytes": 24576, "rawBytes": 65536 },
+    "phase0InitialTotal": { "gzipBytes": 65536, "rawBytes": 131072 },
+    "phase1RouteJavascript": { "gzipBytes": 32768, "rawBytes": 98304 },
+    "phase1RouteTotal": { "gzipBytes": 98304, "rawBytes": 196608 },
+    "phase2RouteJavascript": { "gzipBytes": 40960, "rawBytes": 131072 },
+    "phase2RouteTotal": { "gzipBytes": 98304, "rawBytes": 196608 },
+    "total": { "gzipBytes": 131072, "rawBytes": 262144 }
+  },
+  "metrics": {
+    "css": { "gzipBytes": 3321, "rawBytes": 11026 },
+    "font": { "gzipBytes": 48254, "rawBytes": 48256 },
+    "html": { "gzipBytes": 399, "rawBytes": 734 },
+    "javascript": { "gzipBytes": 45092, "rawBytes": 148437 },
+    "phase0InitialJavascript": { "gzipBytes": 10698, "rawBytes": 32137 },
+    "phase0InitialTotal": { "gzipBytes": 62672, "rawBytes": 92153 },
+    "phase1RouteJavascript": { "gzipBytes": 26221, "rawBytes": 85801 },
+    "phase1RouteTotal": { "gzipBytes": 78195, "rawBytes": 145817 },
+    "phase2RouteJavascript": { "gzipBytes": 37668, "rawBytes": 125160 },
+    "phase2RouteTotal": { "gzipBytes": 89642, "rawBytes": 185176 },
+    "total": { "gzipBytes": 97066, "rawBytes": 208453 }
+  }
+}

@@ -1125,7 +1125,7 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - GitHub Actions Run `29853253312`, job `88711213077`: PASS; 10/10 browser tests; Artifact `8504322478`, digest `sha256:0f2d4cc68c91f606238033cebc8b1a3220dee54cb4c4032652cab78bde789e93`.
 - Reference and Current SHA-256: `54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142`; Scene: `75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e`; 0 differing pixels.
-- CPU frame p95 7.4 ms / 16.7 ms; dirty-to-sleep p95 64.3 ms / 250 ms; 25 ready resources, 0 after loss/disposal, 25 after recovery/recreation.
+- CPU frame p95 7.4 ms / 16.7 ms; dirty-to-sleep p95 64.3 ms / 250 ms; DPR 2 resources/bytes 25 / 7,658,788 ready, 0 / 0 after loss/disposal, exact recovery.
 - Phase 2 route: 125,160 raw / 37,668 gzip JavaScript and 185,176 raw / 89,642 gzip total; all Phase 0/1/2 and aggregate budgets PASS.
 - Phase 2 remains not Accepted. The evidence-pack head, merge, GitHub Pages deployment, public interaction verification, and immutable tag remain mandatory.
 
@@ -1141,16 +1141,36 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Extended the Device Lost, recovery, disposal, recreation, and final-disposal browser flow to measure estimated GPU Buffer plus Texture bytes at every state.
 - Added hard assertions requiring ready bytes to be positive, loss/disposal bytes to be zero, and recovery/recreation bytes to return to the exact ready baseline.
 - Inspected failed Run `29853890127`, its full job log, failed screenshot, trace artifact, runtime metrics, and canonical image hashes instead of retrying blindly.
-- Stabilized physical pointer acceptance by explicitly restoring the Canvas to the interactive viewport after the deterministic full-page screenshot.
+- Determined that the pointer assertions reached the remote checkpoint before the concurrently prepared Playground pointer handler; also stabilized physical pointer acceptance by restoring the Canvas to the interactive viewport after the deterministic full-page screenshot.
 
 ### Validation
 
 - Run `29853890127` proved `7,658,788` estimated bytes ready, `0` after Device Lost, `7,658,788` after recovery, `0` after Dispose, `7,658,788` after recreation, and `0` after final Dispose; resource counts were `25/0/25/0/25/0`.
 - Its canonical full-page and Scene captures remained byte-identical to the frozen Phase 2 baselines.
-- The only failing assertion was the existing pointer drag after full-page capture: without an explicit scroll restoration, both attempts retained orbit `0.530 / 0.220`.
+- The only failing assertion was pointer drag: the remote checkpoint did not yet contain the handler, so both attempts retained orbit `0.530 / 0.220`. Commit `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` adds that handler and the same interaction contract to public Pages verification; scroll restoration remains an independent flake guard.
 - Local formatting, zero-warning Lint, strict typecheck, 31 unit files / 136 tests, build, and Bundle budgets passed. Local browser launch remains unavailable because this workspace has no cached Playwright Chromium executable.
 
 ### Next
 
-- Push the Canvas scroll stabilization together with the hard lifecycle-memory assertions and require a clean official CI run.
+- Require interaction checkpoint `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` to pass a clean official CI run.
 - Promote the successful runtime JSON into the Phase 2 evidence pack, then run the fail-closed evidence head before merge.
+
+## 2026-07-21 10:55 PDT — P2-09 authoritative interaction and lifecycle checkpoint passed
+
+### Completed
+
+- Added the browser Playground pointer handler and public Pages interaction coverage at commit `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` on top of the Canvas scroll guard and lifecycle-memory assertions.
+- Promoted the successful Run `29854505862` runtime records into the Phase 2 visual, performance, lifecycle, technical QA, and owner evidence.
+- Strengthened the fail-closed Phase 2 checker with the exact source Commit, Run, Job, Artifact, digest, lifecycle bytes, and three-attempt image provenance.
+
+### Validation
+
+- Run `29854505862`, job `88715390559`: PASS; 31 unit files / 136 tests and 10 / 10 browser tests.
+- Artifact `8504813925`, digest `sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33`, records CPU p95 `2.9 ms`, dirty-to-sleep p95 `61.1 ms`, and DPR 2 lifecycle bytes `7,658,788/0/7,658,788/0/7,658,788/0`.
+- Full-page and Scene captures match both prior official attempts byte-for-byte; both snapshot gates remain zero-pixel.
+- No active blocker remains. Phase 2 is still deployment-pending and is not marked Accepted.
+
+### Next
+
+- Push the Phase 2 evidence pack and require its fail-closed schema to pass in official CI.
+- Record that evidence-pack Run in a final provenance commit, pass the immutable PR head, then merge and execute the public Pages gate.

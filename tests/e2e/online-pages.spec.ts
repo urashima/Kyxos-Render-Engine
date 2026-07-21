@@ -66,6 +66,7 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('transparent-order')).not.toHaveText(initialOrder ?? '');
 
     const canvas = page.locator('[data-canvas="scene"]');
+    await canvas.scrollIntoViewIfNeeded();
     const bounds = await canvas.boundingBox();
     if (bounds === null) throw new Error('The public Phase 2 Scene Canvas has no bounds.');
     const initialOrbit = await page.getByTestId('orbit-angle').textContent();
