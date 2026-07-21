@@ -154,6 +154,24 @@ importers:
         specifier: workspace:*
         version: link:../frame-scheduler
 
+  packages/visibility:
+    dependencies:
+      '@kyxos/render-camera':
+        specifier: workspace:*
+        version: link:../camera
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-geometry':
+        specifier: workspace:*
+        version: link:../geometry
+      '@kyxos/render-math':
+        specifier: workspace:*
+        version: link:../math
+      '@kyxos/render-scene':
+        specifier: workspace:*
+        version: link:../scene
+
 packages:
 
   '@emnapi/core@1.11.1':

@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../camera" },
+    { "path": "../core" },
+    { "path": "../geometry" },
+    { "path": "../math" },
+    { "path": "../scene" }
+  ]
+}

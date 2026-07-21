@@ -23,7 +23,8 @@ export type EngineModule =
   | 'scene'
   | 'scheduler'
   | 'sdk'
-  | 'unknown';
+  | 'unknown'
+  | 'visibility';
 
 export interface EngineErrorOptions {
   readonly cause?: unknown;

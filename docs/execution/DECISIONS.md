@@ -259,3 +259,13 @@
 - **Reason:** Height-only fitting clips wide objects in portrait viewports, while DOM types in Camera would block Worker, test, touch, and alternate-host integrations. A sphere fit is deliberately conservative but guarantees every AABB corner remains inside the frustum at any valid aspect.
 - **Impact:** Auto framing sets positive finite near/far planes around the fitted volume and emits normal Camera changes so scheduling can wake. Orbit behavior is deterministic in unit tests and reusable by products; later input adapters may change gesture scaling without changing Camera math. WebGPU receives canonical zero-to-one projection, and WebGL2 conversion remains backend-owned.
 - **ADR required:** No; ADR-002 already fixes camera and projection conventions, and this decision adds policy without changing the public dependency direction.
+
+## ED-027 — Emit immutable Render Items before backend submission
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Keep Mesh Renderer components in a Scene-bound store above Geometry. Attachments own Entity local bounds and refer to immutable Mesh data, material/pipeline keys, alpha mode, explicit order, and stable sequence. Visibility consumes Scene and Camera state, performs enabled/inherited-visibility/layer/Frustum gates, and emits immutable opaque and transparent queues without issuing graphics commands.
+- **Candidates:** Submit WebGPU commands directly while traversing Scene; store GPU state inside Entity records; build backend-neutral Render Items and sort before Renderer submission.
+- **Reason:** Traversal-time submission would entangle Scene, culling, sorting, and one backend. A separate Draw List makes offscreen exclusion objectively testable, preserves Scene/Backend isolation, and lets future Render Graph, WebGL2, instancing, and batching consume one prepared contract.
+- **Impact:** Opaque items sort by explicit order, pipeline, material, front-to-back distance, and stable sequence. Transparent items sort by explicit order then back-to-front distance with deterministic tie breakers. Results cache by Scene, Camera, Store, and option revisions; disabled features and unchanged frames perform no unnecessary rebuild. GPU resources remain Renderer/Backend-owned.
+- **ADR required:** No; this implements the visibility output boundary mandated by the development plan and keeps all accepted dependency directions intact.
