@@ -782,3 +782,24 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 ### Next
 
 - Run the complete official Chromium CI on the aspect fix and inspect the regenerated sphere before establishing the Phase 1 canonical visual baseline.
+
+## 2026-07-21 07:43 PDT — P1-08 canonical visuals and CPU timing
+
+### Completed
+
+- Aspect-correction Run `29839550943` passed the complete remote pipeline and produced a visually correct circular sphere plus proportionate triangle.
+- Established the first Phase 1 canonical full-page, triangle, and sphere references from Artifact `8498829603`; retained the rejected stretched image and its 208,525-pixel absolute Difference as fix provenance.
+- Added separate Phase 0 and Phase 1 Playwright projects so each phase resolves only its own fixed snapshot directory.
+- Canonical reproducibility Run `29840128868` passed all three Phase 1 snapshots at 0 differing pixels alongside every existing gate.
+- Added Renderer CPU command-submission timing with an injectable monotonic clock, ten browser samples, a 16.7 ms budget, and explicit adapter `timestamp-query` capability evidence.
+
+### Validation
+
+- Reference and reviewed Current share SHA-256 `779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440`; the zero-Difference image is 1440 × 1490.
+- Reviewed sphere and triangle hashes are `4ce5cf4084a789809bc2132a90349a805c821f6486fb7e72f100d4d1bca7c34d` and `c5d069aa0692aac473a3f3b9ba54cf49726f84abcb63797d13a203eca8722aa1`.
+- Pre-CPU-timing evidence measured static-to-sleep p95 67.0 ms against 250 ms, 1 Draw Call, 1,024 sphere triangles, 3,072 submitted vertices, 1 Pipeline, 6 active resources, 26,448 estimated Buffer bytes, and 0 resources after loss/disposal.
+- Local CPU-timing implementation gates PASS: zero-warning lint, strict typecheck, 15 unit files / 62 tests, Shader validation, builds, and bundle budgets.
+
+### Next
+
+- Run CPU/timestamp evidence in official Chromium, replace the preliminary metric JSON with canonical values, and complete the Phase 1 acceptance/QA documents.

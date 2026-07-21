@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                     |
-| ------------------- | ------------------------------------------------------------------------- |
-| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                  |
-| Current Branch      | `agent/phase-01-webgpu-core`                                              |
-| Current Commit      | `15360f045424646737289e1620449dcc41a0709b` (aspect-correction fix)        |
-| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                            |
-| Current Task        | P1-08 — Visual, performance, resource, and integration evidence           |
-| Last Completed Task | P1-07 — Independent Playground and real WebGPU browser acceptance         |
-| Next Action         | Verify the aspect-corrected sphere in CI and capture replacement evidence |
-| CI Status           | Evidence run 29838945291 PASS; aspect-correction fix pending CI           |
-| Acceptance Status   | In Development                                                            |
-| Known Blockers      | No active blockers                                                        |
-| Last Updated        | 2026-07-21 07:31 PDT                                                      |
+| Field               | Value                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                    |
+| Current Branch      | `agent/phase-01-webgpu-core`                                                |
+| Current Commit      | `e7a5183dff48f12e90b72faf52f4ce1cacfcb946` (CPU timing checkpoint)          |
+| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                              |
+| Current Task        | P1-08 — Visual, performance, resource, and integration evidence             |
+| Last Completed Task | P1-07 — Independent Playground and real WebGPU browser acceptance           |
+| Next Action         | Verify CPU/timestamp metrics in CI, then finalize the Phase 1 evidence pack |
+| CI Status           | Canonical visual run 29840128868 PASS; CPU timing checkpoint pending CI     |
+| Acceptance Status   | In Development                                                              |
+| Known Blockers      | No active blockers                                                          |
+| Last Updated        | 2026-07-21 07:43 PDT                                                        |
 
 ## Phase Progress
 

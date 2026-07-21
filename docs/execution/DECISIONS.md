@@ -209,3 +209,13 @@
 - **Reason:** The first official WebGPU evidence image revealed a visibly horizontal sphere even though behavior tests passed. Backend mutation would violate responsibility boundaries, while adding an early public binding model would expand Phase 1 scope. Renderer already owns the generated vertices and Resize event.
 - **Impact:** Triangle and sphere remain proportionally correct across landscape, portrait, DPR, clamping, hidden/restore, and recovery. Resize with an unchanged aspect performs no upload; an aspect change rewrites two existing Buffers without allocating resources. WebGPU and future WebGL2 receive identical corrected data.
 - **ADR required:** No; this fixes Phase 1 viewport projection within the accepted Renderer/Backend boundary and does not change public product scope.
+
+## ED-022 — Measure CPU submission time and declare unavailable GPU timing
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Measure CPU frame time around Renderer feature execution and command submission with a monotonic injectable clock. Report ten CPU samples separately from dirty-to-sleep latency. Copy the adapter `timestamp-query` capability into evidence and mark GPU frame time unavailable until a query-based timing path exists.
+- **Candidates:** Omit frame timing; mislabel wall-clock dirty-to-sleep as CPU/GPU time; infer GPU time from queue completion; measure CPU submission precisely and declare the missing GPU metric with capability evidence.
+- **Reason:** CPU command construction is measurable without exposing native objects. Queue completion includes scheduling and driver latency and is not a trustworthy GPU execution timer. The acceptance record must distinguish measured values from unavailable capabilities.
+- **Impact:** Renderer diagnostics gain `lastCpuFrameTimeMs`; tests inject a deterministic clock, while production defaults to `performance.now()`. The canonical 16.7 ms CPU budget and 250 ms dirty-to-sleep budget are independent. Future timestamp-query support can add GPU timing without changing the current measurement's meaning.
+- **ADR required:** No; this is additive diagnostics and acceptance instrumentation, not a rendering or public dependency-boundary change.
