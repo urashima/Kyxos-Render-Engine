@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const requiredTextFiles = [
   'docs/acceptance/phase-00/PHASE_00_ACCEPTANCE.md',
+  'docs/acceptance/phase-00/TECHNICAL_QA.md',
   'test-results/phase-00/automated-summary.json',
   'test-results/phase-00/bundle-metrics.json',
   'test-results/phase-00/dependency-graph.json',
+  'test-results/phase-00/technical-qa.json',
   'benchmarks/phase-00/static-to-sleep.json',
   'benchmarks/phase-00/summary.json',
   'visual-baselines/phase-00/metadata.json',
@@ -50,8 +52,12 @@ const summary = await readJson('test-results/phase-00/automated-summary.json');
 if (summary?.phase !== '00' || summary?.localStatus !== 'PASS') {
   failures.push('automated summary: Phase 00 localStatus must be PASS');
 }
-if (summary?.remoteCiStatus !== 'PENDING_PULL_REQUEST') {
-  failures.push('automated summary: remote CI must remain explicitly pending before P0-11');
+if (
+  summary?.remoteCiStatus !== 'PASS' ||
+  summary?.remoteCi?.runId !== 29829543107 ||
+  summary?.remoteCi?.conclusion !== 'success'
+) {
+  failures.push('automated summary: inspected Phase 0 pull-request CI must pass');
 }
 if (!Array.isArray(summary?.requiredFailures) || summary.requiredFailures.length !== 0) {
   failures.push('automated summary: requiredFailures must be empty');
@@ -65,6 +71,18 @@ if (
   dependencies?.violations?.length !== 0
 ) {
   failures.push('dependency evidence: graph or deliberate negative fixture failed');
+}
+
+const technicalQa = await readJson('test-results/phase-00/technical-qa.json');
+if (
+  technicalQa?.status !== 'PASS' ||
+  technicalQa?.acceptanceState !== 'Technical QA Passed' ||
+  technicalQa?.sourceCommit !== '95531062fc432b68e36c99f08983088971e9f534' ||
+  technicalQa?.ci?.runId !== 29829543107 ||
+  technicalQa?.ci?.conclusion !== 'success' ||
+  technicalQa?.blockers?.length !== 0
+) {
+  failures.push('technical QA evidence: reviewed source, CI, or blocker state is invalid');
 }
 
 const bundle = await readJson('test-results/phase-00/bundle-metrics.json');
@@ -180,8 +198,8 @@ try {
   ]) {
     if (!acceptance.includes(heading)) failures.push(`acceptance document: missing ${heading}`);
   }
-  if (!acceptance.includes('Remote GitHub Actions is pending')) {
-    failures.push('acceptance document: remote CI limitation is not declared');
+  if (!acceptance.includes('GitHub Actions run `29829543107` passed')) {
+    failures.push('acceptance document: successful inspected CI run is not declared');
   }
 } catch (error) {
   failures.push(`acceptance document: ${String(error)}`);

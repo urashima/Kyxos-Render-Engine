@@ -435,3 +435,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and push the canonical/development profile repair.
 - Require a new clean GitHub Actions run to prove the default canonical profile at 0 pixels before technical QA can pass.
+
+## 2026-07-21 05:20 PDT — P0-11 automated verification and technical QA passed
+
+### Remote verification
+
+- Observed GitHub Actions run `29829543107`, job `88630686057`, for source commit `95531062fc432b68e36c99f08983088971e9f534` through completion: PASS.
+- Clean merge checkout, Node 24.14.0, pnpm 11.7.0, frozen lockfile install, and the 169-entry supply-chain policy passed.
+- Formatting, zero-warning lint, strict typecheck, 9 unit files / 28 tests, package graph, deliberate negative fixture, 5 ADRs, 2 architecture documents, 14-file acceptance schema, fail-closed Shader state, all builds, and bundle budgets passed.
+- Canonical Playwright acceptance passed 4 / 4, including the unchanged zero-pixel visual assertion and the 10-sample static-to-sleep test.
+- Browser diagnostics artifact `8494704218` was uploaded with digest `sha256:38181c314669104493de7ffa38f1f02fb62965e68c9bf2026b092eb93a6e02ec`.
+
+### Technical QA
+
+- Repeated source scans: only `packages/sdk/src/browser-frame-driver.ts` accesses browser RAF APIs; lower packages contain no native GPU object, React/Next/Zustand, Texture Lab, or private workspace-subpath leak.
+- Full dependency audit: PASS — no known vulnerabilities.
+- Resource lifecycle, device-loss recovery, dirty scheduling, stable errors, standalone SDK consumption, compact layout, canonical visual evidence, performance, bundle, and documentation evidence were reviewed against the Phase 0 scope.
+- Added `TECHNICAL_QA.md` and machine-readable `technical-qa.json`; both identify capability checks that are legitimately not applicable until later phases rather than claiming unimplemented work as passing.
+- Phase 0 state advances from Development Complete through Automated Verification Passed to Technical QA Passed. No active blocker exists.
+
+### Next
+
+- Execute the P0-12 autonomous Owner Checklist against the complete evidence package.
+- Mark PR #1 ready only after owner evidence is versioned, require its final CI, then merge and create `phase-00-accepted`.

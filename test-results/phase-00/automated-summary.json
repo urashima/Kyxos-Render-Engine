@@ -1,10 +1,18 @@
 {
   "schemaVersion": 1,
   "phase": "00",
-  "sourceCheckpoint": "70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d",
-  "generatedAt": "2026-07-21T05:14:00-07:00",
+  "sourceCheckpoint": "95531062fc432b68e36c99f08983088971e9f534",
+  "generatedAt": "2026-07-21T05:20:32-07:00",
   "localStatus": "PASS",
-  "remoteCiStatus": "PENDING_PULL_REQUEST",
+  "remoteCiStatus": "PASS",
+  "remoteCi": {
+    "runId": 29829543107,
+    "jobId": 88630686057,
+    "sourceCommit": "95531062fc432b68e36c99f08983088971e9f534",
+    "conclusion": "success",
+    "artifactId": 8494704218,
+    "artifactDigest": "sha256:38181c314669104493de7ffa38f1f02fb62965e68c9bf2026b092eb93a6e02ec"
+  },
   "gates": [
     {
       "id": "format",
@@ -68,14 +76,14 @@
       "id": "browser",
       "status": "PASS",
       "command": "pnpm test:e2e",
-      "browser": "Chromium 149.0.7827.0",
-      "visualProfile": "sandbox-chromium-149",
+      "browser": "Chrome Headless Shell 149.0.7827.55",
+      "visualProfile": "canonical",
       "tests": 4
     },
     {
       "id": "visual",
       "status": "PASS",
-      "profile": "sandbox-chromium-149",
+      "profile": "canonical",
       "actualDiffPixels": 0,
       "maximumDiffPixels": 0,
       "canonicalAttemptHash": "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
@@ -90,7 +98,7 @@
   ],
   "requiredFailures": [],
   "notes": [
-    "Remote CI is not marked PASS until the pull-request-triggered GitHub Actions run is inspected.",
+    "Pull-request GitHub Actions run 29829543107 completed the authoritative pipeline successfully.",
     "The local sandbox profile and canonical CI profile each enforce zero differing pixels against their own versioned reference.",
     "GPU rendering, CPU/GPU frame timers, Shader compilation, and asset loading are not Phase 0 capabilities."
   ]

@@ -1,35 +1,35 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 0 — Repository and Architecture Baseline                                          |
-| Current Branch      | `agent/phase-00-foundation`                                                             |
-| Current Commit      | `70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d` (last verified remote checkpoint)            |
-| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                          |
-| Current Task        | P0-11 — Run the full gate, open the draft Phase PR, repair CI, and perform technical QA |
-| Last Completed Task | P0-10 — Acceptance schema, visual baseline, performance, and resource evidence pass     |
-| Next Action         | Push canonical CI and strict sandbox visual profiles, then inspect the new clean run    |
-| CI Status           | PR #1 run 29828781956 proved byte-stable CI pixels; canonical-reference repair prepared |
-| Acceptance Status   | Development Complete                                                                    |
-| Known Blockers      | No active blockers                                                                      |
-| Last Updated        | 2026-07-21 05:14 PDT                                                                    |
+| Field               | Value                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 0 — Repository and Architecture Baseline                                           |
+| Current Branch      | `agent/phase-00-foundation`                                                              |
+| Current Commit      | `70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d` (last verified remote checkpoint)             |
+| Overall Progress    | 0 / 15 phases accepted; Phase 0 Technical QA Passed                                      |
+| Current Task        | P0-12 — Autonomous owner evidence review, merge, and accepted-tag freeze                 |
+| Last Completed Task | P0-11 — Complete CI run 29829543107 and technical QA passed                              |
+| Next Action         | Execute owner checklist, make PR ready, require final CI, merge, and freeze accepted tag |
+| CI Status           | PASS — PR #1 run 29829543107, job 88630686057, source `9553106`                          |
+| Acceptance Status   | Technical QA Passed                                                                      |
+| Known Blockers      | No active blockers                                                                       |
+| Last Updated        | 2026-07-21 05:20 PDT                                                                     |
 
 ## Phase Progress
 
-| Phase | Status               | Branch                               | PR  | CI              | Acceptance           | Tag |
-| ----: | -------------------- | ------------------------------------ | --- | --------------- | -------------------- | --- |
-|    00 | Development Complete | `agent/phase-00-foundation`          | #1  | Repair prepared | Development Complete | —   |
-|    01 | Planned              | `agent/phase-01-webgpu-core`         | —   | —               | Planned              | —   |
-|    02 | Planned              | `agent/phase-02-scene-camera`        | —   | —               | Planned              | —   |
-|    03 | Planned              | `agent/phase-03-pbr-ibl`             | —   | —               | Planned              | —   |
-|    04 | Planned              | `agent/phase-04-temporal`            | —   | —               | Planned              | —   |
-|    05 | Planned              | `agent/phase-05-lighting-postfx`     | —   | —               | Planned              | —   |
-|    06 | Planned              | `agent/phase-06-assets`              | —   | —               | Planned              | —   |
-|    07 | Planned              | `agent/phase-07-animation`           | —   | —               | Planned              | —   |
-|    08 | Planned              | `agent/phase-08-material-extensions` | —   | —               | Planned              | —   |
-|    09 | Planned              | `agent/phase-09-sss`                 | —   | —               | Planned              | —   |
-|    10 | Planned              | `agent/phase-10-webgl2`              | —   | —               | Planned              | —   |
-|    11 | Planned              | `agent/phase-11-texture-lab`         | —   | —               | Planned              | —   |
-|    12 | Planned              | `agent/phase-12-advanced-features`   | —   | —               | Planned              | —   |
-|    13 | Planned              | `agent/phase-13-production`          | —   | —               | Planned              | —   |
-|    14 | Planned              | `agent/phase-14-release`             | —   | —               | Planned              | —   |
+| Phase | Status              | Branch                               | PR  | CI   | Acceptance          | Tag |
+| ----: | ------------------- | ------------------------------------ | --- | ---- | ------------------- | --- |
+|    00 | Technical QA Passed | `agent/phase-00-foundation`          | #1  | PASS | Technical QA Passed | —   |
+|    01 | Planned             | `agent/phase-01-webgpu-core`         | —   | —    | Planned             | —   |
+|    02 | Planned             | `agent/phase-02-scene-camera`        | —   | —    | Planned             | —   |
+|    03 | Planned             | `agent/phase-03-pbr-ibl`             | —   | —    | Planned             | —   |
+|    04 | Planned             | `agent/phase-04-temporal`            | —   | —    | Planned             | —   |
+|    05 | Planned             | `agent/phase-05-lighting-postfx`     | —   | —    | Planned             | —   |
+|    06 | Planned             | `agent/phase-06-assets`              | —   | —    | Planned             | —   |
+|    07 | Planned             | `agent/phase-07-animation`           | —   | —    | Planned             | —   |
+|    08 | Planned             | `agent/phase-08-material-extensions` | —   | —    | Planned             | —   |
+|    09 | Planned             | `agent/phase-09-sss`                 | —   | —    | Planned             | —   |
+|    10 | Planned             | `agent/phase-10-webgl2`              | —   | —    | Planned             | —   |
+|    11 | Planned             | `agent/phase-11-texture-lab`         | —   | —    | Planned             | —   |
+|    12 | Planned             | `agent/phase-12-advanced-features`   | —   | —    | Planned             | —   |
+|    13 | Planned             | `agent/phase-13-production`          | —   | —    | Planned             | —   |
+|    14 | Planned             | `agent/phase-14-release`             | —   | —    | Planned             | —   |

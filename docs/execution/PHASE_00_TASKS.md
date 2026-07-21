@@ -1,6 +1,6 @@
 # Phase 0 Task Graph — Repository and Architecture Baseline
 
-Phase status: **In Development**  
+Phase status: **Technical QA Passed**  
 Branch: `agent/phase-00-foundation`
 
 Each task must be validated and committed before its dependants begin.
@@ -17,8 +17,8 @@ Each task must be validated and committed before its dependants begin.
 | P0-08 | Vitest, Playwright, shader validation placeholder with honest capability status, bundle budget, and dependency boundary gates | P0-07      | Full local gate; deliberate forbidden import fixture fails                       | Completed      |
 | P0-09 | GitHub Actions and ADR-001 through ADR-005 plus architecture/dependency documents                                             | P0-08      | Workflow syntax review; ADR and dependency checks                                | Completed      |
 | P0-10 | Acceptance document, automated summary, performance record, and Reference/Current/Difference visual baseline                  | P0-09      | Acceptance artifact schema checks and deterministic screenshot comparison        | Completed      |
-| P0-11 | Full Phase 0 gate, draft PR, CI repair, and technical QA                                                                      | P0-10      | All required checks green; acceptance evidence complete                          | In Development |
-| P0-12 | Autonomous owner evidence review, merge, and `phase-00-accepted` freeze                                                       | P0-11      | Owner checklist evidence, merged main, accepted tag                              | Planned        |
+| P0-11 | Full Phase 0 gate, draft PR, CI repair, and technical QA                                                                      | P0-10      | All required checks green; acceptance evidence complete                          | Completed      |
+| P0-12 | Autonomous owner evidence review, merge, and `phase-00-accepted` freeze                                                       | P0-11      | Owner checklist evidence, merged main, accepted tag                              | In Development |
 
 ## Minimal implementation order
 
