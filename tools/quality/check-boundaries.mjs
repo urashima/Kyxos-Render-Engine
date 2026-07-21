@@ -9,6 +9,7 @@ const fixturePath = path.join(root, 'tools/quality/fixtures/forbidden-renderer-i
 
 const allowedDependencies = new Map([
   ['@kyxos/render-core', new Set()],
+  ['@kyxos/render-math', new Set()],
   ['@kyxos/render-backend-api', new Set(['@kyxos/render-core'])],
   ['@kyxos/render-backend-webgpu', new Set(['@kyxos/render-backend-api', '@kyxos/render-core'])],
   ['@kyxos/render-frame-scheduler', new Set(['@kyxos/render-core'])],

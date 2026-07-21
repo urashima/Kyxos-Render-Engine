@@ -219,3 +219,13 @@
 - **Reason:** CPU command construction is measurable without exposing native objects. Queue completion includes scheduling and driver latency and is not a trustworthy GPU execution timer. The acceptance record must distinguish measured values from unavailable capabilities.
 - **Impact:** Renderer diagnostics gain `lastCpuFrameTimeMs`; tests inject a deterministic clock, while production defaults to `performance.now()`. The canonical 16.7 ms CPU budget and 250 ms dirty-to-sleep budget are independent. Future timestamp-query support can add GPU timing without changing the current measurement's meaning.
 - **ADR required:** No; this is additive diagnostics and acceptance instrumentation, not a rendering or public dependency-boundary change.
+
+## ED-023 — Establish immutable dependency-free scene math
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Place finite-checked vectors, normalized quaternions, column-major matrices, zero-to-one projections, bounds, planes, and frusta in a dependency-free `@kyxos/render-math` package. Return readonly frozen values and keep DOM, Scene, Renderer, and backend types outside the package.
+- **Candidates:** Use mutable arrays inside Scene; adopt a general third-party math library; create the smallest convention-specific engine Math package.
+- **Reason:** Phase 2 Scene, Geometry, Camera, and Visibility must share the exact ADR-002 convention without introducing an upward dependency or backend-specific NDC branch. A focused owned implementation makes every transform and culling invariant directly testable and avoids exposing a third-party public type contract before 1.0.
+- **Impact:** Public constructors reject NaN, Infinity, zero-length normalization, reversed bounds, and invalid projections. Values allocate immutable tuples in this correctness-first layer; later profiling may add internal destination-buffer variants without changing the public value API. WebGPU consumes canonical zero-to-one depth directly, while WebGL2 remains responsible for its Phase 10 conversion.
+- **ADR required:** No; ADR-002 already freezes all affected conventions, and this decision implements it without changing the product boundary.
