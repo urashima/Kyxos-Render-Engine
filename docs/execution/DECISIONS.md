@@ -289,3 +289,13 @@
 - **Reason:** Immutable Geometry makes object identity a safe cache key. Sharing avoids duplicate static geometry memory, while Entity-local Uniform state preserves independent transforms and colors. Releasing on culling would churn resources during normal camera motion; releasing on attachment changes gives deterministic ownership without hidden global caches.
 - **Impact:** Resource counts are predictable, multiple Entities can share one Mesh allocation, and Dispose/Device Lost returns all backend counters to baseline. Dynamic geometry will need an explicit versioned resource path later. WebGPU uses Bind Groups now; WebGL2 can preserve the same cache ownership while translating object Uniforms internally.
 - **ADR required:** No; this refines the Renderer-owned resource policy already mandated by the development plan without changing product scope or dependency direction.
+
+## ED-030 — Budget each lazy acceptance route independently
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Preserve the frozen Phase 0 initial closure and Phase 1 route limits, measure Phase 2 as the initial entry plus only its selected dynamic entry and static imports, and retain a separate cap for all emitted Playground assets.
+- **Candidates:** Keep treating every historical lazy route as one user download; remove the whole-application cap; raise only the old aggregate threshold; enforce immutable per-route closures plus a bounded aggregate allowance for each added acceptance phase.
+- **Reason:** A visitor loads one acceptance route, not every dynamic phase chunk. Summing all historical routes misrepresents transfer cost and eventually makes a multi-phase acceptance application impossible, while raising only that sum could hide regressions in Phase 0 or Phase 1. Manifest closures give both an accurate user path and explicit regression isolation.
+- **Impact:** Phase 0 retains 24 KiB gzip JavaScript / 64 KiB gzip total limits; Phase 1 retains 32 KiB / 96 KiB; Phase 2 is capped at 40 KiB gzip JavaScript / 96 KiB gzip total. All emitted JavaScript remains capped at 48 KiB gzip and complete Playground output at 128 KiB gzip. Later phases must add their own route closure instead of consuming an unmeasured global increase.
+- **ADR required:** No; this changes acceptance delivery accounting only and does not affect engine runtime APIs, dependency direction, or rendering behavior.

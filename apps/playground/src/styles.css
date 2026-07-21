@@ -479,6 +479,113 @@ h2 {
   color: #9eddd5;
 }
 
+.phase-02-hero h1 {
+  max-width: 900px;
+}
+
+.phase-02-workspace {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.scene-stage {
+  min-height: 560px;
+  background:
+    radial-gradient(circle at 56% 42%, rgb(75 129 128 / 10%), transparent 42%),
+    linear-gradient(rgb(255 255 255 / 2%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 2%) 1px, transparent 1px), #090c0e;
+  background-size:
+    auto,
+    42px 42px,
+    42px 42px,
+    auto;
+}
+
+.scene-overlay {
+  z-index: 1;
+}
+
+.scene-axis {
+  position: absolute;
+  bottom: 25px;
+  left: 28px;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  pointer-events: none;
+}
+
+.scene-axis i {
+  position: absolute;
+  bottom: 7px;
+  left: 7px;
+  width: 28px;
+  height: 1px;
+  transform-origin: left center;
+}
+
+.scene-axis i::after {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  content: '';
+}
+
+.axis-x,
+.axis-x::after {
+  background: #dc765d;
+}
+
+.axis-y,
+.axis-y::after {
+  background: #76c9a2;
+}
+
+.axis-z,
+.axis-z::after {
+  background: #6c9ed2;
+}
+
+.scene-axis .axis-x {
+  transform: rotate(-18deg);
+}
+
+.scene-axis .axis-y {
+  transform: rotate(-90deg);
+}
+
+.scene-axis .axis-z {
+  transform: rotate(-145deg);
+}
+
+.scene-actions button {
+  padding-inline: 11px;
+}
+
+.scene-diagnostics .metric-list {
+  padding-bottom: 12px;
+}
+
+.scene-diagnostics .metric-list div {
+  min-height: 35px;
+}
+
+.scene-diagnostics [data-testid='transparent-order'] {
+  max-width: 205px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-contract {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 26px;
+}
+
 .mock-surface p {
   bottom: 48px;
   margin: 0;
@@ -673,6 +780,10 @@ footer code {
   .lower-grid {
     grid-template-columns: 1fr;
   }
+
+  .phase-02-workspace {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
@@ -716,6 +827,14 @@ footer code {
 
   .gpu-stage {
     min-height: 360px;
+  }
+
+  .scene-stage {
+    min-height: 420px;
+  }
+
+  .scene-contract {
+    grid-template-columns: 1fr;
   }
 
   .dependency-flow {

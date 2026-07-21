@@ -40,6 +40,12 @@ export default defineConfig({
       testMatch: /phase-01\.spec\.ts/,
       use: chromiumUse,
     },
+    {
+      name: 'chromium-scene',
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-02/{arg}{ext}',
+      testMatch: /phase-02\.spec\.ts/,
+      use: chromiumUse,
+    },
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env['CI'] === undefined ? 0 : 1,
