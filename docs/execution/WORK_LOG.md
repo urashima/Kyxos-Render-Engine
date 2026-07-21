@@ -826,3 +826,23 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Push and inspect the complete evidence-pack CI.
 - Add the narrowly scoped immutable `phase-01-accepted` main-push workflow, pass final CI, merge PR #2, and verify the tag target.
+
+## 2026-07-21 08:03 PDT — P1-09 evidence head passed; freeze prepared
+
+### Completed
+
+- Complete evidence-pack Run `29841668634`, job `88671836231`, passed with all 21 acceptance files, 62 unit tests, 7 browser tests, and three exact Phase 1 snapshots.
+- Recorded the passing evidence-pack source `5193ca3c4800f48f53d387789edc1295c001e52d`, Artifact `8499683438`, and digest in automated, technical QA, and owner evidence.
+- Added a Phase 1-only main-push workflow with `contents: write` that creates annotated tag `phase-01-accepted` and refuses to move an existing tag.
+- Extended the fail-closed Phase 1 checker to inspect the freeze workflow and reject `pull_request_target`, missing main scoping, missing immutable-tag behavior, or absent final owner-evidence CI.
+
+### Validation
+
+- Updated Phase 1 acceptance schema: 21 evidence files PASS.
+- Freeze workflow, checker, evidence JSON, lint, and strict typecheck: PASS locally.
+- No active blockers.
+
+### Next
+
+- Push the freeze checkpoint and require its final GitHub Actions run to pass.
+- Mark Draft PR #2 ready, verify no unresolved review state, merge the exact tested head, and verify `phase-01-accepted` equals the merge commit.

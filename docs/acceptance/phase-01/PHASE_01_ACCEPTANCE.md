@@ -1,14 +1,15 @@
 # Phase 01 Acceptance — WebGPU Core and Basic Geometry
 
 - **Evidence status:** Automated verification, technical QA, and autonomous owner evidence review complete
-- **Phase status:** Owner Acceptance Passed; final evidence CI, merge, and accepted tag pending
+- **Phase status:** Owner Acceptance Passed; freeze-head CI, merge, and accepted tag pending
 - **Branch:** `agent/phase-01-webgpu-core`
 - **Pull request:** [#2](https://github.com/urashima/Kyxos-Render-Engine/pull/2)
 - **Reviewed checkpoint:** `02373b17c1ed4b334b6b6279208364f38ecc54e7`
 - **CI run:** [29840589848](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29840589848)
+- **Evidence-pack CI:** [29841668634](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29841668634) — PASS
 - **Evidence generated:** 2026-07-21 07:48 PDT
 
-This document proves the Phase 1 scope defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It does not claim `Phase Accepted`: the complete evidence commit must pass, PR #2 must merge, and `phase-01-accepted` must resolve to that accepted merge.
+This document proves the Phase 1 scope defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. The complete evidence commit passed Run `29841668634`. It does not claim `Phase Accepted`: the immutable freeze head must pass, PR #2 must merge, and `phase-01-accepted` must resolve to that accepted merge.
 
 ## Acceptance surface
 
@@ -45,7 +46,7 @@ The authoritative command is:
 pnpm verify
 ```
 
-GitHub Actions Run `29840589848`, job `88668170176`, passed the complete pipeline at the reviewed checkpoint. The machine-readable record is [`test-results/phase-01/automated-summary.json`](../../../test-results/phase-01/automated-summary.json).
+GitHub Actions Run `29840589848`, job `88668170176`, passed the complete pipeline at the reviewed implementation checkpoint. Evidence-pack Run `29841668634`, job `88671836231`, then passed the same pipeline with the fail-closed Phase 1 acceptance schema enabled. The machine-readable record is [`test-results/phase-01/automated-summary.json`](../../../test-results/phase-01/automated-summary.json).
 
 | Gate                  | Result | Evidence                                                      |
 | --------------------- | ------ | ------------------------------------------------------------- |
@@ -125,4 +126,4 @@ Owner Acceptance Passed — Autonomous Evidence Review. The corrected Reference/
 
 ## Acceptance conclusion
 
-Phase 1 passes automated verification, technical QA, and autonomous owner evidence review at checkpoint `02373b17c1ed4b334b6b6279208364f38ecc54e7`. Require the complete evidence-pack head to pass the same pipeline before merge, then merge PR #2 and create immutable tag `phase-01-accepted` at the accepted main commit.
+Phase 1 passes automated verification, technical QA, and autonomous owner evidence review at checkpoint `02373b17c1ed4b334b6b6279208364f38ecc54e7`; the evidence-pack head `5193ca3c4800f48f53d387789edc1295c001e52d` also passed. Require the immutable freeze head to pass the same pipeline before merge, then merge PR #2 and create tag `phase-01-accepted` at the accepted main commit without moving any existing tag.

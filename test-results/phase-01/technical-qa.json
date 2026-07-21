@@ -12,6 +12,13 @@
     "artifactId": 8499252492,
     "artifactDigest": "sha256:7cd6c1e100ad6b394ae6c09851fe244bfa45541b1f1247350e2ef907ec388aff"
   },
+  "evidencePackCi": {
+    "runId": 29841668634,
+    "jobId": 88671836231,
+    "sourceCommit": "5193ca3c4800f48f53d387789edc1295c001e52d",
+    "conclusion": "success",
+    "artifactId": 8499683438
+  },
   "checks": {
     "cleanInstall": "PASS",
     "formatLintTypecheck": "PASS",

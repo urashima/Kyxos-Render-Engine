@@ -13,6 +13,14 @@
     "artifactId": 8499252492,
     "artifactDigest": "sha256:7cd6c1e100ad6b394ae6c09851fe244bfa45541b1f1247350e2ef907ec388aff"
   },
+  "evidencePackCi": {
+    "runId": 29841668634,
+    "jobId": 88671836231,
+    "sourceCommit": "5193ca3c4800f48f53d387789edc1295c001e52d",
+    "conclusion": "success",
+    "artifactId": 8499683438,
+    "artifactDigest": "sha256:96f8d68caf6d85fc82ca1fc2f4ab3f954e7d043cf462c2ec17c4ba12477468ca"
+  },
   "gates": [
     { "id": "format", "status": "PASS", "command": "pnpm format:check" },
     { "id": "lint", "status": "PASS", "command": "pnpm lint", "warnings": 0 },
@@ -83,6 +91,7 @@
   "requiredFailures": [],
   "notes": [
     "Run 29840589848 passed the authoritative pipeline, including real WebGPU adapter/device creation, runtime WGSL compilation, rendering, lifecycle recovery, and three zero-pixel snapshots.",
+    "Run 29841668634 passed the complete evidence-pack head, including the fail-closed Phase 1 acceptance schema.",
     "The canonical adapter reports timestamp-query support, but GPU timestamp instrumentation is not exposed in the Phase 1 diagnostics contract and is declared unavailable.",
     "Asset-load timing is not applicable until the Phase 6 asset system."
   ]

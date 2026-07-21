@@ -5,13 +5,14 @@
 - **Pull request:** [#2](https://github.com/urashima/Kyxos-Render-Engine/pull/2)
 - **CI run:** [29840589848](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29840589848)
 - **CI job:** `88668170176`
+- **Evidence-pack CI:** [29841668634](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29841668634), job `88671836231` — PASS
 - **Verified:** 2026-07-21 07:48 PDT
 
 ## Conclusion
 
 Phase 1 passes technical QA. The official Chromium pipeline creates a real WebGPU adapter/device, compiles the canonical WGSL at runtime, renders clear/triangle/sphere paths, and completes every lifecycle and visual gate without console or page errors.
 
-This result does not freeze the phase. The evidence-pack head must pass, PR #2 must merge, and `phase-01-accepted` must resolve to the merge.
+The evidence-pack head passed the same complete pipeline with the acceptance schema enabled. This result does not freeze the phase: the immutable freeze head must pass, PR #2 must merge, and `phase-01-accepted` must resolve to the merge.
 
 ## Automated gate review
 

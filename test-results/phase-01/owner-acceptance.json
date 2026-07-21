@@ -12,6 +12,14 @@
     "conclusion": "success",
     "artifactId": 8499252492
   },
+  "finalOwnerEvidenceCi": {
+    "runId": 29841668634,
+    "jobId": 88671836231,
+    "sourceCommit": "5193ca3c4800f48f53d387789edc1295c001e52d",
+    "conclusion": "success",
+    "artifactId": 8499683438,
+    "browserTests": 7
+  },
   "phaseOperations": {
     "resizeWindowAndDpr": "PASS",
     "repeatedCreateDispose": "PASS",
@@ -54,7 +62,6 @@
   },
   "blockers": [],
   "remainingFreezeGates": [
-    "The complete evidence-pack commit passes GitHub Actions.",
     "Draft PR #2 is marked ready and its final head passes GitHub Actions.",
     "PR #2 merges to main and phase-01-accepted resolves to the accepted merge."
   ],
