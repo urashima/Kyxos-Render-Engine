@@ -1109,3 +1109,48 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Verify the same Phase 2 owner-control operations against the public Pages route after deployment and use the next clean CI artifact as the P2-08 source checkpoint.
 - Freeze Reference/Current/Difference, performance comparison, technical QA, and autonomous owner evidence behind a fail-closed Phase 2 acceptance schema.
+
+## 2026-07-21 10:35 PDT — P2-08 canonical evidence and owner review complete
+
+### Completed
+
+- Directly inspected official Run `29852642508` full-page and Scene captures; Plane, Cube, Sphere, Custom tetrahedron, depth overlap, transparent objects, and framing have no blocking visual defect.
+- Froze the reviewed images as Phase 2 Reference/Current/Scene plus an all-black Difference, then added `maxDiffPixels: 0` browser assertions for both captures.
+- Required the independent canonical rerun `29853253312` to pass; both images were byte-identical across the two official attempts.
+- Archived exact Scene/queue/resource metrics, DPR 2 Device Lost/disposal lifecycle, route-aware Bundle metrics, Phase 1 performance comparison, dependency graph, technical QA, and autonomous owner evidence.
+- Added a fail-closed Phase 2 acceptance schema and encoded every owner operation in both the local official-browser suite and post-deployment public Pages suite.
+- Added real pointer-drag Orbit and wheel dolly at the Playground boundary while Camera/Orbit math remains DOM-free.
+
+### Validation
+
+- GitHub Actions Run `29853253312`, job `88711213077`: PASS; 10/10 browser tests; Artifact `8504322478`, digest `sha256:0f2d4cc68c91f606238033cebc8b1a3220dee54cb4c4032652cab78bde789e93`.
+- Reference and Current SHA-256: `54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142`; Scene: `75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e`; 0 differing pixels.
+- CPU frame p95 7.4 ms / 16.7 ms; dirty-to-sleep p95 64.3 ms / 250 ms; 25 ready resources, 0 after loss/disposal, 25 after recovery/recreation.
+- Phase 2 route: 125,160 raw / 37,668 gzip JavaScript and 185,176 raw / 89,642 gzip total; all Phase 0/1/2 and aggregate budgets PASS.
+- Phase 2 remains not Accepted. The evidence-pack head, merge, GitHub Pages deployment, public interaction verification, and immutable tag remain mandatory.
+
+### Next
+
+- Pass the complete evidence-pack head in GitHub Actions, update final evidence provenance, and freeze the exact verified PR head.
+- Merge only that verified head, require public `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/` verification, then confirm `phase-02-accepted` points to the deployed main commit.
+
+## 2026-07-21 10:46 PDT — P2-09 lifecycle-memory gate and Canvas interaction diagnosis
+
+### Completed
+
+- Extended the Device Lost, recovery, disposal, recreation, and final-disposal browser flow to measure estimated GPU Buffer plus Texture bytes at every state.
+- Added hard assertions requiring ready bytes to be positive, loss/disposal bytes to be zero, and recovery/recreation bytes to return to the exact ready baseline.
+- Inspected failed Run `29853890127`, its full job log, failed screenshot, trace artifact, runtime metrics, and canonical image hashes instead of retrying blindly.
+- Stabilized physical pointer acceptance by explicitly restoring the Canvas to the interactive viewport after the deterministic full-page screenshot.
+
+### Validation
+
+- Run `29853890127` proved `7,658,788` estimated bytes ready, `0` after Device Lost, `7,658,788` after recovery, `0` after Dispose, `7,658,788` after recreation, and `0` after final Dispose; resource counts were `25/0/25/0/25/0`.
+- Its canonical full-page and Scene captures remained byte-identical to the frozen Phase 2 baselines.
+- The only failing assertion was the existing pointer drag after full-page capture: without an explicit scroll restoration, both attempts retained orbit `0.530 / 0.220`.
+- Local formatting, zero-warning Lint, strict typecheck, 31 unit files / 136 tests, build, and Bundle budgets passed. Local browser launch remains unavailable because this workspace has no cached Playwright Chromium executable.
+
+### Next
+
+- Push the Canvas scroll stabilization together with the hard lifecycle-memory assertions and require a clean official CI run.
+- Promote the successful runtime JSON into the Phase 2 evidence pack, then run the fail-closed evidence head before merge.

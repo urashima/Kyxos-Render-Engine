@@ -256,6 +256,7 @@ test.describe('Phase 2 Scene Playground', () => {
     await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
 
     const canvas = page.locator('[data-canvas="scene"]');
+    await canvas.scrollIntoViewIfNeeded();
     const bounds = await canvas.boundingBox();
     if (bounds === null) throw new Error('The Phase 2 Scene Canvas has no bounds.');
     const pointerOrbit = await page.getByTestId('orbit-angle').textContent();
@@ -357,6 +358,12 @@ test.describe('Phase 2 Scene Playground', () => {
         await page.getByTestId('resource-count').textContent(),
       );
       const estimatedBytesAfterFinalDispose = await estimatedGpuBytes();
+      expect(estimatedBytesReady).toBeGreaterThan(0);
+      expect(estimatedBytesAfterDeviceLoss).toBe(0);
+      expect(estimatedBytesAfterRecovery).toBe(estimatedBytesReady);
+      expect(estimatedBytesAfterDispose).toBe(0);
+      expect(estimatedBytesAfterRecreate).toBe(estimatedBytesReady);
+      expect(estimatedBytesAfterFinalDispose).toBe(0);
       expect(runtimeErrors).toEqual([]);
       await writeRuntimeJson('lifecycle-metrics.json', {
         schemaVersion: 1,
