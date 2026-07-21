@@ -6,6 +6,7 @@
     "browser": "Chromium 149.0.7827.0",
     "colorScheme": "dark",
     "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
     "fullPage": true,
     "viewport": {
       "height": 1000,
@@ -20,24 +21,24 @@
   },
   "files": {
     "reference": {
-      "bytes": 479350,
-      "height": 1303,
+      "bytes": 465017,
+      "height": 1306,
       "path": "reference.png",
-      "sha256": "0e833e7cbda1884b34ce07e75113cc035dd5ea98caf98755b13851c3966b0bee",
+      "sha256": "bcf3737e7185f49d6925b7a0fc392653cc4152b61e9a1ebe5863176dafeebf41",
       "width": 1440
     },
     "current": {
-      "bytes": 479350,
-      "height": 1303,
+      "bytes": 465017,
+      "height": 1306,
       "path": "current.png",
-      "sha256": "0e833e7cbda1884b34ce07e75113cc035dd5ea98caf98755b13851c3966b0bee",
+      "sha256": "bcf3737e7185f49d6925b7a0fc392653cc4152b61e9a1ebe5863176dafeebf41",
       "width": 1440
     },
     "difference": {
-      "bytes": 385,
-      "height": 1303,
+      "bytes": 386,
+      "height": 1306,
       "path": "difference.png",
-      "sha256": "0fcc7d718282233ae72143aede5e29e9bc44c3bd3fb139cfd04ebf870b68defc",
+      "sha256": "426a5cb5bd6c9dcfc5c63765897390c175157bdf9f28d36ac9d4c3eab58b5798",
       "width": 1440
     }
   },

@@ -1,14 +1,16 @@
+@font-face {
+  font-family: 'Kyxos Inter';
+  font-style: normal;
+  font-display: block;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
 :root {
   color: #e8edf2;
   background: #090b0d;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: 'Kyxos Inter', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }

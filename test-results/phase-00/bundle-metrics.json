@@ -9,22 +9,30 @@
       "gzipBytes": 4096,
       "rawBytes": 8192
     },
+    "font": {
+      "gzipBytes": 65536,
+      "rawBytes": 65536
+    },
     "javascript": {
       "gzipBytes": 24576,
       "rawBytes": 65536
     },
     "total": {
-      "gzipBytes": 49152,
+      "gzipBytes": 65536,
       "rawBytes": 131072
     }
   },
   "metrics": {
     "css": {
-      "gzipBytes": 2499,
-      "rawBytes": 7849
+      "gzipBytes": 2538,
+      "rawBytes": 7963
+    },
+    "font": {
+      "gzipBytes": 48254,
+      "rawBytes": 48256
     },
     "html": {
-      "gzipBytes": 342,
+      "gzipBytes": 343,
       "rawBytes": 557
     },
     "javascript": {
@@ -32,8 +40,8 @@
       "rawBytes": 20299
     },
     "total": {
-      "gzipBytes": 9371,
-      "rawBytes": 28705
+      "gzipBytes": 57665,
+      "rawBytes": 77075
     }
   }
 }

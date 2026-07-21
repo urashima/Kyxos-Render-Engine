@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "phase": "00",
-  "sourceCheckpoint": "1b37529e9f767837137598ea80b810c45f270a25",
-  "generatedAt": "2026-07-21T04:42:53-07:00",
+  "sourceCheckpoint": "8ae37d3ce9706be7ba7fb1f87a5f7ea14c7eb2b0",
+  "generatedAt": "2026-07-21T05:02:35-07:00",
   "localStatus": "PASS",
   "remoteCiStatus": "PENDING_PULL_REQUEST",
   "gates": [
@@ -61,8 +61,8 @@
       "id": "bundle",
       "status": "PASS",
       "command": "pnpm check:bundle",
-      "rawBytes": 28705,
-      "gzipBytes": 9371
+      "rawBytes": 77075,
+      "gzipBytes": 57665
     },
     {
       "id": "browser",
@@ -81,7 +81,7 @@
       "id": "performance",
       "status": "PASS",
       "staticToSleepBudgetMs": 250,
-      "staticToSleepP95Ms": 49.2
+      "staticToSleepP95Ms": 66.2
     }
   ],
   "requiredFailures": [],

@@ -99,3 +99,13 @@
 - **Reason:** The first CI run emitted an explicit Node 20 deprecation warning for every v4 action. The official action repositories currently document v7 usage and declare the Node 24 runtime.
 - **Impact:** CI remains least-privilege and removes a known runtime deprecation before Phase acceptance. Action-major upgrades remain subject to an observed workflow run.
 - **ADR required:** No; this is CI maintenance, not engine architecture.
+
+## ED-011 — Bundle the acceptance typeface as a licensed deterministic input
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Pin `@fontsource-variable/inter@5.2.8`, emit only `inter-latin-wght-normal.woff2`, wait for loaded fonts before visual capture, and account for the font in explicit asset and total bundle budgets.
+- **Candidates:** Keep environment-dependent `system-ui`; allow a nonzero text-pixel threshold; commit a CI-generated reference; bundle a versioned WebFont and retain the zero-pixel gate.
+- **Reason:** The second clean CI run passed every nonvisual gate and produced the same 2,763 text-edge differences on both attempts. Artifact inspection showed identical layout, colors, panels, and vector content; only glyph rasterization differed because the original local fallback resolved to DejaVu Sans while the GitHub runner supplied another system typeface. A versioned OFL font removes that undeclared input without hiding differences.
+- **Impact:** The Playground output grows by 48,256 raw bytes and 48,254 gzip bytes. Total output remains below a recorded 128 KiB raw / 64 KiB gzip budget. The reference is regenerated because the previous reference encoded an unspecified system font; the zero-pixel maximum and image threshold remain unchanged. No engine runtime package gains a font dependency.
+- **ADR required:** No; this is an acceptance-fixture and asset-provenance decision.

@@ -22,6 +22,7 @@ async function collectFiles(directory) {
 }
 
 function categoryFor(filePath) {
+  if (filePath.endsWith('.woff2')) return 'font';
   if (filePath.endsWith('.js')) return 'javascript';
   if (filePath.endsWith('.css')) return 'css';
   if (filePath.endsWith('.html')) return 'html';
@@ -32,6 +33,7 @@ const budgets = JSON.parse(await readFile(budgetPath, 'utf8'));
 const files = await collectFiles(distDirectory);
 const metrics = {
   css: { gzipBytes: 0, rawBytes: 0 },
+  font: { gzipBytes: 0, rawBytes: 0 },
   html: { gzipBytes: 0, rawBytes: 0 },
   javascript: { gzipBytes: 0, rawBytes: 0 },
   total: { gzipBytes: 0, rawBytes: 0 },

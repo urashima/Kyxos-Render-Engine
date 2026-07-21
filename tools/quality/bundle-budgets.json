@@ -7,12 +7,16 @@
     "gzipBytes": 4096,
     "rawBytes": 8192
   },
+  "font": {
+    "gzipBytes": 65536,
+    "rawBytes": 65536
+  },
   "javascript": {
     "gzipBytes": 24576,
     "rawBytes": 65536
   },
   "total": {
-    "gzipBytes": 49152,
+    "gzipBytes": 65536,
     "rawBytes": 131072
   }
 }

@@ -3,8 +3,8 @@
 - **Evidence status:** Local evidence complete
 - **Phase status:** Development Complete; formal CI and technical QA pending
 - **Branch:** `agent/phase-00-foundation`
-- **Source checkpoint:** `1b37529e9f767837137598ea80b810c45f270a25`
-- **Evidence generated:** 2026-07-21 04:42 PDT
+- **Source checkpoint:** `8ae37d3ce9706be7ba7fb1f87a5f7ea14c7eb2b0`
+- **Evidence generated:** 2026-07-21 05:02 PDT
 
 This document proves the Phase 0 deliverables defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It does not claim Phase Accepted: the pull-request CI run, technical QA review, autonomous owner evidence review, merge, and accepted tag are later gates.
 
@@ -58,10 +58,10 @@ Local result: **PASS**. The machine-readable record is [`test-results/phase-00/a
 | Architecture docs     | PASS           | 5 ADRs, 2 architecture documents, valid links  |
 | Shader validation     | NOT APPLICABLE | No Phase 0 Shader capability or sources        |
 | Build                 | PASS           | 7 packages, 1 application                      |
-| Bundle budget         | PASS           | 28,705 B raw; 9,371 B gzip                     |
+| Bundle budget         | PASS           | 77,075 B raw; 57,665 B gzip                    |
 | Browser acceptance    | PASS           | 4 / 4 Chromium tests                           |
 | Visual regression     | PASS           | 0 differing pixels                             |
-| Static-to-sleep       | PASS           | p95 49.2 ms against 250 ms Phase 0 budget      |
+| Static-to-sleep       | PASS           | p95 66.2 ms against 250 ms Phase 0 budget      |
 | Pull-request CI       | PENDING        | Must be inspected after the Phase PR exists    |
 
 Shader validation is deliberately not marked PASS: the current gate reports `NOT_APPLICABLE` and will fail if Shader files appear before a compiler-backed validator is added.
@@ -74,13 +74,15 @@ No `integration-texture-lab` package exists in Phase 0. Therefore excluding it c
 
 ## Visual evidence
 
-The screenshot is a 1440 × 1303 full-page Chromium capture at DPR 1 and dark color scheme. Animations and transitions are disabled. Only the wall-clock text inside `.event-log time` is hidden during capture; event identity, runtime state, diagnostics, dependency direction, and all controls remain visible.
+The screenshot is a 1440 × 1306 full-page Chromium capture at DPR 1 and dark color scheme. Animations and transitions are disabled. Only the wall-clock text inside `.event-log time` is hidden during capture; event identity, runtime state, diagnostics, dependency direction, and all controls remain visible.
 
 | Reference                                                         | Current                                                       | Difference                                                          |
 | ----------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
 | [reference.png](../../../visual-baselines/phase-00/reference.png) | [current.png](../../../visual-baselines/phase-00/current.png) | [difference.png](../../../visual-baselines/phase-00/difference.png) |
 
-Reference and Current have identical SHA-256 `0e833e7cbda1884b34ce07e75113cc035dd5ea98caf98755b13851c3966b0bee`. Absolute error is 0 pixels. [`metadata.json`](../../../visual-baselines/phase-00/metadata.json) records dimensions, hashes, capture settings, threshold, and known limitations.
+Reference and Current have identical SHA-256 `bcf3737e7185f49d6925b7a0fc392653cc4152b61e9a1ebe5863176dafeebf41`. Absolute error is 0 pixels. [`metadata.json`](../../../visual-baselines/phase-00/metadata.json) records dimensions, hashes, capture settings, threshold, and known limitations.
+
+The first remote visual run exposed 2,763 text-edge pixels caused by the original implicit system-font fallback. The corrected baseline bundles the normal Latin weight-variable Inter v20 subset from `@fontsource-variable/inter@5.2.8`; its source and OFL-1.1 license are recorded in [`THIRD_PARTY_ASSETS.md`](../../assets/THIRD_PARTY_ASSETS.md). Reference was regenerated only after this deterministic input fix. The zero-pixel limit and comparison threshold are unchanged.
 
 This is the initial visual baseline. It proves the Phase 0 UI and Mock Backend diagnostics, not GPU-rendered geometry; Phase 1 establishes the first GPU scene baseline.
 
@@ -90,14 +92,15 @@ This is the initial visual baseline. It proves the Phase 0 UI and Mock Backend d
 
 | Metric                         | Result                          |
 | ------------------------------ | ------------------------------- |
-| Static-to-sleep, 10 samples    | median 16.7 ms; p95/max 49.2 ms |
+| Static-to-sleep, 10 samples    | median 16.6 ms; p95/max 66.2 ms |
 | Static-to-sleep budget         | 250 ms — PASS                   |
 | Draw calls / triangles         | 0 / 0 — Mock Backend baseline   |
 | Pipeline count                 | 0 — Mock Backend baseline       |
 | Active resources after dispose | 0 — PASS                        |
 | Active estimated bytes         | 0 — PASS                        |
 | Playground JavaScript          | 20,299 B raw / 6,530 B gzip     |
-| Total Playground output        | 28,705 B raw / 9,371 B gzip     |
+| Playground font                | 48,256 B raw / 48,254 B gzip    |
+| Total Playground output        | 77,075 B raw / 57,665 B gzip    |
 | CPU/GPU frame time             | NOT APPLICABLE until Phase 1    |
 | Asset load time                | NOT APPLICABLE until Phase 6    |
 
@@ -122,7 +125,7 @@ Owner Acceptance is not marked passed in this checkpoint. P0-12 will mechanicall
 - WebGPU device creation, clear, triangle rendering, GPU timing, and Shader compilation begin in Phase 1.
 - WebGL2 implementation and cross-backend visual comparison begin in Phase 10.
 - CPU/GPU frame times and asset-load metrics are unavailable because their capabilities do not yet exist.
-- Remote GitHub Actions is pending the Phase pull request and is not represented as green.
+- Remote GitHub Actions is pending the repaired pull-request run and is not represented as green.
 
 ## P0-10 conclusion
 

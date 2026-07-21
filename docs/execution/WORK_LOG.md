@@ -368,3 +368,37 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and push the clean-checkout formatting plus Actions runtime repair.
 - Inspect the new pull-request workflow run and fetch logs for any remaining failure.
+
+## 2026-07-21 05:05 PDT — P0-11 deterministic visual-input repair
+
+### CI diagnosis
+
+- Inspected pull-request workflow run `29827965870` and its uploaded browser diagnostics artifact.
+- Clean checkout, Node/pnpm setup, lockfile supply-chain policy, dependency audit, formatting, lint, strict typecheck, 28 unit tests, package boundaries, architecture documents, acceptance schema, Shader capability state, production build, and bundle budget all passed.
+- The lifecycle, compact-viewport, and static-to-sleep browser tests passed. Only the zero-pixel screenshot test failed, with the same 2,763 differing pixels on both attempts.
+- Reference/Current/Difference inspection showed identical geometry, panels, colors, and vector content; differences followed text glyph edges. The original `Inter, system-ui` declaration resolved to DejaVu Sans locally and an environment-specific system typeface on the GitHub runner.
+
+### Repair
+
+- Pinned the established `@fontsource-variable/inter@5.2.8` package and bundled only `inter-latin-wght-normal.woff2` as the Phase 0 acceptance typeface.
+- Recorded Inter v20 provenance and the SIL Open Font License 1.1 in `docs/assets/THIRD_PARTY_ASSETS.md`.
+- Added WOFF2 accounting to the executable bundle gate. The font is 48,256 raw bytes / 48,254 gzip bytes; total Playground output is 77,075 raw bytes / 57,665 gzip bytes against 131,072 raw / 65,536 gzip budgets.
+- Regenerated Reference only after removing the environment-dependent font input. Reference and Current are byte-identical at 1440 × 1306; absolute Difference is 0 pixels. The maximum diff remains 0 and the image threshold remains unchanged.
+- Updated visual, bundle, performance, and acceptance evidence. The new 10-sample static-to-sleep record has median 16.6 ms and p95/max 66.2 ms against the 250 ms budget.
+
+### Validation
+
+- Dependency install supply-chain policy: PASS — 168 lockfile entries.
+- Full `pnpm verify`: PASS.
+- Formatting/lint/typecheck: PASS with zero warnings.
+- Unit tests: PASS — 9 files and 28 tests.
+- Dependency negative fixture, architecture documents, and Phase 0 evidence schema: PASS.
+- Production build and bundle budget: PASS.
+- Chromium acceptance: PASS — 4 / 4, including the unchanged zero-pixel visual gate.
+- Two additional independent visual repeats: PASS — 0 differing pixels on both runs.
+- Full dependency audit after adding the font package: PASS — no known vulnerabilities.
+
+### Next
+
+- Commit and push the deterministic visual-input repair to draft PR #1.
+- Inspect the new clean GitHub Actions run and complete technical QA only after all remote gates pass.
