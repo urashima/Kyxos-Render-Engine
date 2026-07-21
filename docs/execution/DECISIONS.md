@@ -299,3 +299,13 @@
 - **Reason:** A visitor loads one acceptance route, not every dynamic phase chunk. Summing all historical routes misrepresents transfer cost and eventually makes a multi-phase acceptance application impossible, while raising only that sum could hide regressions in Phase 0 or Phase 1. Manifest closures give both an accurate user path and explicit regression isolation.
 - **Impact:** Phase 0 retains 24 KiB gzip JavaScript / 64 KiB gzip total limits; Phase 1 retains 32 KiB / 96 KiB; Phase 2 is capped at 40 KiB gzip JavaScript / 96 KiB gzip total. All emitted JavaScript remains capped at 48 KiB gzip and complete Playground output at 128 KiB gzip. Later phases must add their own route closure instead of consuming an unmeasured global increase.
 - **ADR required:** No; this changes acceptance delivery accounting only and does not affect engine runtime APIs, dependency direction, or rendering behavior.
+
+## ED-031 — Deploy isolated accepted Playgrounds before freezing a Phase
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Build every accepted acceptance route into its own GitHub Pages directory, rebuild `latest` from only the highest contiguous Owner-Acceptance PASS record, and deploy through the official Pages artifact pipeline. After deployment, run public Chromium/WebGPU interaction smoke tests against every historical URL and `latest`; only a successful public-deployment workflow may create the next immutable accepted tag.
+- **Candidates:** Publish one mutable root bundle for every URL; deploy screenshots or CI artifacts only; deploy isolated route builds but freeze before checking the public site; deploy isolated route builds and make the public check a fail-closed predecessor of tag creation.
+- **Reason:** A shared root bundle can silently change historical routes, while a local or downloadable artifact does not prove that a reviewer can open and operate the milestone from another device. The acceptance tag must represent code, CI, deployment, public reachability, and browser interaction together rather than code alone.
+- **Impact:** `/phase-0/` through the latest accepted `/phase-N/` remain explicit regression surfaces, `/latest/` never selects an in-development phase, and each directory owns its hashed assets under the repository Pages base path. The deployment workflow has only `contents: read`, `pages: write`, and `id-token: write`; the separate post-deployment freeze workflow alone receives `contents: write`. A repository must have GitHub Pages configured to use GitHub Actions before the deployment can pass.
+- **ADR required:** No; this governs acceptance delivery and release automation without changing engine runtime architecture or public APIs.

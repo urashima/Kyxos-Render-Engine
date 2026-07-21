@@ -1065,3 +1065,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Run the unchanged `chromium-scene` suite in GitHub Actions, inspect exact WebGPU diagnostics, and fix any browser-only behavior before marking P2-07 complete.
 - Generate fixed visual, performance, and lifecycle evidence for P2-08 after the official browser flow passes.
+
+## 2026-07-21 10:10 PDT — Global Continuous Deployment Gate implementation checkpoint
+
+### Completed
+
+- Appended the mandatory Phase 0–14 Continuous Deployment Gate to `PHASE_ACCEPTANCE_PLAN.md`; the isolated documentation commit `34943e3efdd44a6a77f603e47b754b4530e1f754` passed official GitHub Actions Run `29850874660`.
+- Added base-aware Playground routing so local `/acceptance/phase-XX` routes and public `/phase-N/` snapshots use the same SDK-only acceptance modules without escaping the GitHub project subpath.
+- Added deterministic accepted-phase discovery from contiguous Owner-Acceptance PASS records, isolated per-Phase and `latest` Vite builds, a machine-readable deployment manifest, `.nojekyll`, root/404 redirects, and fail-closed static artifact validation.
+- Added the official GitHub Pages build/upload/deploy workflow with current Node 24 Actions, public URL reachability checks, and a separate Chromium/WebGPU suite that executes every historical route plus `latest` after deployment.
+- Added a generic post-deployment freeze workflow; a Phase tag is now created only after CI, Pages deployment, public reachability, and online browser interactions all succeed. Recorded the policy in ED-031.
+
+### Validation
+
+- Formatting, zero-warning Lint, strict package/test/app typecheck, 31 unit files / 136 tests, dependency boundaries plus negative fixture, architecture docs, Shader mirrors, Phase 0/1 acceptance schemas, builds, and all route/aggregate bundle budgets: PASS.
+- Pages artifact validation built isolated Phase 0, 1, 2, and `latest` directories; every HTML asset reference remained inside its target base path and every referenced file existed.
+- Chromium 149 loaded the built project-subpath URLs `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/` with the expected acceptance surface; the complete Phase 0 browser suite passed 5/5 against its unchanged zero-pixel sandbox baseline.
+- Local official Playwright Chromium is not cached, so real WebGPU and canonical zero-pixel results remain delegated to the unchanged official CI environment. No browser test, threshold, or baseline was disabled or relaxed.
+- Deployment source and workflow checkpoint submitted as `887fb80d33e73bc3fcf190b26f1e95d42588a425`; official PR CI remained pending when this record was written.
+
+### Next
+
+- Require deployment checkpoint `887fb80d33e73bc3fcf190b26f1e95d42588a425` to pass clean official PR CI, including the canonical Phase 0/1 images and full Phase 2 WebGPU evidence flow.
+- Resume P2-08 evidence finalization after the deployment infrastructure head is green; Phase 2 remains In Development until its own public Pages deployment succeeds after merge.
