@@ -10,7 +10,7 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 | P1-04 | Implement Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder ownership           | P1-02       | Create/destroy/native-destroy/resource-count tests; loss returns resource baseline           | Completed      |
 | P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | In Development |
 | P1-06 | Connect Renderer and public SDK Canvas options without exposing `GPUDevice`                   | P1-03,P1-05 | SDK-only consumer; create/dispose/recreate; clear fallback errors                            | Completed      |
-| P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | Planned        |
+| P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | In Development |
 | P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Planned        |
 | P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | Planned        |
 
@@ -22,6 +22,14 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 - [x] Canonical WGSL source, exact runtime mirror, entry-point/static validation, and runtime compilation-info enforcement.
 - [x] Generated triangle and indexed sphere geometry wired through a Renderer feature.
 - [ ] Real WebGPU smoke covering clear, triangle, and sphere submissions.
+
+### P1-07 checkpoints
+
+- [x] Independent lazy-loaded `/acceptance/phase-01` route consuming only the public SDK.
+- [x] Live clear, triangle, sphere, one-shot wake, Resize, DPR, hidden/restore, Canvas switch, Device Lost, recovery, disposal, and recreation controls.
+- [x] Backend, Shader, Surface, frame, Draw, triangle, vertex, Pipeline, resource, memory, Canvas, and viewport diagnostics.
+- [x] Strict browser tests for compiler/render output and full lifecycle recovery without skips.
+- [ ] Official Playwright Chromium CI proves the real WebGPU adapter/compiler/render path.
 
 ## Required architecture boundaries
 

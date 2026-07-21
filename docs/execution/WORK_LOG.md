@@ -715,3 +715,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-06 checkpoint.
 - Build the independent `/acceptance/phase-01` Playground route and use it for real browser adapter/device/WGSL compiler/clear/triangle/sphere evidence.
+
+## 2026-07-21 07:10 PDT — P1-07 independent WebGPU Playground checkpoint
+
+### Completed
+
+- Added a lazy-loaded `/acceptance/phase-01` route that consumes only the public SDK and keeps the Phase 0 entry graph isolated.
+- Added two switchable WebGPU Canvas surfaces and controls for clear color, triangle, generated sphere, one-shot wake, hidden/restore, Device Lost, recovery, disposal, and recreation.
+- Added live backend, Renderer, Shader, Surface, DPR, scheduler, Draw, triangle, vertex, Pipeline, resource, estimated memory, Canvas, and viewport diagnostics plus a bounded event trace.
+- Added SDK-only diagnostic Device Lost injection without exposing a native device and implemented it consistently in WebGPU and Mock backends.
+- Added strict Playwright coverage for real WGSL compilation, visually distinct triangle/sphere frames, Resize/DPR, zero-area suspension, Canvas switching, Device Lost, resource return to zero, recovery, disposal, and recreation.
+- Added a Vite manifest and route-aware bundle gate so Phase 0 retains its accepted initial-entry limits while the complete multi-route Playground has explicit Phase 1 budgets.
+
+### Validation
+
+- Format, zero-warning lint, strict typecheck, canonical WGSL validation, all package builds, and 15 unit files / 62 tests: PASS.
+- Phase 0 browser regression on the sandbox Chromium profile: 5 / 5 PASS, including the exact visual baseline.
+- Bundle gate: Phase 0 initial JavaScript 28,918 raw / 9,599 gzip bytes; Phase 0 initial total 87,492 raw / 61,225 gzip bytes; all JavaScript 76,765 raw / 22,915 gzip bytes; complete output 135,339 raw / 74,541 gzip bytes. All budgets PASS.
+- The network-restricted local Chromium binary exposes `navigator.gpu` but has no bundled SwiftShader/Vulkan libraries or hardware `/dev/dri`, so it cannot return a real adapter. The strict Phase 1 test remains enabled and will run in CI after Playwright installs its complete official Chromium bundle; this is an environment capability gap, not an active repository blocker.
+
+### Next
+
+- Commit and remotely verify the P1-07 checkpoint.
+- Inspect the triggered GitHub Actions run, fix any real WebGPU compiler/runtime failures, and retain the run artifacts as Phase 1 acceptance evidence.

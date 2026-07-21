@@ -189,3 +189,13 @@
 - **Reason:** Product-side composition would violate the single public entry policy, while Renderer-side selection would invert the backend contract. The SDK already owns public options and is the narrow place where `auto` policy and actionable fallback errors belong.
 - **Impact:** Phase 1 `auto` and explicit `webgpu` both choose WebGPU; unavailable devices return a stable recoverable error until the accepted WebGL2 backend is added in Phase 10. The dependency checker records the concrete edge and will reject native/private subpath imports.
 - **ADR required:** No; ADR-004 defines SDK as the product boundary and this implements its composition role without exposing a new lower-level API.
+
+## ED-020 — Lazy-load Phase 1 while freezing the accepted Phase 0 entry budget
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Route `/acceptance/phase-01` through a dynamic import and use the Vite manifest to measure the static Phase 0 entry closure separately from all emitted JavaScript and the complete Playground output.
+- **Candidates:** Bundle every acceptance phase into the initial entry; raise the Phase 0 budget; lazy-load Phase 1 and preserve both the accepted entry budget and a new whole-Playground budget.
+- **Reason:** The real WebGPU backend and diagnostic Playground are intentionally larger than the mock Phase 0 surface, but a new acceptance route must not silently regress the already accepted Phase 0 initial download.
+- **Impact:** Phase 0 remains below its original 24 KiB gzip JavaScript and 64 KiB gzip total budgets. Phase 1 receives explicit 32 KiB gzip JavaScript and 96 KiB gzip total Playground budgets. The check follows only static manifest imports, so lazy route chunks are not misreported as initial work while still counting toward the whole application.
+- **ADR required:** No; this is an acceptance-application delivery and performance policy, not a public engine API decision.
