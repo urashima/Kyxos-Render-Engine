@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const requiredTextFiles = [
+  '.github/workflows/phase-01-freeze.yml',
   'docs/acceptance/phase-01/PHASE_01_ACCEPTANCE.md',
   'docs/acceptance/phase-01/OWNER_ACCEPTANCE.md',
   'docs/acceptance/phase-01/TECHNICAL_QA.md',
@@ -22,6 +23,8 @@ const requiredTextFiles = [
 const imageDirectory = path.join(root, 'visual-baselines/phase-01');
 const sourceCommit = '02373b17c1ed4b334b6b6279208364f38ecc54e7';
 const sourceCiRun = 29840589848;
+const evidencePackCommit = '5193ca3c4800f48f53d387789edc1295c001e52d';
+const evidencePackCiRun = 29841668634;
 const failures = [];
 
 async function readJson(relativePath) {
@@ -83,6 +86,9 @@ if (
   automated?.remoteCi?.sourceCommit !== sourceCommit ||
   automated?.remoteCi?.conclusion !== 'success' ||
   automated?.remoteCi?.artifactId !== 8499252492 ||
+  automated?.evidencePackCi?.runId !== evidencePackCiRun ||
+  automated?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  automated?.evidencePackCi?.conclusion !== 'success' ||
   !Array.isArray(automated?.requiredFailures) ||
   automated.requiredFailures.length !== 0
 ) {
@@ -108,6 +114,9 @@ if (
   technicalQa?.sourceCommit !== sourceCommit ||
   technicalQa?.ci?.runId !== sourceCiRun ||
   technicalQa?.ci?.conclusion !== 'success' ||
+  technicalQa?.evidencePackCi?.runId !== evidencePackCiRun ||
+  technicalQa?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  technicalQa?.evidencePackCi?.conclusion !== 'success' ||
   Object.values(technicalQa?.checks ?? {}).some((status) => status !== 'PASS') ||
   technicalQa?.blockers?.length !== 0
 ) {
@@ -121,6 +130,10 @@ if (
   owner?.reviewedCheckpoint !== sourceCommit ||
   owner?.ci?.runId !== sourceCiRun ||
   owner?.ci?.conclusion !== 'success' ||
+  owner?.finalOwnerEvidenceCi?.runId !== evidencePackCiRun ||
+  owner?.finalOwnerEvidenceCi?.sourceCommit !== evidencePackCommit ||
+  owner?.finalOwnerEvidenceCi?.conclusion !== 'success' ||
+  owner?.finalOwnerEvidenceCi?.browserTests !== 7 ||
   owner?.subjectiveReview?.status !== 'PASS' ||
   Object.values(owner?.phaseOperations ?? {}).some((status) => status !== 'PASS') ||
   Object.values(owner?.generalChecklist ?? {}).some((status) => status !== 'PASS') ||
@@ -254,6 +267,30 @@ try {
   }
 } catch (error) {
   failures.push(`acceptance document: ${String(error)}`);
+}
+
+try {
+  const freezeWorkflow = await readFile(
+    path.join(root, '.github/workflows/phase-01-freeze.yml'),
+    'utf8',
+  );
+  for (const requiredFragment of [
+    'branches:\n      - main',
+    'contents: write',
+    'TAG_NAME: phase-01-accepted',
+    'git tag --annotate',
+    'git push origin "refs/tags/${TAG_NAME}"',
+    'preserving its original target',
+  ]) {
+    if (!freezeWorkflow.includes(requiredFragment)) {
+      failures.push(`phase freeze workflow: missing ${requiredFragment}`);
+    }
+  }
+  if (freezeWorkflow.includes('pull_request_target')) {
+    failures.push('phase freeze workflow: pull_request_target is forbidden');
+  }
+} catch (error) {
+  failures.push(`phase freeze workflow: ${String(error)}`);
 }
 
 if (failures.length > 0) {
