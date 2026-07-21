@@ -29,3 +29,29 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Commit and verify this execution baseline.
 - Initialize the pnpm monorepo and strict TypeScript/tooling configuration.
 
+## 2026-07-21 02:25 PDT — P0-01 and P0-02 execution/toolchain checkpoint
+
+### Completed
+
+- Added the pnpm workspace, exact runtime constraints, shared strict TypeScript configuration, ESLint flat configuration, and Prettier policy.
+- Added repository ignores and a root TypeScript solution marker.
+- Generated a deterministic `pnpm-lock.yaml` from exact dependency versions.
+- Moved pnpm project policy into `pnpm-workspace.yaml`, including a workspace-local store for sandbox and CI portability.
+
+### Validation
+
+- `pnpm install --frozen-lockfile`: PASS.
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS under TypeScript strict mode.
+
+### Issues and resolution
+
+- Initial pnpm installation attempted to create `/root/.local`, which is outside the writable workspace. A project-local pnpm store resolved the environment-specific path issue.
+- The first dependency selection included packages published inside the active minimum-release-age window. They were replaced with compatible stable versions (`typescript-eslint` 8.64.0 and Prettier 3.9.5), then the lockfile was rebuilt and reverified.
+- TypeScript 6 rejects an empty root `files` list; a declaration-only solution marker now keeps the root project valid until package references are added.
+
+### Next
+
+- Commit and remotely verify the toolchain checkpoint.
+- Scaffold the package manifests, TypeScript references, and public-only export map.

@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  '@types/node': 24.13.3
+  typescript: 6.0.3
+
+engineStrict: true
+strictPeerDependencies: true
+autoInstallPeers: false
+saveExact: true
+storeDir: .pnpm-store
