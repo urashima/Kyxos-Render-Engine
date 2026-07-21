@@ -60,6 +60,39 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('frustum-culled-count')).toHaveText('3');
     await page.locator('[data-action="move-hierarchy"]').click();
     await expect(page.getByTestId('frustum-culled-count')).toHaveText('1');
+
+    const initialOrder = await page.getByTestId('transparent-order').textContent();
+    await page.locator('[data-action="swap-transparent"]').click();
+    await expect(page.getByTestId('transparent-order')).not.toHaveText(initialOrder ?? '');
+
+    const canvas = page.locator('[data-canvas="scene"]');
+    const bounds = await canvas.boundingBox();
+    if (bounds === null) throw new Error('The public Phase 2 Scene Canvas has no bounds.');
+    const initialOrbit = await page.getByTestId('orbit-angle').textContent();
+    await page.mouse.move(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width * 0.62, bounds.y + bounds.height * 0.43, {
+      steps: 4,
+    });
+    await page.mouse.up();
+    await expect(page.getByTestId('orbit-angle')).not.toHaveText(initialOrbit ?? '');
+
+    const initialDistance = await page.getByTestId('orbit-distance').textContent();
+    await page.mouse.wheel(0, -160);
+    await expect(page.getByTestId('orbit-distance')).not.toHaveText(initialDistance ?? '');
+
+    const previousFrame = Number(await page.getByTestId('frame-index').textContent());
+    await page.locator('[data-action="rotate-parent"]').click();
+    await expect(page.getByTestId('frame-index')).toHaveText(String(previousFrame + 1));
+    await page.locator('[data-action="frame"]').click();
+    await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+
+    await page.locator('[data-action="toggle-culling"]').click();
+    await expect(page.getByTestId('frustum-culled-count')).toHaveText('0');
+    await expect(page.getByTestId('draw-calls')).toHaveText('7');
+    await page.locator('[data-action="toggle-layers"]').click();
+    await expect(page.getByTestId('layer-culled-count')).toHaveText('0');
+    await expect(page.getByTestId('draw-calls')).toHaveText('8');
   }
   expect(runtimeErrors).toEqual([]);
 }

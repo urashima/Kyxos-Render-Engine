@@ -729,6 +729,53 @@ function bindActions(root: HTMLElement, runtime: AcceptanceRuntime): void {
   });
 }
 
+function bindPointerCamera(root: HTMLElement, runtime: AcceptanceRuntime): void {
+  const canvas = requireElement<HTMLCanvasElement>(root, '[data-canvas="scene"]');
+  canvas.style.cursor = 'grab';
+  canvas.style.touchAction = 'none';
+  let activePointer: number | undefined;
+  let previousX = 0;
+  let previousY = 0;
+
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || runtime.renderer === undefined) return;
+    activePointer = event.pointerId;
+    previousX = event.clientX;
+    previousY = event.clientY;
+    canvas.setPointerCapture(event.pointerId);
+    canvas.style.cursor = 'grabbing';
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (event.pointerId !== activePointer || runtime.renderer === undefined) return;
+    const deltaX = event.clientX - previousX;
+    const deltaY = event.clientY - previousY;
+    previousX = event.clientX;
+    previousY = event.clientY;
+    runtime.renderer.orbit(deltaX * 0.008, -deltaY * 0.008);
+    updateDiagnostics(root, runtime);
+  });
+  const finishPointer = (event: PointerEvent) => {
+    if (event.pointerId !== activePointer) return;
+    activePointer = undefined;
+    canvas.style.cursor = 'grab';
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    appendEvent(root, 'camera.orbit · pointer drag');
+  };
+  canvas.addEventListener('pointerup', finishPointer);
+  canvas.addEventListener('pointercancel', finishPointer);
+  canvas.addEventListener(
+    'wheel',
+    (event) => {
+      if (runtime.renderer === undefined) return;
+      event.preventDefault();
+      runtime.renderer.dolly(Math.exp(event.deltaY * 0.001));
+      updateDiagnostics(root, runtime);
+      appendEvent(root, 'camera.dolly · wheel');
+    },
+    { passive: false },
+  );
+}
+
 export async function mountPhase02Acceptance(root: HTMLElement): Promise<void> {
   root.innerHTML = acceptanceMarkup();
   const runtime: AcceptanceRuntime = {
@@ -744,6 +791,7 @@ export async function mountPhase02Acceptance(root: HTMLElement): Promise<void> {
     transparentSwapped: false,
   };
   bindActions(root, runtime);
+  bindPointerCamera(root, runtime);
   await createRenderer(root, runtime);
 
   let resizeRequest: number | undefined;
