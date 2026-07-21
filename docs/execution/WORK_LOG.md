@@ -1043,3 +1043,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Build the lazy `/acceptance/phase-02` route with deterministic Plane/Cube/Sphere hierarchy, transparent ordering, orbit/framing and culling controls, live queue/resource diagnostics, and browser capability reporting.
 - Add browser automation for interactions, Resize/DPR, sleep/wake, and Device Lost before generating fixed visual evidence.
+
+## 2026-07-21 09:41 PDT — P2-07 Scene Playground implementation checkpoint
+
+### Completed
+
+- Added the lazy, SDK-only `/acceptance/phase-02` route with a real WebGPU Plane/Cube/Sphere scene, parent-child hierarchy, opaque and transparent objects, offscreen/layer/hidden/disabled fixtures, and live Scene/Camera/queue/resource diagnostics.
+- Added controls for Orbit, dolly, automatic framing, parent Transform propagation, transparent distance swapping, Frustum and layer masks, clear color, dirty-only wake, zero-height suspension, Device Lost recovery, disposal, and recreation.
+- Added three Playwright flows covering exact Draw/triangle/visible/culling/resource counts, predictable transparency ordering, interaction wake/sleep, Surface suspension, Device Lost recovery, zero-resource disposal, and compact-layout overflow.
+- Extended the manifest-driven bundle gate with frozen Phase 0 and Phase 1 route closures plus an independently measured Phase 2 route closure. Recorded the delivery policy in ED-030.
+
+### Validation
+
+- Format, zero-warning lint, strict package/test/app typecheck, 31 unit files / 136 tests, dependency boundaries plus negative fixture, architecture docs, Phase 0/1 acceptance schemas, two Shader mirrors, all builds, and bundle budgets: PASS.
+- Phase 2 route: 120,630 raw / 36,296 gzip JavaScript and 180,659 raw / 88,280 gzip total, below 128/40 KiB JavaScript and 192/96 KiB total limits.
+- Phase 0 initial and Phase 1 route budgets remain independently frozen and PASS.
+- Local Playwright launch could not begin because the managed environment lacks Playwright Chromium v1228 and rejected its download. The repository workflow installs the pinned official browser; this is an environment capability gap, not an active repository blocker or a skipped test.
+- Submitted implementation as `3a37219107a0da74225d1df2f1b4a5af3d44ec8e`.
+
+### Next
+
+- Run the unchanged `chromium-scene` suite in GitHub Actions, inspect exact WebGPU diagnostics, and fix any browser-only behavior before marking P2-07 complete.
+- Generate fixed visual, performance, and lifecycle evidence for P2-08 after the official browser flow passes.
