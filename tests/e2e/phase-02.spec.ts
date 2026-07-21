@@ -212,6 +212,32 @@ test.describe('Phase 2 Scene Playground', () => {
       shaderCompilation: await page.getByTestId('shader-status').textContent(),
     });
 
+    for (const [focus, triangles] of [
+      ['Plane', '2'],
+      ['Cube', '12'],
+      ['Sphere', '224'],
+      ['Custom', '4'],
+    ] as const) {
+      await page.locator('[data-action="cycle-geometry"]').click();
+      await expect(page.getByTestId('geometry-focus')).toHaveText(focus);
+      await expect(page.getByTestId('visible-count')).toHaveText('1');
+      await expect(page.getByTestId('draw-calls')).toHaveText('1');
+      await expect(page.getByTestId('triangles')).toHaveText(triangles);
+    }
+    await page.locator('[data-action="cycle-geometry"]').click();
+    await expect(page.getByTestId('geometry-focus')).toHaveText('All');
+    await expect(page.getByTestId('visible-count')).toHaveText('6');
+    await expect(page.getByTestId('draw-calls')).toHaveText('6');
+    await expect(page.getByTestId('triangles')).toHaveText('690');
+
+    await page.locator('[data-action="move-hierarchy"]').click();
+    await expect(page.getByTestId('visible-count')).toHaveText('4');
+    await expect(page.getByTestId('draw-calls')).toHaveText('4');
+    await expect(page.getByTestId('frustum-culled-count')).toHaveText('3');
+    await page.locator('[data-action="move-hierarchy"]').click();
+    await expect(page.getByTestId('visible-count')).toHaveText('6');
+    await expect(page.getByTestId('frustum-culled-count')).toHaveText('1');
+
     const initialOrder = await page.getByTestId('transparent-order').textContent();
     expect(initialOrder).toContain('Glass Far');
     expect(initialOrder).toContain('Glass Near');

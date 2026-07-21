@@ -17,22 +17,41 @@ const INITIAL_RESOURCE_BASELINE = 25;
 
 interface SceneHandles {
   readonly disabled: EntityHandle;
+  readonly geometry: {
+    readonly cube: EntityHandle;
+    readonly custom: EntityHandle;
+    readonly participants: readonly EntityHandle[];
+    readonly plane: EntityHandle;
+    readonly sphere: EntityHandle;
+  };
   readonly glassFar: EntityHandle;
   readonly glassNear: EntityHandle;
   readonly offscreen: EntityHandle;
   readonly root: EntityHandle;
 }
 
+type GeometryFocus = 'all' | 'cube' | 'custom' | 'plane' | 'sphere';
+
 interface AcceptanceRuntime {
   allLayers: boolean;
   clearVariant: number;
   frustumCulling: boolean;
+  geometryFocusIndex: number;
   hidden: boolean;
+  hierarchyOffscreen: boolean;
   renderer: KyxosSceneCanvasRenderer | undefined;
   rotationStep: number;
   sceneHandles: SceneHandles | undefined;
   transparentSwapped: boolean;
 }
+
+const geometryFocuses: readonly GeometryFocus[] = Object.freeze([
+  'all',
+  'plane',
+  'cube',
+  'sphere',
+  'custom',
+]);
 
 const clearColors: readonly BackendClearColor[] = Object.freeze([
   Object.freeze({ a: 1, b: 0.055, g: 0.035, r: 0.025 }),
@@ -117,7 +136,9 @@ function acceptanceMarkup(): string {
             <button data-action="dolly-in" type="button">Dolly in</button>
             <button data-action="dolly-out" type="button">Dolly out</button>
             <button data-action="frame" type="button">Frame scene</button>
+            <button data-action="cycle-geometry" type="button">Cycle geometry</button>
             <button data-action="rotate-parent" type="button">Rotate parent</button>
+            <button data-action="move-hierarchy" type="button">Move hierarchy out</button>
             <button data-action="swap-transparent" type="button">Swap transparency</button>
             <button data-action="toggle-culling" type="button">Toggle culling</button>
             <button data-action="toggle-layers" type="button">Toggle layer 2</button>
@@ -167,6 +188,7 @@ function acceptanceMarkup(): string {
           <dl class="metric-list scene-contract">
             <div><dt>Hierarchy</dt><dd data-testid="hierarchy">Root → Child</dd></div>
             <div><dt>Geometry</dt><dd data-testid="geometry-contract">Plane · Cube · Sphere · Custom</dd></div>
+            <div><dt>Geometry focus</dt><dd data-testid="geometry-focus">All</dd></div>
             <div><dt>Camera aspect</dt><dd data-testid="camera-aspect">—</dd></div>
             <div><dt>Orbit yaw / pitch</dt><dd data-testid="orbit-angle">—</dd></div>
             <div><dt>Orbit distance</dt><dd data-testid="orbit-distance">—</dd></div>
@@ -241,6 +263,39 @@ function frameVisibleCluster(runtime: AcceptanceRuntime): void {
   renderer.frameScene({ bounds: { layerMask: 1, visibleOnly: true } });
   renderer.scene.setVisible(handles.offscreen, true);
   renderer.scene.setVisible(handles.disabled, true);
+}
+
+function updateMeshEnabled(
+  renderer: KyxosSceneCanvasRenderer,
+  entity: EntityHandle,
+  enabled: boolean,
+): void {
+  const component = renderer.meshRenderers.componentOf(entity);
+  if (component === null || component.enabled === enabled) return;
+  renderer.meshRenderers.update(entity, {
+    alphaMode: component.alphaMode,
+    baseColor: component.baseColor,
+    enabled,
+    localBounds: component.localBounds,
+    materialKey: component.materialKey,
+    mesh: component.mesh,
+    pipelineKey: component.pipelineKey,
+    renderOrder: component.renderOrder,
+  });
+}
+
+function applyGeometryFocus(root: ParentNode, runtime: AcceptanceRuntime): void {
+  const renderer = runtime.renderer;
+  const handles = runtime.sceneHandles;
+  if (renderer === undefined || handles === undefined) return;
+  const focus = geometryFocuses[runtime.geometryFocusIndex] ?? 'all';
+  const selected = focus === 'all' ? undefined : handles.geometry[focus];
+  for (const entity of handles.geometry.participants) {
+    updateMeshEnabled(renderer, entity, selected === undefined || entity === selected);
+  }
+  requireElement(root, '[data-testid="geometry-focus"]').textContent =
+    focus === 'all' ? 'All' : `${focus[0]?.toUpperCase() ?? ''}${focus.slice(1)}`;
+  appendEvent(root, `geometry.focus · ${focus}`);
 }
 
 function populateScene(renderer: KyxosSceneCanvasRenderer): SceneHandles {
@@ -322,7 +377,20 @@ function populateScene(renderer: KyxosSceneCanvasRenderer): SceneHandles {
   });
   renderer.meshRenderers.attach(disabled, { enabled: false, mesh: cube });
 
-  return { disabled, glassFar, glassNear, offscreen, root };
+  return {
+    disabled,
+    geometry: {
+      cube: root,
+      custom: customMesh,
+      participants: Object.freeze([ground, root, child, glassNear, glassFar, customMesh]),
+      plane: ground,
+      sphere: child,
+    },
+    glassFar,
+    glassNear,
+    offscreen,
+    root,
+  };
 }
 
 function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
@@ -484,6 +552,8 @@ async function createRenderer(root: ParentNode, runtime: AcceptanceRuntime): Pro
   runtime.hidden = false;
   runtime.allLayers = false;
   runtime.frustumCulling = true;
+  runtime.geometryFocusIndex = 0;
+  runtime.hierarchyOffscreen = false;
   runtime.transparentSwapped = false;
   runtime.rotationStep = 0;
   setError(root, undefined);
@@ -563,6 +633,10 @@ function bindActions(root: HTMLElement, runtime: AcceptanceRuntime): void {
           frameVisibleCluster(runtime);
           appendEvent(root, 'camera.frame · visible layer-1 cluster');
           break;
+        case 'cycle-geometry':
+          runtime.geometryFocusIndex = (runtime.geometryFocusIndex + 1) % geometryFocuses.length;
+          applyGeometryFocus(root, runtime);
+          break;
         case 'rotate-parent':
           if (renderer !== undefined && handles !== undefined) {
             runtime.rotationStep += 1;
@@ -570,6 +644,18 @@ function bindActions(root: HTMLElement, runtime: AcceptanceRuntime): void {
               rotation: quaternionFromAxisAngle([0, 1, 0], runtime.rotationStep * (Math.PI / 8)),
             });
             appendEvent(root, `scene.transform · parent rotation ${runtime.rotationStep}`);
+          }
+          break;
+        case 'move-hierarchy':
+          if (renderer !== undefined && handles !== undefined) {
+            runtime.hierarchyOffscreen = !runtime.hierarchyOffscreen;
+            renderer.scene.setLocalTransform(handles.root, {
+              translation: runtime.hierarchyOffscreen ? [60, -0.3, 0] : [-1.15, -0.3, 0],
+            });
+            appendEvent(
+              root,
+              `scene.transform · hierarchy ${runtime.hierarchyOffscreen ? 'offscreen' : 'restored'}`,
+            );
           }
           break;
         case 'swap-transparent':
@@ -648,7 +734,9 @@ export async function mountPhase02Acceptance(root: HTMLElement): Promise<void> {
     allLayers: false,
     clearVariant: 0,
     frustumCulling: true,
+    geometryFocusIndex: 0,
     hidden: false,
+    hierarchyOffscreen: false,
     renderer: undefined,
     rotationStep: 0,
     sceneHandles: undefined,
