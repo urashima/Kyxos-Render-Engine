@@ -22,6 +22,7 @@ Lower layers never import higher layers. Interfaces, opaque handles, immutable d
 | ------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `render-core`            | No engine package                                                                                         |
 | `render-math`            | No engine package                                                                                         |
+| `render-geometry`        | `render-math`                                                                                             |
 | `render-backend-api`     | `render-core`                                                                                             |
 | `render-backend-webgpu`  | `render-backend-api`, `render-core`                                                                       |
 | `render-frame-scheduler` | `render-core`                                                                                             |

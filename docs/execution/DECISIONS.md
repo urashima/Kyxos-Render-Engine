@@ -229,3 +229,13 @@
 - **Reason:** Phase 2 Scene, Geometry, Camera, and Visibility must share the exact ADR-002 convention without introducing an upward dependency or backend-specific NDC branch. A focused owned implementation makes every transform and culling invariant directly testable and avoids exposing a third-party public type contract before 1.0.
 - **Impact:** Public constructors reject NaN, Infinity, zero-length normalization, reversed bounds, and invalid projections. Values allocate immutable tuples in this correctness-first layer; later profiling may add internal destination-buffer variants without changing the public value API. WebGPU consumes canonical zero-to-one depth directly, while WebGL2 remains responsible for its Phase 10 conversion.
 - **ADR required:** No; ADR-002 already freezes all affected conventions, and this decision implements it without changing the product boundary.
+
+## ED-024 — Keep CPU mesh data immutable and renderer-neutral
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Store Phase 2 Mesh positions, normalized normals, UV0, and triangle indices as copied frozen numeric arrays in `@kyxos/render-geometry`. Derive AABB and Bounding Sphere at construction, select 16/32-bit index format from the largest addressed vertex, and keep GPU Buffers and material/render state outside the package.
+- **Candidates:** Let callers retain mutable typed arrays; make Geometry own GPU Buffer uploads; copy validated CPU data into a backend-neutral immutable Mesh value.
+- **Reason:** Caller mutation after validation would invalidate bounds and culling, while GPU ownership in Geometry would create a concrete-backend dependency. Frozen CPU values provide deterministic Custom Mesh behavior and allow Scene/Visibility to operate without Renderer or GPU access.
+- **Impact:** Construction intentionally copies and validates data; primitive meshes are small and deterministic. Later dynamic geometry will require an explicit versioned update API rather than mutating this value. Both WebGPU and WebGL2 can upload the same data and choose native index representations behind their backend boundaries.
+- **ADR required:** No; this adds a downward Geometry-to-Math edge under existing architecture rules and does not alter the public SDK boundary.

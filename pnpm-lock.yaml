@@ -75,6 +75,12 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/geometry:
+    dependencies:
+      '@kyxos/render-math':
+        specifier: workspace:*
+        version: link:../math
+
   packages/math: {}
 
   packages/renderer:

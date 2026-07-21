@@ -1,0 +1,26 @@
+{
+  "name": "@kyxos/render-geometry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validated immutable mesh data and deterministic primitive builders.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@kyxos/render-math": "workspace:*"
+  }
+}
