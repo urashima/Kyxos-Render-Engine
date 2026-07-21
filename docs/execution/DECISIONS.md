@@ -59,3 +59,13 @@
 - **Reason:** The engine's defining temporal requirement starts at the foundation boundary. Driver injection makes scheduling deterministic in tests and keeps browser/platform behavior outside Renderer Core.
 - **Impact:** Phase 0 supports Interactive and Sleeping behavior only; Stabilizing and Accumulating policies remain explicitly deferred to Phase 4. The SDK browser adapter is the sole current global RAF access point.
 - **ADR required:** Yes; ADR-003 will capture scheduler ownership, sleeping guarantees, and future temporal extension points.
+
+## ED-007 — Keep the Playground framework-independent
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Build the engine Playground as a plain TypeScript, semantic HTML, and CSS Vite application. The Phase 0 route imports the public SDK plus the development Mock Backend and contains no React or Texture Lab dependency.
+- **Candidates:** React-based developer UI; reuse the Texture Lab UI; standalone plain TypeScript acceptance application.
+- **Reason:** A small independent consumer is the strongest executable proof that Renderer Core has no product or UI-framework dependency.
+- **Impact:** The Phase 0 bundle remains small and the Playground can later add optional framework adapters without making them engine dependencies.
+- **ADR required:** No; ADR-004 and the dependency architecture document will freeze the public/package boundary.

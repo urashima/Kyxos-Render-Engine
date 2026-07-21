@@ -180,3 +180,38 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-06 checkpoint.
 - Build the framework-independent Vite Playground and `/acceptance/phase-00` route, then run browser smoke checks.
+
+## 2026-07-21 04:18 PDT — P0-07 Playground development checkpoint
+
+### Completed
+
+- Added a framework-independent Vite Playground under `apps/playground`.
+- Added the direct `/acceptance/phase-00` route with public SDK initialization and Mock Backend diagnostics.
+- Added interactive controls for dirty wake, texture allocation/release, device loss, recovery, event trace, and renderer disposal.
+- Added explicit Phase 0 capability messaging instead of pretending a GPU surface, CPU/GPU timer, draw call, or triangle result exists before Phase 1.
+- Added responsive and reduced-motion presentation without React, Texture Lab, a business store, or analytics.
+- Extended root build and typecheck orchestration to include applications.
+
+### Validation
+
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS for packages, tests, and the Playground.
+- `pnpm build`: PASS for all seven packages and the Playground production bundle.
+- Vite production output: HTML 0.55 kB, CSS 7.84 kB / 2.51 kB gzip, JavaScript 20.29 kB / 6.55 kB gzip.
+- Dependency inspection: Playground imports SDK and testing support only; no Texture Lab, React, Next.js, Zustand, or product route dependency exists.
+
+### Browser verification status
+
+- Cloud browser navigation to the workspace loopback URL returned `ERR_BLOCKED_BY_CLIENT`; this is a network-isolation result, not a page failure.
+- Browser smoke remains open and is not marked PASS. P0-08 will add repository-owned Playwright startup and interaction checks and attempt a local Chromium runtime.
+
+### Performance
+
+- Idle runtime reports Sleeping with zero scheduled engine frames.
+- Phase 0 production JavaScript is 6.55 kB gzip.
+
+### Next
+
+- Commit and remotely verify the P0-07 development checkpoint.
+- Add Playwright, dependency/bundle/shader gates, then complete the outstanding browser smoke test.
