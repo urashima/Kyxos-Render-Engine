@@ -143,15 +143,30 @@ importers:
       '@kyxos/render-backend-webgpu':
         specifier: workspace:*
         version: link:../backend-webgpu
+      '@kyxos/render-camera':
+        specifier: workspace:*
+        version: link:../camera
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
       '@kyxos/render-frame-scheduler':
         specifier: workspace:*
         version: link:../frame-scheduler
+      '@kyxos/render-geometry':
+        specifier: workspace:*
+        version: link:../geometry
+      '@kyxos/render-math':
+        specifier: workspace:*
+        version: link:../math
       '@kyxos/render-renderer':
         specifier: workspace:*
         version: link:../renderer
+      '@kyxos/render-scene':
+        specifier: workspace:*
+        version: link:../scene
+      '@kyxos/render-visibility':
+        specifier: workspace:*
+        version: link:../visibility
     devDependencies:
       '@kyxos/render-testing':
         specifier: workspace:*

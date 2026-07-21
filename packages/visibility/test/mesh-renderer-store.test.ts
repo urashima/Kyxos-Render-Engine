@@ -10,6 +10,10 @@ describe('MeshRendererStore', () => {
     const scene = new Scene();
     const store = new MeshRendererStore(scene);
     const entity = scene.createEntity();
+    const changes: string[] = [];
+    store.on('changed', ({ entity: changedEntity, kind, revision }) => {
+      changes.push(`${kind}:${changedEntity?.id ?? 'all'}:${revision}`);
+    });
     const mesh = createCubeGeometry();
     const component = store.attach(entity, {
       alphaMode: 'blend',
@@ -33,6 +37,7 @@ describe('MeshRendererStore', () => {
     expect(scene.localBoundsOf(entity)).toEqual(mesh.bounds);
     expect(store.size).toBe(1);
     expect(store.revision).toBe(1);
+    expect(changes).toEqual([`attached:${entity.id}:1`]);
   });
 
   it('updates in place, preserves sequence, and supports a bounds override', () => {

@@ -47,9 +47,14 @@ const allowedDependencies = new Map([
     new Set([
       '@kyxos/render-backend-api',
       '@kyxos/render-backend-webgpu',
+      '@kyxos/render-camera',
       '@kyxos/render-core',
       '@kyxos/render-frame-scheduler',
+      '@kyxos/render-geometry',
+      '@kyxos/render-math',
       '@kyxos/render-renderer',
+      '@kyxos/render-scene',
+      '@kyxos/render-visibility',
     ]),
   ],
   [

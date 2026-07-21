@@ -1,13 +1,24 @@
-import { KyxosEngineError } from '@kyxos/render-core';
+import { KyxosEngineError, TypedEventEmitter } from '@kyxos/render-core';
 import { createAabb } from '@kyxos/render-math';
 
-import type { Disposable, Unsubscribe } from '@kyxos/render-core';
+import type { Disposable, EventListener, Unsubscribe } from '@kyxos/render-core';
 import type { MeshData } from '@kyxos/render-geometry';
 import type { Aabb } from '@kyxos/render-math';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
 
 export type AlphaMode = 'blend' | 'opaque';
 export type RgbaColor = readonly [red: number, green: number, blue: number, alpha: number];
+export type MeshRendererStoreChangeKind = 'attached' | 'detached' | 'purged' | 'updated';
+
+export interface MeshRendererStoreChangeEvent {
+  readonly entity: EntityHandle | null;
+  readonly kind: MeshRendererStoreChangeKind;
+  readonly revision: number;
+}
+
+export interface MeshRendererStoreEvents {
+  readonly changed: MeshRendererStoreChangeEvent;
+}
 
 export interface MeshRendererDescriptor {
   readonly alphaMode?: AlphaMode;
@@ -34,6 +45,7 @@ export interface MeshRendererComponent {
 
 export class MeshRendererStore implements Disposable {
   readonly #components = new Map<EntityHandle, MeshRendererComponent>();
+  readonly #events = new TypedEventEmitter<MeshRendererStoreEvents>();
   readonly #scene: Scene;
   readonly #unsubscribe: Unsubscribe;
   #disposed = false;
@@ -60,6 +72,14 @@ export class MeshRendererStore implements Disposable {
     return this.#components.size;
   }
 
+  on<EventName extends keyof MeshRendererStoreEvents>(
+    eventName: EventName,
+    listener: EventListener<MeshRendererStoreEvents[EventName]>,
+  ): Unsubscribe {
+    this.#assertActive();
+    return this.#events.on(eventName, listener);
+  }
+
   attach(entity: EntityHandle, descriptor: MeshRendererDescriptor): MeshRendererComponent {
     this.#assertActive();
     this.#assertEntity(entity);
@@ -71,6 +91,7 @@ export class MeshRendererStore implements Disposable {
     this.#components.set(entity, component);
     this.#scene.setLocalBounds(entity, component.localBounds);
     this.#revision += 1;
+    this.#emitChange('attached', entity);
     return component;
   }
 
@@ -85,6 +106,7 @@ export class MeshRendererStore implements Disposable {
     this.#components.set(entity, component);
     this.#scene.setLocalBounds(entity, component.localBounds);
     this.#revision += 1;
+    this.#emitChange('updated', entity);
     return component;
   }
 
@@ -93,6 +115,7 @@ export class MeshRendererStore implements Disposable {
     if (!this.#components.delete(entity)) return false;
     if (this.#scene.hasEntity(entity)) this.#scene.setLocalBounds(entity, null);
     this.#revision += 1;
+    this.#emitChange('detached', entity);
     return true;
   }
 
@@ -119,6 +142,7 @@ export class MeshRendererStore implements Disposable {
     for (const entity of entities) {
       if (this.#scene.hasEntity(entity)) this.#scene.setLocalBounds(entity, null);
     }
+    this.#events.dispose();
   }
 
   #createComponent(descriptor: MeshRendererDescriptor, sequence: number): MeshRendererComponent {
@@ -199,7 +223,14 @@ export class MeshRendererStore implements Disposable {
         changed = true;
       }
     }
-    if (changed) this.#revision += 1;
+    if (changed) {
+      this.#revision += 1;
+      this.#emitChange('purged', null);
+    }
+  }
+
+  #emitChange(kind: MeshRendererStoreChangeKind, entity: EntityHandle | null): void {
+    this.#events.emit('changed', Object.freeze({ entity, kind, revision: this.#revision }));
   }
 
   #assertActive(): void {
