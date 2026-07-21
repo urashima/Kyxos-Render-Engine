@@ -269,3 +269,13 @@
 - **Reason:** Traversal-time submission would entangle Scene, culling, sorting, and one backend. A separate Draw List makes offscreen exclusion objectively testable, preserves Scene/Backend isolation, and lets future Render Graph, WebGL2, instancing, and batching consume one prepared contract.
 - **Impact:** Opaque items sort by explicit order, pipeline, material, front-to-back distance, and stable sequence. Transparent items sort by explicit order then back-to-front distance with deterministic tie breakers. Results cache by Scene, Camera, Store, and option revisions; disabled features and unchanged frames perform no unnecessary rebuild. GPU resources remain Renderer/Backend-owned.
 - **ADR required:** No; this implements the visibility output boundary mandated by the development plan and keeps all accepted dependency directions intact.
+
+## ED-028 — Extend the backend contract with portable binding and depth state
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Represent Phase 2 object Uniforms as pipeline-derived backend Bind Groups, depth testing as an owned depth Texture attachment plus pipeline state, and transparency as portable color-target Blend components. Only opaque Handles and scalar descriptors cross the public backend boundary.
+- **Candidates:** CPU-bake every object's camera transform into vertex data; expose native WebGPU binding/layout objects; add minimal backend-neutral Bind Group, depth, and blend descriptors.
+- **Reason:** Per-frame CPU vertex rewriting would scale with geometry size and hard-code Camera behavior into resource uploads. Native objects would break WebGL2 portability and the no-leak public contract. Pipeline-derived Bind Groups preserve WebGPU automatic layouts now while keeping room for a WebGL2 Uniform implementation behind the same API.
+- **Impact:** Backends validate Buffer usage and ranges, group uniqueness and pipeline ownership, depth format and dimensions, and resource lifecycle. Phase 2 can submit one immutable Mesh upload with per-object transforms and colors; later material layouts can extend the descriptor without Scene or Camera importing a backend. WebGPU maps directly to native Bind Groups and depth attachments; WebGL2 Phase 10 will translate the same contract to program Uniform state and depth/blend state.
+- **ADR required:** No; this is an additive implementation contract inside the already accepted backend abstraction and does not change product scope or global rendering conventions.

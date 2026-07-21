@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering           |
-| Current Branch      | `agent/phase-02-scene-camera`                                    |
-| Current Commit      | `bb7c29f407d91843b3941cc6ac0ecc8ee2116bce` (P2-05 visibility)    |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                   |
-| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK       |
-| Last Completed Task | P2-05 — Frustum/layer visibility and deterministic Render Queues |
-| Next Action         | Add Scene rendering feature, GPU mesh ownership, and SDK surface |
-| CI Status           | P2-04 Run 29845630396 PASS; P2-05 local quality gates PASS       |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development              |
-| Known Blockers      | No active blockers                                               |
-| Last Updated        | 2026-07-21 08:53 PDT                                             |
+| Field               | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering               |
+| Current Branch      | `agent/phase-02-scene-camera`                                        |
+| Current Commit      | `92f9927dba999879bd6e5c4a257a24b650321a80` (P2-06 backend contracts) |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                       |
+| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK           |
+| Last Completed Task | P2-06A — Bind Group, depth attachment, and blend backend contracts   |
+| Next Action         | Implement Renderer-owned Scene GPU resources and draw submission     |
+| CI Status           | P2-05 Run 29846146006 PASS; P2-06A local gates PASS                  |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                  |
+| Known Blockers      | No active blockers                                                   |
+| Last Updated        | 2026-07-21 09:07 PDT                                                 |
 
 ## Phase Progress
 
@@ -20,7 +20,7 @@
 | ----: | -------------- | ------------------------------------ | --- | ------- | -------------- | ------------------- |
 |    00 | Phase Accepted | `agent/phase-00-foundation`          | #1  | PASS    | Phase Accepted | `phase-00-accepted` |
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS    | Phase Accepted | `phase-01-accepted` |
-|    02 | In Development | `agent/phase-02-scene-camera`        | —   | Pending | In Development | —                   |
+|    02 | In Development | `agent/phase-02-scene-camera`        | #3  | Running | In Development | —                   |
 |    03 | Planned        | `agent/phase-03-pbr-ibl`             | —   | —       | Planned        | —                   |
 |    04 | Planned        | `agent/phase-04-temporal`            | —   | —       | Planned        | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —       | Planned        | —                   |

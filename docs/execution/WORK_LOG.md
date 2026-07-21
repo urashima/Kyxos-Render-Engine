@@ -977,3 +977,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Add Renderer-owned GPU mesh buffers and a Scene Render Feature that consumes only immutable Render Queues and backend-neutral command descriptors.
 - Expose Scene, Camera, Orbit, primitives, Mesh Renderer attachment, and diagnostics through the public SDK without leaking `GPUDevice` or internal package paths.
+
+## 2026-07-21 09:07 PDT — P2-06A Backend rendering contracts complete
+
+### Completed
+
+- Added backend-neutral Buffer Bind Group descriptors and Draw bindings without exposing `GPUDevice`, `GPUBindGroup`, pipeline layouts, or native resource objects.
+- Added depth-enabled Render Pipeline state, owned depth Texture attachments, and portable color Blend descriptors.
+- Implemented translation and command encoding in the browser WebGPU port, including native layout resolution, depth views, `setBindGroup`, depth state, and blend state.
+- Added strict ownership, usage, alignment, range, format, dimension, duplicate-slot, and pipeline-compatibility validation in both WebGPU and Mock backends. Recorded the contract in ED-028.
+
+### Validation
+
+- Browser platform, WebGPU backend, and Mock backend targeted suites: 3 files / 26 tests PASS.
+- Full unit suite: 29 files / 131 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package builds, and architecture boundaries plus negative fixture: PASS.
+- P2-05 official PR CI Run `29846146006`: PASS; P2-06A submitted as commit `92f9927dba999879bd6e5c4a257a24b650321a80`.
+- No active blockers.
+
+### Next
+
+- Implement the Scene Render Feature with shared immutable Mesh Buffer uploads, per-item Uniform data, depth lifecycle, and distinct opaque/transparent pipeline policy.
+- Expose the composed Scene renderer through the SDK, then prove wake, Resize, Device Lost, and Dispose behavior before building the acceptance route.
