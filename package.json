@@ -13,7 +13,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false && pnpm typecheck:tests",
+    "typecheck:tests": "tsc --noEmit --pretty false -p tsconfig.test.json",
+    "test:unit": "vitest run --config vitest.config.ts",
     "build": "tsc -b --pretty false",
     "build:packages": "pnpm --recursive --filter './packages/*' build",
     "clean": "tsc -b --clean"
@@ -25,6 +27,7 @@
     "globals": "17.7.0",
     "prettier": "3.9.5",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.64.0"
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10"
   }
 }

@@ -29,3 +29,13 @@
 - **Reason:** The selected graph proves ownership and dependency direction without creating dozens of empty packages or a monolith that would be costly to split.
 - **Impact:** Core has no engine dependency; backend-api depends only on core; renderer sees the backend contract but no concrete GPU API; sdk stays above renderer; testing cannot enter production packages. WebGPU and future WebGL2 remain replaceable implementations.
 - **ADR required:** Yes; ADR-004 will freeze the public SDK boundary and the architecture overview will record all allowed edges.
+
+## ED-004 — Use deterministic synchronous core ownership primitives
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Core cleanup is idempotent and LIFO, event delivery is synchronous over a listener snapshot, and typed resource handles use immutable monotonically increasing IDs that are never reused within an allocator.
+- **Candidates:** Async global lifecycle manager; mutable numeric IDs with a free list; deterministic package-local primitives.
+- **Reason:** GPU resource owners need predictable cleanup order, safe subscription mutation, and stale-handle protection without introducing a global singleton or asynchronous teardown into every API.
+- **Impact:** Resource destruction can be audited and tested independently. Long-running allocators consume a monotonically increasing safe-integer space, whose practical limit is far beyond a browser session. The policy is backend-neutral.
+- **ADR required:** No; the public lifecycle contract will be captured by ADR-003 while these are internal deterministic primitives.

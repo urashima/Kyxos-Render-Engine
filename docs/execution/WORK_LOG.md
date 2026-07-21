@@ -82,3 +82,35 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the package graph.
 - Implement core ownership, lifecycle, typed event, stable error, and handle primitives with regression tests.
+
+## 2026-07-21 03:44 PDT — P0-04 core contract checkpoint
+
+### Completed
+
+- Added stable engine error codes, module attribution, recovery metadata, serialization, and unknown-error wrapping.
+- Added an idempotent LIFO disposal bag that attempts every cleanup and aggregates multiple failures.
+- Added a synchronous typed event emitter with snapshot delivery, one-shot listeners, idempotent unsubscribe, and deterministic disposal.
+- Added immutable monotonic typed handles that do not reuse IDs, plus runtime validation and stable diagnostic keys.
+- Exposed only the intended public contracts through the core package root.
+
+### Validation
+
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS under strict TypeScript settings.
+- `pnpm test:unit`: PASS — 4 files and 12 tests.
+- `pnpm build:packages`: PASS for all seven packages.
+
+### Issues and resolution
+
+- The previous execution ended after writing the P0-04 working files but before committing them. The remote branch remained intact at P0-03; the local snapshot was recovered and revalidated against that exact branch head.
+- GitHub CLI is unavailable in the execution image. Authenticated GitHub connector Git-data operations remain the established non-blocking publish path.
+
+### Performance
+
+- Core primitives allocate no GPU resources and introduce no frame loop. Event delivery is synchronous and proportional to active listeners.
+
+### Next
+
+- Commit and remotely verify the P0-04 checkpoint.
+- Implement backend capabilities, lifecycle state, resource creation/destruction contracts, and a deterministic accounting mock.
