@@ -279,3 +279,13 @@
 - **Reason:** Per-frame CPU vertex rewriting would scale with geometry size and hard-code Camera behavior into resource uploads. Native objects would break WebGL2 portability and the no-leak public contract. Pipeline-derived Bind Groups preserve WebGPU automatic layouts now while keeping room for a WebGL2 Uniform implementation behind the same API.
 - **Impact:** Backends validate Buffer usage and ranges, group uniqueness and pipeline ownership, depth format and dimensions, and resource lifecycle. Phase 2 can submit one immutable Mesh upload with per-object transforms and colors; later material layouts can extend the descriptor without Scene or Camera importing a backend. WebGPU maps directly to native Bind Groups and depth attachments; WebGL2 Phase 10 will translate the same contract to program Uniform state and depth/blend state.
 - **ADR required:** No; this is an additive implementation contract inside the already accepted backend abstraction and does not change product scope or global rendering conventions.
+
+## ED-029 — Cache GPU Meshes by immutable value identity and object state by Entity
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Let the Scene Render Feature own one vertex/index allocation per immutable Mesh object and one Uniform Buffer plus pipeline-derived Bind Group per submitted Entity. Retain resources for attached but temporarily culled objects, and release them when the component or last Mesh reference disappears.
+- **Candidates:** Upload every Mesh on every frame; let Geometry own backend resources; allocate duplicate Mesh Buffers per Entity; cache immutable Mesh uploads in Renderer and keep only per-object Uniform state per Entity.
+- **Reason:** Immutable Geometry makes object identity a safe cache key. Sharing avoids duplicate static geometry memory, while Entity-local Uniform state preserves independent transforms and colors. Releasing on culling would churn resources during normal camera motion; releasing on attachment changes gives deterministic ownership without hidden global caches.
+- **Impact:** Resource counts are predictable, multiple Entities can share one Mesh allocation, and Dispose/Device Lost returns all backend counters to baseline. Dynamic geometry will need an explicit versioned resource path later. WebGPU uses Bind Groups now; WebGL2 can preserve the same cache ownership while translating object Uniforms internally.
+- **ADR required:** No; this refines the Renderer-owned resource policy already mandated by the development plan without changing product scope or dependency direction.

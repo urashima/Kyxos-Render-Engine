@@ -999,3 +999,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement the Scene Render Feature with shared immutable Mesh Buffer uploads, per-item Uniform data, depth lifecycle, and distinct opaque/transparent pipeline policy.
 - Expose the composed Scene renderer through the SDK, then prove wake, Resize, Device Lost, and Dispose behavior before building the acceptance route.
+
+## 2026-07-21 09:21 PDT — P2-06B Scene Render Feature complete
+
+### Completed
+
+- Added Renderer-owned shared immutable Mesh uploads with interleaved position/normal data and aligned 16/32-bit Index Buffers.
+- Added per-Entity model-view-projection, inverse-transpose normal Matrix, and RGBA Uniform uploads through opaque Bind Group Handles.
+- Added separate depth-writing opaque and depth-read-only alpha-blended pipelines over one validated Phase 2 WGSL module.
+- Added depth Texture ownership across visible, suspended, resized, lost-device, recovered, and disposed Surface states.
+- Reconciled removed Entity and unreferenced Mesh GPU state to baseline without deleting resources for merely culled objects. Recorded the ownership policy in ED-029.
+
+### Validation
+
+- Scene Render Feature suite covers shared Mesh allocation, ordered opaque/transparent Draws, exact frame statistics, Uniform payloads, culling diagnostics, Resize depth replacement, removal cleanup, Device Lost recovery, and final zero-resource baseline.
+- Full unit suite: 30 files / 134 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package builds, architecture boundaries plus negative fixture, and two Shader source/runtime mirrors: PASS.
+- Submitted as commit `f16ccaf994d9bfabe0545a2241de4d82366b5aa9`; no active blockers.
+
+### Next
+
+- Add the public Scene Canvas Renderer that owns Scene, Camera, Orbit Controller, Mesh Renderer Store, subscriptions, framing, Resize, screenshots-ready Surface access, and recovery.
+- Prove that SDK-only consumers can build and control the Scene renderer without native GPU types or private package imports.

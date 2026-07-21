@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                |
-| ------------------- | -------------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering               |
-| Current Branch      | `agent/phase-02-scene-camera`                                        |
-| Current Commit      | `92f9927dba999879bd6e5c4a257a24b650321a80` (P2-06 backend contracts) |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                       |
-| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK           |
-| Last Completed Task | P2-06A — Bind Group, depth attachment, and blend backend contracts   |
-| Next Action         | Implement Renderer-owned Scene GPU resources and draw submission     |
-| CI Status           | P2-05 Run 29846146006 PASS; P2-06A local gates PASS                  |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                  |
-| Known Blockers      | No active blockers                                                   |
-| Last Updated        | 2026-07-21 09:07 PDT                                                 |
+| Field               | Value                                                              |
+| ------------------- | ------------------------------------------------------------------ |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering             |
+| Current Branch      | `agent/phase-02-scene-camera`                                      |
+| Current Commit      | `f16ccaf994d9bfabe0545a2241de4d82366b5aa9` (P2-06 Scene rendering) |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                     |
+| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK         |
+| Last Completed Task | P2-06B — Renderer-owned Scene GPU resources and Draw submission    |
+| Next Action         | Compose Scene, Camera, Orbit, Mesh Renderer, and lifecycle in SDK  |
+| CI Status           | P2-05 Run 29846146006 PASS; P2-06B local gates PASS; CI running    |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                |
+| Known Blockers      | No active blockers                                                 |
+| Last Updated        | 2026-07-21 09:21 PDT                                               |
 
 ## Phase Progress
 
