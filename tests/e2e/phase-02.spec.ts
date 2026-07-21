@@ -40,8 +40,10 @@ test.describe('Phase 2 Scene Playground', () => {
     await expect(page.getByTestId('gpu-mesh-count')).toHaveText('4');
     await expect(page.getByTestId('object-binding-count')).toHaveText('6');
     await expect(page.getByTestId('pipeline-count')).toHaveText('2');
+    await expect(page.getByTestId('material-count')).toHaveText('4');
     await expect(page.getByTestId('resource-count')).toHaveText('25');
     await expect(page.getByTestId('buffer-memory')).toHaveAttribute('data-bytes', '6948');
+    await expect(page.getByTestId('texture-memory')).toHaveAttribute('data-bytes', '2271360');
     await expect(page.getByTestId('hierarchy')).toHaveText('Root → Child');
     await expect(page.getByTestId('geometry-contract')).toHaveText(
       'Plane · Cube · Sphere · Custom',
@@ -178,7 +180,11 @@ test.describe('Phase 2 Scene Playground', () => {
         ),
         gpuMeshCount: Number(await page.getByTestId('gpu-mesh-count').textContent()),
         objectBindingCount: Number(await page.getByTestId('object-binding-count').textContent()),
+        materialCount: Number(await page.getByTestId('material-count').textContent()),
         pipelineCount: Number(await page.getByTestId('pipeline-count').textContent()),
+        activeEstimatedTextureBytes: Number(
+          await page.getByTestId('texture-memory').getAttribute('data-bytes'),
+        ),
       },
       performance: performanceMetrics,
       shaderCompilation: await page.getByTestId('shader-status').textContent(),

@@ -146,8 +146,9 @@ function acceptanceMarkup(): string {
             <div><dt>Layer / frustum culled</dt><dd><span data-testid="layer-culled-count">0</span> / <span data-testid="frustum-culled-count">0</span></dd></div>
             <div><dt>Transparent order</dt><dd data-testid="transparent-order">—</dd></div>
             <div><dt>GPU meshes / objects</dt><dd><span data-testid="gpu-mesh-count">0</span> / <span data-testid="object-binding-count">0</span></dd></div>
-            <div><dt>Pipelines / resources</dt><dd><span data-testid="pipeline-count">0</span> / <span data-testid="resource-count">0</span></dd></div>
-            <div><dt>Buffer memory</dt><dd data-testid="buffer-memory">0 B</dd></div>
+            <div><dt>Pipelines / materials</dt><dd><span data-testid="pipeline-count">0</span> / <span data-testid="material-count">0</span></dd></div>
+            <div><dt>Resources</dt><dd data-testid="resource-count">0</dd></div>
+            <div><dt>Buffer / depth memory</dt><dd><span data-testid="buffer-memory">0 B</span> / <span data-testid="texture-memory">0 B</span></dd></div>
           </dl>
         </aside>
       </div>
@@ -346,6 +347,9 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   const bufferMemory = requireElement<HTMLElement>(root, '[data-testid="buffer-memory"]');
   bufferMemory.textContent = formatBytes(resources.byKind.buffer.activeEstimatedBytes);
   bufferMemory.dataset['bytes'] = String(resources.byKind.buffer.activeEstimatedBytes);
+  const textureMemory = requireElement<HTMLElement>(root, '[data-testid="texture-memory"]');
+  textureMemory.textContent = formatBytes(resources.byKind.texture.activeEstimatedBytes);
+  textureMemory.dataset['bytes'] = String(resources.byKind.texture.activeEstimatedBytes);
   const verdict = requireElement(root, '[data-testid="resource-verdict"]');
   verdict.textContent =
     diagnostics.state === 'ready' && resources.activeCount === INITIAL_RESOURCE_BASELINE
@@ -400,6 +404,9 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   requireElement(root, '[data-testid="transparent-order"]').textContent = queues.transparent
     .map(({ entity }) => renderer.scene.nameOf(entity))
     .join(' → ');
+  requireElement(root, '[data-testid="material-count"]').textContent = String(
+    new Set([...queues.opaque, ...queues.transparent].map(({ materialKey }) => materialKey)).size,
+  );
   const sceneDiagnostics = renderer.getSceneDiagnostics();
   requireElement(root, '[data-testid="gpu-mesh-count"]').textContent = String(
     sceneDiagnostics.feature.gpuMeshCount,
