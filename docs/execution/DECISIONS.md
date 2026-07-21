@@ -89,3 +89,13 @@
 - **Reason:** Wall-clock text is not a rendering result and changes every run. Removing the entire panel would conceal useful acceptance content, while changing the product for a screenshot would be misleading.
 - **Impact:** Playwright still exercises the unmodified interactive page. The fixed visual assertion permits zero differing pixels, and the black absolute Difference image communicates that result directly.
 - **ADR required:** No; this is acceptance-fixture policy rather than runtime architecture.
+
+## ED-010 — Track the current Node 24 GitHub-maintained action majors
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Use `actions/checkout@v7`, `actions/setup-node@v7`, and `actions/upload-artifact@v7`, with checkout credentials not persisted because CI is read-only.
+- **Candidates:** Retain v4 while GitHub forces its Node 20 action runtime onto Node 24; use the current official v7 majors that declare `node24`.
+- **Reason:** The first CI run emitted an explicit Node 20 deprecation warning for every v4 action. The official action repositories currently document v7 usage and declare the Node 24 runtime.
+- **Impact:** CI remains least-privilege and removes a known runtime deprecation before Phase acceptance. Action-major upgrades remain subject to an observed workflow run.
+- **ADR required:** No; this is CI maintenance, not engine architecture.

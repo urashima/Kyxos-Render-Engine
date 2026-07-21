@@ -339,3 +339,32 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-10 acceptance checkpoint.
 - Open the draft Phase PR, inspect the pull-request GitHub Actions run, repair failures, and complete technical QA.
+
+## 2026-07-21 04:51 PDT — P0-11 first CI run and root-cause repair
+
+### Completed
+
+- Opened draft PR #1 from `agent/phase-00-foundation` to `main`; GitHub reports it mergeable with 11 commits and 99 changed files.
+- Observed workflow run `29827641874` through completion and fetched job `88624579954` logs.
+- Confirmed clean checkout, Node 24.14.0, pnpm 11.7.0 lockfile install, supply-chain policy, and official Playwright Chromium installation all passed.
+- Isolated the failure to `pnpm format:check`: remote `docs/execution/BLOCKERS.md` retained one extra trailing blank line, while the reconstructed local workspace had already been formatted but that file was omitted from prior explicit remote commit lists.
+- Prepared the missing formatted file for the next commit.
+- Updated GitHub-maintained actions from v4 to the currently documented v7 majors, which declare Node 24, and disabled persisted checkout credentials for the read-only job.
+
+### Technical QA completed in parallel
+
+- Only the SDK browser adapter accesses `requestAnimationFrame`/`cancelAnimationFrame`.
+- Core, Backend API, Frame Scheduler, Renderer, and SDK source contain no native GPU object, Texture Lab, React/Next/Zustand, or private workspace-subpath leak.
+- Full production and development dependency audits report no known vulnerabilities.
+- A clean TypeScript build followed by all seven package builds, the Playground build, and 28 unit tests passes.
+
+### Failure policy
+
+- The failed CI run is retained as evidence; it was not rerun without a change.
+- No test, assertion, visual threshold, bundle budget, or architecture rule was weakened.
+- `docs/execution/BLOCKERS.md` remains `No active blockers` because the deterministic formatting root cause has an in-scope fix.
+
+### Next
+
+- Commit and push the clean-checkout formatting plus Actions runtime repair.
+- Inspect the new pull-request workflow run and fetch logs for any remaining failure.
