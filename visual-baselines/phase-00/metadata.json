@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "phase": "00",
+  "route": "/acceptance/phase-00",
+  "capture": {
+    "browser": "Chromium 149.0.7827.0",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "fullPage": true,
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    }
+  },
+  "comparison": {
+    "actualDiffPixels": 0,
+    "maximumDiffPixels": 0,
+    "status": "PASS",
+    "threshold": 0.2
+  },
+  "files": {
+    "reference": {
+      "bytes": 479350,
+      "height": 1303,
+      "path": "reference.png",
+      "sha256": "0e833e7cbda1884b34ce07e75113cc035dd5ea98caf98755b13851c3966b0bee",
+      "width": 1440
+    },
+    "current": {
+      "bytes": 479350,
+      "height": 1303,
+      "path": "current.png",
+      "sha256": "0e833e7cbda1884b34ce07e75113cc035dd5ea98caf98755b13851c3966b0bee",
+      "width": 1440
+    },
+    "difference": {
+      "bytes": 385,
+      "height": 1303,
+      "path": "difference.png",
+      "sha256": "0fcc7d718282233ae72143aede5e29e9bc44c3bd3fb139cfd04ebf870b68defc",
+      "width": 1440
+    }
+  },
+  "dynamicRegions": [
+    {
+      "selector": ".event-log time",
+      "treatment": "Hidden only during deterministic screenshot capture; event names and runtime state remain visible."
+    }
+  ],
+  "limitations": [
+    "This baseline proves the independent Phase 0 acceptance UI and Mock Backend diagnostics, not GPU-rendered pixels.",
+    "The first accepted baseline has no older reference to compare; future runs compare against reference.png."
+  ]
+}

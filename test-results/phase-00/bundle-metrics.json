@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "budgets": {
+    "css": {
+      "gzipBytes": 12288,
+      "rawBytes": 32768
+    },
+    "html": {
+      "gzipBytes": 4096,
+      "rawBytes": 8192
+    },
+    "javascript": {
+      "gzipBytes": 24576,
+      "rawBytes": 65536
+    },
+    "total": {
+      "gzipBytes": 49152,
+      "rawBytes": 131072
+    }
+  },
+  "metrics": {
+    "css": {
+      "gzipBytes": 2499,
+      "rawBytes": 7849
+    },
+    "html": {
+      "gzipBytes": 342,
+      "rawBytes": 557
+    },
+    "javascript": {
+      "gzipBytes": 6530,
+      "rawBytes": 20299
+    },
+    "total": {
+      "gzipBytes": 9371,
+      "rawBytes": 28705
+    }
+  }
+}

@@ -305,3 +305,37 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-09 architecture checkpoint.
 - Generate the Phase 0 acceptance document, machine-readable summary, performance record, and deterministic visual baseline/difference evidence.
+
+## 2026-07-21 04:47 PDT — P0-10 acceptance evidence checkpoint
+
+### Completed
+
+- Added the Phase 0 acceptance document with required deliverables, automated results, dependency evidence, owner checklist state, limitations, and an explicit non-acceptance conclusion pending CI and QA.
+- Added machine-readable automated, dependency-graph, bundle, performance, and visual metadata records.
+- Added fixed Chromium Reference and Current captures plus a standard absolute Difference image.
+- Added a zero-pixel Playwright visual assertion with fixed viewport, DPR, color scheme, disabled motion, and only wall-clock glyphs hidden.
+- Added a browser static-to-sleep benchmark over ten dirty-only frames and a 250 ms Phase 0 budget.
+- Added an acceptance schema gate that validates required files, JSON states, bundle/performance budgets, resource deltas, PNG headers/dimensions/bytes/hashes, and mandatory acceptance sections.
+- Integrated the acceptance schema gate into `pnpm verify`.
+
+### Validation
+
+- Full `pnpm verify`: PASS.
+- Unit tests: PASS — 9 files and 28 tests.
+- Chromium acceptance: PASS — 4 tests covering lifecycle, compact layout, deterministic visual regression, and static-to-sleep.
+- Visual comparison: PASS — Reference and Current are byte-identical; absolute error is 0 pixels; Difference is all black.
+- Acceptance evidence gate: PASS — 10 required evidence files.
+- Static-to-sleep: 10 samples; median 16.7 ms; p95/max 49.2 ms; budget 250 ms.
+- Dispose resource delta: 0 active resources and 0 active estimated bytes.
+- Bundle: PASS — 28,705 raw bytes and 9,371 gzip bytes.
+- GPU frame time, CPU frame time, Shader validation, and asset loading remain explicitly not applicable to Phase 0.
+
+### Issues and resolution
+
+- The first screenshot exposed a wall-clock timestamp in the event trace. The visual test now hides only those glyphs during capture, preserves the panel's semantic content, and passes on a second independent run.
+- The first zero-difference visualization used a white no-difference convention. It was replaced with a standard absolute-difference composite, where black represents no difference.
+
+### Next
+
+- Commit and remotely verify the P0-10 acceptance checkpoint.
+- Open the draft Phase PR, inspect the pull-request GitHub Actions run, repair failures, and complete technical QA.

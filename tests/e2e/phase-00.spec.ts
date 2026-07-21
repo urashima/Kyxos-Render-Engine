@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import { expect, test } from '@playwright/test';
 
 test.describe('Phase 0 independent Playground', () => {
@@ -53,5 +56,110 @@ test.describe('Phase 0 independent Playground', () => {
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test('matches the deterministic Phase 0 visual baseline', async ({ page }) => {
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto('/acceptance/phase-00');
+    await expect(page.getByTestId('phase-00-acceptance')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          animation: none !important;
+          caret-color: transparent !important;
+          transition: none !important;
+        }
+
+        .event-log time {
+          visibility: hidden !important;
+        }
+      `,
+    });
+
+    const screenshot = await page.screenshot({ animations: 'disabled', fullPage: true });
+    const runtimeDirectory = path.resolve('test-results/phase-00/runtime/visual');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(path.join(runtimeDirectory, 'current.png'), screenshot);
+
+    if (process.env['UPDATE_ACCEPTANCE_EVIDENCE'] === 'true') {
+      const evidenceDirectory = path.resolve('visual-baselines/phase-00');
+      await mkdir(evidenceDirectory, { recursive: true });
+      await writeFile(path.join(evidenceDirectory, 'current.png'), screenshot);
+    }
+
+    expect(screenshot).toMatchSnapshot('reference.png', {
+      maxDiffPixels: 0,
+      threshold: 0.2,
+    });
+  });
+
+  test('returns dirty-only frames to sleep within the Phase 0 budget', async ({ page }) => {
+    await page.goto('/acceptance/phase-00');
+    await expect(page.getByTestId('renderer-state')).toHaveText('ready');
+
+    const measurement = await page.evaluate(async () => {
+      const wakeButton = document.querySelector<HTMLButtonElement>('[data-action="wake"]');
+      const frameIndex = document.querySelector<HTMLElement>('[data-testid="frame-index"]');
+      const renderMode = document.querySelector<HTMLElement>('[data-testid="render-mode"]');
+      if (wakeButton === null || frameIndex === null || renderMode === null) {
+        throw new Error('Phase 0 benchmark controls are unavailable.');
+      }
+
+      const samples = [];
+      for (let sample = 0; sample < 10; sample += 1) {
+        const previousFrame = frameIndex.textContent;
+        const startedAt = performance.now();
+        const frameCompleted = new Promise<void>((resolve, reject) => {
+          const observer = new MutationObserver(() => {
+            if (frameIndex.textContent !== previousFrame) {
+              observer.disconnect();
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+          const timeout = window.setTimeout(() => {
+            observer.disconnect();
+            reject(new Error('Dirty-only frame did not complete within 1 second.'));
+          }, 1_000);
+          observer.observe(frameIndex, { characterData: true, childList: true, subtree: true });
+        });
+
+        wakeButton.click();
+        await frameCompleted;
+        samples.push(performance.now() - startedAt);
+        if (renderMode.textContent !== 'sleeping') {
+          throw new Error('Renderer did not return to sleeping after a dirty-only frame.');
+        }
+      }
+
+      const sorted = [...samples].sort((left, right) => left - right);
+      const round = (value: number) => Math.round(value * 1_000) / 1_000;
+      return {
+        budgetMs: 250,
+        maxMs: round(sorted.at(-1) ?? 0),
+        medianMs: round(sorted[Math.floor(sorted.length / 2)] ?? 0),
+        minMs: round(sorted[0] ?? 0),
+        p95Ms: round(sorted[Math.ceil(sorted.length * 0.95) - 1] ?? 0),
+        sampleCount: sorted.length,
+      };
+    });
+
+    expect(measurement.maxMs).toBeLessThan(measurement.budgetMs);
+    const runtimeDirectory = path.resolve('test-results/phase-00/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'static-to-sleep.json'),
+      `${JSON.stringify(measurement, null, 2)}\n`,
+    );
+
+    if (process.env['UPDATE_ACCEPTANCE_EVIDENCE'] === 'true') {
+      const benchmarkDirectory = path.resolve('benchmarks/phase-00');
+      await mkdir(benchmarkDirectory, { recursive: true });
+      await writeFile(
+        path.join(benchmarkDirectory, 'static-to-sleep.json'),
+        `${JSON.stringify(measurement, null, 2)}\n`,
+      );
+    }
   });
 });

@@ -23,6 +23,7 @@ export default defineConfig({
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env['CI'] === undefined ? 0 : 1,
+  snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-00/{arg}{ext}',
   testDir: './tests/e2e',
   timeout: 30_000,
   use: {

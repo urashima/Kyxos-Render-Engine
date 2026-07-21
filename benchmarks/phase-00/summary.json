@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "phase": "00",
+  "status": "PASS_WITH_DECLARED_NOT_APPLICABLE_METRICS",
+  "previousAcceptedTagComparison": {
+    "status": "NOT_APPLICABLE",
+    "reason": "Phase 0 is the initial baseline and has no previous accepted tag."
+  },
+  "environment": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "browser": "Chromium 149.0.7827.0",
+    "backend": "mock",
+    "viewport": "1440x1000",
+    "devicePixelRatio": 1
+  },
+  "metrics": {
+    "cpuFrameTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "A GPU frame and timing instrumentation begin in Phase 1."
+    },
+    "gpuFrameTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The Phase 0 Mock Backend submits no GPU work."
+    },
+    "drawCalls": {
+      "status": "PHASE_00_MOCK_BASELINE",
+      "value": 0
+    },
+    "triangles": {
+      "status": "PHASE_00_MOCK_BASELINE",
+      "value": 0
+    },
+    "pipelineCount": {
+      "status": "PHASE_00_MOCK_BASELINE",
+      "value": 0
+    },
+    "textureMemoryBytesAfterDispose": {
+      "status": "PASS",
+      "value": 0
+    },
+    "bufferMemoryBytesAfterDispose": {
+      "status": "PASS",
+      "value": 0
+    },
+    "activeResourceCountAfterDispose": {
+      "status": "PASS",
+      "value": 0
+    },
+    "bundleRawBytes": {
+      "budget": 131072,
+      "status": "PASS",
+      "value": 28705
+    },
+    "bundleGzipBytes": {
+      "budget": 49152,
+      "status": "PASS",
+      "value": 9371
+    },
+    "assetLoadTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The asset system begins in Phase 6."
+    },
+    "staticToSleep": {
+      "budgetMs": 250,
+      "maxMs": 49.2,
+      "medianMs": 16.7,
+      "minMs": 2.7,
+      "p95Ms": 49.2,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "disposeResourceDelta": {
+      "activeEstimatedBytes": 0,
+      "activeResources": 0,
+      "status": "PASS"
+    }
+  }
+}

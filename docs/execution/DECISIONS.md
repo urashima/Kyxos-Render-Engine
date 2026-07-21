@@ -79,3 +79,13 @@
 - **Reason:** Phase acceptance must prove both positive behavior and rejection of prohibited architecture. An honest capability state prevents Phase 0 from claiming Shader validation before Shader sources and a compiler exist.
 - **Impact:** Local and CI checks use the same command. Any future Shader source makes the placeholder fail until a real compiler-backed validator is configured. The checks are backend-neutral and do not add runtime code.
 - **ADR required:** No; ADR-004 and the dependency rules document will record the stable boundary policy.
+
+## ED-009 — Preserve visual semantics while removing wall-clock nondeterminism
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Capture Phase acceptance at a fixed browser, viewport, DPR, and color scheme with motion disabled. Hide only `.event-log time` during screenshot capture while retaining event identity, runtime state, diagnostics, controls, and dependency information. Store Reference, Current, absolute Difference, hashes, and capture metadata.
+- **Candidates:** Accept time-driven pixel noise; mask the entire event panel; remove the timestamp from the product; hide only wall-clock glyphs in the test capture.
+- **Reason:** Wall-clock text is not a rendering result and changes every run. Removing the entire panel would conceal useful acceptance content, while changing the product for a screenshot would be misleading.
+- **Impact:** Playwright still exercises the unmodified interactive page. The fixed visual assertion permits zero differing pixels, and the black absolute Difference image communicates that result directly.
+- **ADR required:** No; this is acceptance-fixture policy rather than runtime architecture.
