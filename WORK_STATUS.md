@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering           |
-| Current Branch      | `agent/phase-02-scene-camera`                                    |
-| Current Commit      | `765921a50f429cdeb0e274a99db2d385a30b813c` (P2-02 geometry)      |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                   |
-| Current Task        | P2-03 — Entity hierarchy and Transform dirty propagation         |
-| Last Completed Task | P2-02 — Mesh validation, bounds, and deterministic primitives    |
-| Next Action         | Implement and test the independent `@kyxos/render-scene` package |
-| CI Status           | P2-01 Run 29843776139 PASS; P2-02 local quality gates PASS       |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development              |
-| Known Blockers      | No active blockers                                               |
-| Last Updated        | 2026-07-21 08:29 PDT                                             |
+| Field               | Value                                                              |
+| ------------------- | ------------------------------------------------------------------ |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering             |
+| Current Branch      | `agent/phase-02-scene-camera`                                      |
+| Current Commit      | `362c35c5d06cbd3018a5f6266875681b831c592d` (P2-03 scene graph)     |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                     |
+| Current Task        | P2-04 — Perspective Camera, Orbit Controller, and auto framing     |
+| Last Completed Task | P2-03 — Entity hierarchy and Transform dirty propagation           |
+| Next Action         | Implement DOM-free camera/orbit/framing behavior with strict tests |
+| CI Status           | P2-02 Run 29844282487 PASS; P2-03 local quality gates PASS         |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                |
+| Known Blockers      | No active blockers                                                 |
+| Last Updated        | 2026-07-21 08:39 PDT                                               |
 
 ## Phase Progress
 

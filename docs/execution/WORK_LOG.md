@@ -911,3 +911,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement Entity handles, parent/child ownership, safe reparent/removal behavior, local TRS, cached world matrices, visibility/layers, and deep dirty propagation.
 - Prove cycle rejection, parent-before-child world updates, unchanged-tree cache stability, and aggregate world bounds before adding Camera behavior.
+
+## 2026-07-21 08:39 PDT — P2-03 Scene Graph complete
+
+### Completed
+
+- Added `@kyxos/render-scene` with Scene-scoped non-reused Entity Handles, deterministic root/child order, controlled reparenting, subtree destruction, and idempotent owned stale-handle destruction.
+- Added immutable local TRS, partial updates that preserve unspecified fields, cached local/world matrices, iterative descendant dirty propagation, and on-demand parent-before-child recomputation.
+- Added local/world AABB caching, scene aggregate bounds, local and inherited visibility, independent 32-bit layer masks, revisioned change events, diagnostics, clear, and disposal.
+- Rejected cross-Scene handles, hierarchy cycles, stale reads, empty names, nonfinite transforms, invalid layer masks, and post-disposal operations with stable engine errors. Recorded the ownership/cache policy in ED-025.
+
+### Validation
+
+- Scene suite: 3 files / 14 tests PASS, including a 2,000-level hierarchy without recursive traversal.
+- Full unit suite: 23 files / 103 tests PASS.
+- Parent mutation dirties exactly its two-node test subtree; the first update recomputes both and subsequent unchanged reads recompute zero.
+- Geometry checkpoint official PR CI Run `29844282487`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Implement a finite perspective Camera using the canonical negative-Z/zero-to-one conventions, plus a DOM-independent Orbit Controller.
+- Fit the camera to Scene bounds across aspect ratios and empty/degenerate inputs, then prove every fitted AABB corner lies inside the resulting frustum.
