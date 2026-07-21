@@ -758,3 +758,27 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Add deterministic Phase 1 screenshot capture, canonical Reference/Current/Difference handling, and route-specific CI artifacts.
 - Record resource, Draw, triangle, vertex, Pipeline, bundle, static-to-sleep, and unavailable-capability metrics against `phase-00-accepted`.
+
+## 2026-07-21 07:31 PDT — Phase 1 visual evidence found and fixed aspect deformation
+
+### Finding
+
+- Evidence Run `29838945291` passed every automated gate and produced Artifact `8498579214` with Current, triangle, sphere, lifecycle, resource, and timing outputs.
+- Direct image review showed the sphere was horizontally stretched on the 1044 × 500 WebGPU Surface. This violated the Phase 1 no-deformation requirement, so the image was rejected as a canonical Reference despite green behavior tests.
+- Root cause: Phase 1 vertices were written directly in NDC, where equal X/Y values map to unequal pixel distances on a non-square Surface.
+
+### Fix
+
+- Added pure aspect projection that scales the longer NDC axis to equalize pixel-space radii without clipping or mutating canonical geometry.
+- Basic Geometry now uploads corrected triangle and sphere vertices at initialization and only when the Surface aspect changes; same-aspect Resize and zero-area suspension perform no redundant upload.
+- Device Lost and disposal clear cached projection state so recovery always uploads data for the restored Surface.
+- Added landscape, portrait, invalid-viewport, upload-count, zero-area, same-aspect, and aspect-change regression assertions.
+
+### Validation
+
+- Zero-warning lint, strict typecheck, 15 unit files / 62 tests, canonical Shader validation, all builds, and bundle budgets: PASS.
+- Complete Playground output remains within budget at 136,166 raw / 74,806 gzip bytes; Phase 0 initial entry remains 87,492 raw / 61,223 gzip bytes.
+
+### Next
+
+- Run the complete official Chromium CI on the aspect fix and inspect the regenerated sphere before establishing the Phase 1 canonical visual baseline.

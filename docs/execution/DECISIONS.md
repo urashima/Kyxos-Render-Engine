@@ -199,3 +199,13 @@
 - **Reason:** The real WebGPU backend and diagnostic Playground are intentionally larger than the mock Phase 0 surface, but a new acceptance route must not silently regress the already accepted Phase 0 initial download.
 - **Impact:** Phase 0 remains below its original 24 KiB gzip JavaScript and 64 KiB gzip total budgets. Phase 1 receives explicit 32 KiB gzip JavaScript and 96 KiB gzip total Playground budgets. The check follows only static manifest imports, so lazy route chunks are not misreported as initial work while still counting toward the whole application.
 - **ADR required:** No; this is an acceptance-application delivery and performance policy, not a public engine API decision.
+
+## ED-021 — Correct basic geometry aspect in Renderer-owned vertex uploads
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Keep canonical generated geometry backend-neutral, create aspect-corrected vertex copies when a Surface is initialized or its aspect changes, and upload them through the existing opaque Buffer contract. Scale only the longer viewport axis in NDC so pixel-space X and Y radii match without clipping.
+- **Candidates:** Accept stretched clip-space geometry; expose viewport uniforms and Bind Groups before their planned phase; make Backend mutate vertex data; project Renderer-owned vertex uploads for the current Surface.
+- **Reason:** The first official WebGPU evidence image revealed a visibly horizontal sphere even though behavior tests passed. Backend mutation would violate responsibility boundaries, while adding an early public binding model would expand Phase 1 scope. Renderer already owns the generated vertices and Resize event.
+- **Impact:** Triangle and sphere remain proportionally correct across landscape, portrait, DPR, clamping, hidden/restore, and recovery. Resize with an unchanged aspect performs no upload; an aspect change rewrites two existing Buffers without allocating resources. WebGPU and future WebGL2 receive identical corrected data.
+- **ADR required:** No; this fixes Phase 1 viewport projection within the accepted Renderer/Backend boundary and does not change public product scope.
