@@ -690,3 +690,28 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-05b checkpoint.
 - Add public SDK WebGPU Canvas selection and controller lifecycle, then exercise the canonical Shader through a real browser adapter/device/compiler/render smoke.
+
+## 2026-07-21 06:50 PDT — P1-06 public SDK Canvas composition
+
+### Completed
+
+- Added overloads to `createKyxosRenderer`: existing injected `GraphicsBackend` consumers remain source-compatible, while Canvas consumers can select `auto`, `webgpu`, or an injected test backend.
+- Made the public SDK the explicit browser composition root for `backend-webgpu`; Renderer and features still depend only on the backend-neutral contract, and generated SDK/Renderer/Backend API sources contain no native `GPUDevice`, `GPUQueue`, or context types.
+- Added `KyxosCanvasRenderer` with initial dirty-frame request, Surface diagnostics, explicit Resize/DPR/render-scale inputs, clear-color changes, triangle/sphere switching, recovery, and inherited deterministic disposal.
+- Added Canvas measurement defaults for HTML-like and Offscreen-like targets without giving the backend ownership of DOM layout observation.
+- Added stable automatic-selection failure behavior: Phase 1 returns recoverable `BACKEND_UNAVAILABLE` with an explicit WebGL2 Phase 10 recommendation instead of claiming a nonexistent fallback.
+- Split the injected-backend composition into `createKyxosRendererFromBackend`, allowing consumers that do not request WebGPU to tree-shake the concrete implementation instead of paying its download cost.
+- Updated runtime dependency policy, manifest, TypeScript references, and lockfile for the intentional SDK-to-WebGPU composition edge.
+
+### Validation
+
+- Full unit suite: 15 files / 61 tests PASS, including SDK-only injected use, Canvas creation, initial triangle, sphere switch, zero-area suspension, device loss/recovery, disposal baseline, and WebGPU-unavailable error.
+- Dependency graph and deliberate Renderer-to-SDK negative fixture: PASS; SDK now has the one documented concrete-backend composition edge.
+- Zero-warning lint and strict source/test/application typecheck: PASS.
+- Phase 0 Playground remains within its frozen budget after tree-shaking: JavaScript 26,954 raw / 8,171 gzip bytes; total 83,730 raw / 59,309 gzip bytes.
+- Supply-chain policy verified all 169 lockfile entries; no external dependency was added.
+
+### Next
+
+- Commit and remotely verify the P1-06 checkpoint.
+- Build the independent `/acceptance/phase-01` Playground route and use it for real browser adapter/device/WGSL compiler/clear/triangle/sphere evidence.

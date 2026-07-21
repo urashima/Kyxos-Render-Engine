@@ -21,16 +21,16 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 
 ## Phase 0 package graph
 
-| Package                         | Responsibility                                                         | Runtime dependencies                         |
-| ------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------- |
-| `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                  | None                                         |
-| `@kyxos/render-backend-api`     | Backend capabilities, lifecycle, resource handles, diagnostics         | Core                                         |
-| `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1 | Backend API, Core                            |
-| `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                      | Core                                         |
-| `@kyxos/render-renderer`        | Renderer lifecycle, registrations, backend/scheduler coordination      | Backend API, Core, Frame Scheduler           |
-| `@kyxos/render-sdk`             | Only supported engine entry point for independent consumers            | Backend API, Core, Frame Scheduler, Renderer |
-| `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                            | Backend API, Core, Frame Scheduler           |
-| `@kyxos/render-playground`      | Independent acceptance and development application                     | SDK, Testing                                 |
+| Package                         | Responsibility                                                         | Runtime dependencies                                         |
+| ------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                  | None                                                         |
+| `@kyxos/render-backend-api`     | Backend capabilities, lifecycle, resource handles, diagnostics         | Core                                                         |
+| `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1 | Backend API, Core                                            |
+| `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                      | Core                                                         |
+| `@kyxos/render-renderer`        | Renderer lifecycle, registrations, backend/scheduler coordination      | Backend API, Core, Frame Scheduler                           |
+| `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry      | Backend API, WebGPU Backend, Core, Frame Scheduler, Renderer |
+| `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                            | Backend API, Core, Frame Scheduler                           |
+| `@kyxos/render-playground`      | Independent acceptance and development application                     | SDK, Testing                                                 |
 
 Every package exposes only its root entry. Runtime code may not import another workspace's private source path.
 

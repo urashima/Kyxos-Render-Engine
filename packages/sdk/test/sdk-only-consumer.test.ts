@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BACKEND_RESOURCE_KINDS,
   createBackendCapabilityReport,
-  createKyxosRenderer,
+  createKyxosRendererFromBackend,
 } from '../src/index.js';
 import type {
   BackendBufferData,
@@ -185,7 +185,7 @@ class SdkOnlyFrameDriver implements FrameRequestDriver {
 describe('SDK-only consumer', () => {
   it('creates and controls a renderer using only the public SDK entry point', async () => {
     const frameDriver = new SdkOnlyFrameDriver();
-    const renderer = await createKyxosRenderer({
+    const renderer = await createKyxosRendererFromBackend({
       backend: new SdkOnlyBackend(),
       frameDriver,
     });

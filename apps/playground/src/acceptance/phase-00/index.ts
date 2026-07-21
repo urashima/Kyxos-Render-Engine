@@ -1,4 +1,4 @@
-import { createKyxosRenderer } from '@kyxos/render-sdk';
+import { createKyxosRendererFromBackend } from '@kyxos/render-sdk';
 import type { BackendResourceHandle, KyxosRenderer } from '@kyxos/render-sdk';
 import { MockBackend } from '@kyxos/render-testing';
 
@@ -293,7 +293,7 @@ function bindActions(root: ParentNode, runtime: AcceptanceRuntime): void {
 export async function mountPhase00Acceptance(root: HTMLElement): Promise<void> {
   root.innerHTML = acceptanceMarkup();
   const backend = new MockBackend();
-  const renderer = await createKyxosRenderer({ backend });
+  const renderer = await createKyxosRendererFromBackend({ backend });
   const runtime: AcceptanceRuntime = { backend, renderer, resources: [] };
 
   bindRuntimeEvents(root, runtime);

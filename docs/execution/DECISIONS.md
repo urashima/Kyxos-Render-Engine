@@ -179,3 +179,13 @@
 - **Reason:** A monolithic Renderer would make later SSDO, SSR, SSS, and indoor mapping invasive, while product-owned resources would break the SDK boundary. Lifecycle-aware features preserve registration-based extensibility and deterministic ownership without exposing native GPU objects.
 - **Impact:** Phase 1 basic geometry is a replaceable feature. Zero-area surfaces return zero statistics without submitting work; unexpected feature errors become typed Renderer events; Device Lost clears stale handles and recovery creates a fresh resource set. WebGL2 features can implement the same contract in Phase 10.
 - **ADR required:** No; this realizes the registration architecture already mandated by the development plan.
+
+## ED-019 — Keep concrete backend selection in the public SDK composition root
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** `@kyxos/render-sdk` may import concrete backend packages only to instantiate the caller-selected implementation. It passes the result to Renderer as `GraphicsBackend`; SDK return types, Renderer, features, and product callers receive no native GPU objects. Existing explicit backend injection remains supported for tests and custom hosts.
+- **Candidates:** Require every product to import a concrete backend; make Renderer import WebGPU; compose concrete backends only inside the public SDK factory.
+- **Reason:** Product-side composition would violate the single public entry policy, while Renderer-side selection would invert the backend contract. The SDK already owns public options and is the narrow place where `auto` policy and actionable fallback errors belong.
+- **Impact:** Phase 1 `auto` and explicit `webgpu` both choose WebGPU; unavailable devices return a stable recoverable error until the accepted WebGL2 backend is added in Phase 10. The dependency checker records the concrete edge and will reject native/private subpath imports.
+- **ADR required:** No; ADR-004 defines SDK as the product boundary and this implements its composition role without exposing a new lower-level API.

@@ -104,6 +104,20 @@ export class BasicGeometryFeature implements RenderFeature {
     return this.#primitive;
   }
 
+  getSurfaceInfo(): BackendSurfaceInfo {
+    this.#assertActive();
+    const backend = this.#backend;
+    const resources = this.#resources;
+    if (backend === undefined || resources === undefined) {
+      throw new KyxosEngineError('Basic geometry must be initialized before reading its Surface.', {
+        code: 'INVALID_STATE',
+        module: 'renderer',
+        recoverable: false,
+      });
+    }
+    return backend.getSurfaceInfo(resources.surface);
+  }
+
   async initialize(context: RenderFeatureInitializationContext): Promise<void> {
     this.#assertActive();
     if (this.#resources !== undefined) {
