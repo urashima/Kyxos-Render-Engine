@@ -255,6 +255,22 @@ test.describe('Phase 2 Scene Playground', () => {
     await expect(page.getByTestId('orbit-distance')).not.toHaveText(initialDistance ?? '');
     await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
 
+    const canvas = page.locator('[data-canvas="scene"]');
+    const bounds = await canvas.boundingBox();
+    if (bounds === null) throw new Error('The Phase 2 Scene Canvas has no bounds.');
+    const pointerOrbit = await page.getByTestId('orbit-angle').textContent();
+    await page.mouse.move(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width * 0.62, bounds.y + bounds.height * 0.43, {
+      steps: 4,
+    });
+    await page.mouse.up();
+    await expect(page.getByTestId('orbit-angle')).not.toHaveText(pointerOrbit ?? '');
+    const wheelDistance = await page.getByTestId('orbit-distance').textContent();
+    await page.mouse.wheel(0, -160);
+    await expect(page.getByTestId('orbit-distance')).not.toHaveText(wheelDistance ?? '');
+    await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+
     await page.locator('[data-action="toggle-culling"]').click();
     await expect(page.getByTestId('culling-mode')).toHaveText('FRUSTUM OFF');
     await expect(page.getByTestId('frustum-culled-count')).toHaveText('0');
@@ -297,6 +313,9 @@ test.describe('Phase 2 Scene Playground', () => {
       if (message.type() === 'error') runtimeErrors.push(message.text());
     });
     page.on('pageerror', (error) => runtimeErrors.push(error.message));
+    const estimatedGpuBytes = async () =>
+      Number(await page.getByTestId('buffer-memory').getAttribute('data-bytes')) +
+      Number(await page.getByTestId('texture-memory').getAttribute('data-bytes'));
 
     try {
       await page.goto('/acceptance/phase-02');
@@ -304,6 +323,7 @@ test.describe('Phase 2 Scene Playground', () => {
       await expect(page.getByTestId('dpr')).toHaveText('2.00');
       await expect(page.getByTestId('resource-count')).toHaveText('25');
       const initialSurface = await page.getByTestId('surface-size').textContent();
+      const estimatedBytesReady = await estimatedGpuBytes();
 
       await page.locator('[data-action="lose"]').click();
       await expect(page.getByTestId('renderer-state')).toHaveText('lost');
@@ -311,32 +331,43 @@ test.describe('Phase 2 Scene Playground', () => {
       const resourcesAfterDeviceLoss = Number(
         await page.getByTestId('resource-count').textContent(),
       );
+      const estimatedBytesAfterDeviceLoss = await estimatedGpuBytes();
 
       await page.locator('[data-action="recover"]').click();
       await expect(page.getByTestId('renderer-state')).toHaveText('ready');
       await expect(page.getByTestId('resource-count')).toHaveText('25');
       await expect(page.getByTestId('draw-calls')).toHaveText('6');
       const resourcesAfterRecovery = Number(await page.getByTestId('resource-count').textContent());
+      const estimatedBytesAfterRecovery = await estimatedGpuBytes();
 
       await page.locator('[data-action="dispose"]').click();
       await expect(page.getByTestId('renderer-state')).toHaveText('disposed');
       await expect(page.getByTestId('resource-count')).toHaveText('0');
       const resourcesAfterDispose = Number(await page.getByTestId('resource-count').textContent());
+      const estimatedBytesAfterDispose = await estimatedGpuBytes();
 
       await page.locator('[data-action="recreate"]').click();
       await expect(page.getByTestId('renderer-state')).toHaveText('ready');
       await expect(page.getByTestId('resource-count')).toHaveText('25');
       const resourcesAfterRecreate = Number(await page.getByTestId('resource-count').textContent());
+      const estimatedBytesAfterRecreate = await estimatedGpuBytes();
       await page.locator('[data-action="dispose"]').click();
       await expect(page.getByTestId('resource-count')).toHaveText('0');
       const resourcesAfterFinalDispose = Number(
         await page.getByTestId('resource-count').textContent(),
       );
+      const estimatedBytesAfterFinalDispose = await estimatedGpuBytes();
       expect(runtimeErrors).toEqual([]);
       await writeRuntimeJson('lifecycle-metrics.json', {
         schemaVersion: 1,
         phase: '02',
         devicePixelRatio: 2,
+        estimatedBytesAfterDeviceLoss,
+        estimatedBytesAfterDispose,
+        estimatedBytesAfterFinalDispose,
+        estimatedBytesAfterRecovery,
+        estimatedBytesAfterRecreate,
+        estimatedBytesReady,
         initialSurface,
         resourceBaseline: 25,
         resourcesAfterDeviceLoss,
@@ -346,10 +377,15 @@ test.describe('Phase 2 Scene Playground', () => {
         resourcesAfterRecreate,
         status:
           resourcesAfterDeviceLoss === 0 &&
+          estimatedBytesAfterDeviceLoss === 0 &&
           resourcesAfterDispose === 0 &&
+          estimatedBytesAfterDispose === 0 &&
           resourcesAfterFinalDispose === 0 &&
+          estimatedBytesAfterFinalDispose === 0 &&
           resourcesAfterRecovery === 25 &&
-          resourcesAfterRecreate === 25
+          resourcesAfterRecreate === 25 &&
+          estimatedBytesAfterRecovery === estimatedBytesReady &&
+          estimatedBytesAfterRecreate === estimatedBytesReady
             ? 'PASS'
             : 'FAIL',
       });
