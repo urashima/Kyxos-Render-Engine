@@ -2,6 +2,8 @@ import { createKyxosRendererFromBackend } from '@kyxos/render-sdk';
 import type { BackendResourceHandle, KyxosRenderer } from '@kyxos/render-sdk';
 import { MockBackend } from '@kyxos/render-testing';
 
+import { acceptancePhaseHref, acceptanceRouteLabel } from '../../routing.js';
+
 const COMMIT_SHA = import.meta.env.VITE_COMMIT_SHA ?? 'local-working-tree';
 
 interface AcceptanceRuntime {
@@ -35,7 +37,7 @@ function acceptanceMarkup(): string {
   return `
     <main class="shell" data-testid="phase-00-acceptance">
       <header class="topbar">
-        <a class="brand" href="/acceptance/phase-00" aria-label="Kyxos Render Engine home">
+        <a class="brand" href="${acceptancePhaseHref(0)}" aria-label="Kyxos Render Engine home">
           <span class="brand-mark" aria-hidden="true">K</span>
           <span>
             <strong>Kyxos Render Engine</strong>
@@ -149,7 +151,7 @@ function acceptanceMarkup(): string {
 
       <footer>
         <span>No Texture Lab · No React · No permanent RAF</span>
-        <span>Phase 00 acceptance route: <code>/acceptance/phase-00</code></span>
+        <span>Phase 00 acceptance route: <code>${acceptanceRouteLabel(0)}</code></span>
       </footer>
     </main>
   `;

@@ -1,0 +1,56 @@
+name: Freeze deployed accepted phase
+
+on:
+  workflow_run:
+    workflows:
+      - Deploy accepted Playgrounds
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: freeze-deployed-accepted-phase
+  cancel-in-progress: false
+
+jobs:
+  create-accepted-tag:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.repository == 'urashima/Kyxos-Render-Engine'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out deployed main commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Resolve latest accepted phase
+        id: accepted
+        run: node tools/deployment/accepted-phases.mjs --github-output
+
+      - name: Create immutable post-deployment tag
+        env:
+          LATEST_PHASE: ${{ steps.accepted.outputs.latest }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tag_name="phase-$(printf '%02d' "${LATEST_PHASE}")-accepted"
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag_name}" >/dev/null 2>&1; then
+            echo "${tag_name} already exists; preserving its original target."
+            exit 0
+          fi
+
+          test "$(git rev-parse HEAD)" = "${TARGET_SHA}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "${tag_name}" "${TARGET_SHA}" --message "Phase ${LATEST_PHASE} accepted after public deployment"
+          git push origin "refs/tags/${tag_name}"

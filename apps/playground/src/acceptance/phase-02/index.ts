@@ -9,6 +9,8 @@ import {
 } from '@kyxos/render-sdk';
 import type { BackendClearColor, EntityHandle, KyxosSceneCanvasRenderer } from '@kyxos/render-sdk';
 
+import { acceptancePhaseHref, acceptanceRouteLabel } from '../../routing.js';
+
 const ALL_LAYERS = 0xffff_ffff;
 const COMMIT_SHA = import.meta.env.VITE_COMMIT_SHA ?? 'local-working-tree';
 const INITIAL_RESOURCE_BASELINE = 25;
@@ -61,14 +63,14 @@ function acceptanceMarkup(): string {
   return `
     <main class="shell phase-02-shell" data-testid="phase-02-acceptance">
       <header class="topbar">
-        <a class="brand" href="/acceptance/phase-02" aria-label="Kyxos Phase 2 Playground">
+        <a class="brand" href="${acceptancePhaseHref(2)}" aria-label="Kyxos Phase 2 Playground">
           <span class="brand-mark" aria-hidden="true">K</span>
           <span><strong>Kyxos Render Engine</strong><small>Independent Scene Playground</small></span>
         </a>
         <nav class="phase-nav" aria-label="Acceptance phases">
-          <a href="/acceptance/phase-00">Phase 00</a>
-          <a href="/acceptance/phase-01">Phase 01</a>
-          <a href="/acceptance/phase-02" aria-current="page">Phase 02</a>
+          <a href="${acceptancePhaseHref(0)}">Phase 00</a>
+          <a href="${acceptancePhaseHref(1)}">Phase 01</a>
+          <a href="${acceptancePhaseHref(2)}" aria-current="page">Phase 02</a>
         </nav>
       </header>
 
@@ -181,7 +183,7 @@ function acceptanceMarkup(): string {
 
       <footer>
         <span>Scene → Visibility → Renderer → opaque Backend Handles · No permanent RAF</span>
-        <span>Phase 02 acceptance route: <code>/acceptance/phase-02</code></span>
+        <span>Phase 02 acceptance route: <code>${acceptanceRouteLabel(2)}</code></span>
       </footer>
     </main>
   `;
