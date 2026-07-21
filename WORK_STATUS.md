@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| Current Phase       | Phase 0 — Repository and Architecture Baseline                                       |
-| Current Branch      | `agent/phase-00-foundation`                                                          |
-| Current Commit      | `b87f699569bc6f9fe9d7310cc5264abc5ba5fc07` (last verified remote checkpoint)         |
-| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                       |
-| Current Task        | P0-09 — Add GitHub Actions, ADR-001 through ADR-005, and architecture documentation  |
-| Last Completed Task | P0-08 — Full local verify, 28 unit tests, and 2 Chromium acceptance tests pass       |
-| Next Action         | Push the verification workflow, inspect its run, then freeze ADR-001 through ADR-005 |
-| CI Status           | Workflow implementation in progress; complete local `pnpm verify` passes             |
-| Acceptance Status   | In Development                                                                       |
-| Known Blockers      | No active blockers                                                                   |
-| Last Updated        | 2026-07-21 04:31 PDT                                                                 |
+| Field               | Value                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 0 — Repository and Architecture Baseline                                        |
+| Current Branch      | `agent/phase-00-foundation`                                                           |
+| Current Commit      | `70d48ff2569b4a2224b0ebf8d72abe7a22048c43` (last verified remote checkpoint)          |
+| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                        |
+| Current Task        | P0-10 — Build the Phase 0 acceptance evidence, metrics, and visual baseline           |
+| Last Completed Task | P0-09 — CI workflow, five ADRs, architecture docs, and documentation gate pass        |
+| Next Action         | Commit P0-09, generate deterministic acceptance artifacts, then run the evidence gate |
+| CI Status           | Workflow configured; formal pull-request run pending; local `pnpm verify` passes      |
+| Acceptance Status   | In Development                                                                        |
+| Known Blockers      | No active blockers                                                                    |
+| Last Updated        | 2026-07-21 04:36 PDT                                                                  |
 
 ## Phase Progress
 

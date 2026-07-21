@@ -40,3 +40,33 @@ WebGPU / WebGL2
 ```
 
 Texture Lab 只允许通过公共 SDK 和专用 Integration Adapter 调用引擎。
+
+详细规则见：
+
+- [`docs/architecture/overview.md`](./docs/architecture/overview.md)
+- [`docs/architecture/dependency-rules.md`](./docs/architecture/dependency-rules.md)
+- [`docs/adr/`](./docs/adr/)
+
+## 当前开发状态
+
+[`WORK_STATUS.md`](./WORK_STATUS.md) 是当前 Phase、分支、检查点、CI、验收状态和唯一下一步操作的入口。执行历史与技术决策保存在 [`docs/execution/`](./docs/execution/)；GitHub 分支和提交是恢复工作的可信状态来源。
+
+## 本地开发
+
+要求 Node.js 24.14.0 和由仓库 `packageManager` 字段固定的 pnpm 11.7.0：
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm verify
+```
+
+启动独立 Playground：
+
+```bash
+pnpm --dir apps/playground dev
+```
+
+Phase 0 验收页面位于 `/acceptance/phase-00`。它只通过公共 SDK 和开发用 Mock Backend 运行，不依赖 Texture Lab 或 UI 框架。
+
+贡献、门禁和分支要求见 [`CONTRIBUTING.md`](./CONTRIBUTING.md)。

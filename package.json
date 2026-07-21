@@ -21,10 +21,11 @@
     "build": "pnpm build:packages && pnpm build:apps",
     "build:apps": "pnpm --recursive --filter './apps/*' build",
     "build:packages": "pnpm --recursive --filter './packages/*' build",
+    "check:architecture": "node tools/quality/check-architecture-docs.mjs",
     "check:boundaries": "node tools/quality/check-boundaries.mjs && node tools/quality/check-boundaries.mjs --verify-fixture",
     "check:bundle": "node tools/quality/check-bundle-budget.mjs",
     "validate:shaders": "node tools/shader-build/validate-shaders.mjs",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm check:boundaries && pnpm validate:shaders && pnpm build && pnpm check:bundle && pnpm test:e2e",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm check:boundaries && pnpm check:architecture && pnpm validate:shaders && pnpm build && pnpm check:bundle && pnpm test:e2e",
     "clean": "tsc -b --clean"
   },
   "devDependencies": {

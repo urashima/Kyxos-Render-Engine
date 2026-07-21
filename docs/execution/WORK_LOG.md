@@ -274,3 +274,34 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Push the workflow and inspect the resulting GitHub Actions run.
 - Write and validate ADR-001 through ADR-005 plus the architecture and dependency rules.
+
+## 2026-07-21 04:36 PDT — P0-09 architecture baseline checkpoint
+
+### Completed
+
+- Accepted ADR-001 WebGPU First / WebGL2 Fallback, ADR-002 Coordinate and Color Conventions, ADR-003 Render Graph, ADR-004 Public SDK Boundary, and ADR-005 Temporal Accumulation and Sleep.
+- Added the current package graph, runtime ownership, backend policy, extensibility, product isolation, and verification contract to the architecture overview.
+- Added an exact allowed-edge table, forbidden dependencies, root-entry policy, negative-fixture enforcement, and package-change procedure to the dependency rules.
+- Added a documentation gate that requires all five accepted ADRs, their required sections, both architecture documents, and valid relative Markdown links.
+- Added local development and recovery entry points to the README and created the contribution/architecture review guide.
+- Extended `pnpm verify` so architecture documentation is checked in local and GitHub Actions gates.
+
+### Validation
+
+- Full `pnpm verify`: PASS after all architecture and documentation changes.
+- Architecture documentation gate: PASS — 5 ADRs and 2 architecture documents.
+- Dependency graph and deliberate forbidden fixture: PASS.
+- Unit tests: PASS — 9 files and 28 tests.
+- Chromium acceptance: PASS — 2 tests.
+- Production build and bundle budget: PASS — 28,705 raw bytes and 9,371 gzip bytes.
+- The workflow file was accepted into the remote branch. The available connector exposes pull-request-triggered runs but not the branch-only push run, so remote CI is intentionally left pending until the Phase PR exists.
+
+### Architecture impact
+
+- WebGPU/WebGL2 selection, coordinate/color semantics, Render Graph ownership, SDK isolation, and temporal sleep/reset rules now have accepted decision records before their dependent phases begin.
+- No runtime package edge or production bundle content changed.
+
+### Next
+
+- Commit and remotely verify the P0-09 architecture checkpoint.
+- Generate the Phase 0 acceptance document, machine-readable summary, performance record, and deterministic visual baseline/difference evidence.
