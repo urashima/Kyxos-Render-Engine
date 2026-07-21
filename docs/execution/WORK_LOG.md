@@ -528,3 +528,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and push the immutable tag workflow and updated evidence.
 - Require that exact new head to pass the same full CI before merging and verifying `phase-00-accepted`.
+
+## 2026-07-21 05:44 PDT — Phase 0 accepted; Phase 1 started
+
+### Phase 0 freeze
+
+- Final freeze-head commit `c0748ffe8a3d36feab69d488ac1910489868ed11` passed GitHub Actions run `29831061041`, job `88635669628`, with every step successful.
+- PR #1 merged with the small-commit history preserved as merge commit `6522a6d7ff35ebef39c2efd7627a3f23a7b1da2c`.
+- The main-push freeze workflow created the real `phase-00-accepted` tag.
+- Reading acceptance content through the tag succeeded, and a commit comparison proved the tag and merge commit are identical with zero commits ahead or behind.
+- Phase 0 state is now `Phase Accepted`; no active blocker exists.
+
+### Phase 1 kickoff
+
+- Created `agent/phase-01-webgpu-core` from the accepted Phase 0 merge.
+- Read the Phase 1 development and acceptance requirements for WebGPU device/queue/surface, resources, command encoding, clear/triangle/sphere, Resize/DPR, lifecycle, loss, and debug counts.
+- Split Phase 1 into dependency-ordered, independently verifiable tasks in `PHASE_01_TASKS.md`.
+- Started P1-01 with an explicit injectable native seam so lifecycle and failure paths can be unit tested without leaking browser GPU objects above the backend package.
+
+### Next
+
+- Commit the Phase 1 recovery baseline.
+- Implement adapter/device lifecycle and capability negotiation with unavailable, initialization-failure, repeated-initialize, loss, and dispose tests.
