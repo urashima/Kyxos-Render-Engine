@@ -87,6 +87,8 @@ test.describe('Phase 2 Scene Playground', () => {
       writeFile(path.join(visualDirectory, 'current.png'), current),
       writeFile(path.join(visualDirectory, 'scene.png'), scene),
     ]);
+    expect(scene).toMatchSnapshot('scene.png', { maxDiffPixels: 0, threshold: 0.2 });
+    expect(current).toMatchSnapshot('reference.png', { maxDiffPixels: 0, threshold: 0.2 });
 
     const performanceMetrics = await page.evaluate(async () => {
       const wakeButton = document.querySelector<HTMLButtonElement>('[data-action="wake"]');
