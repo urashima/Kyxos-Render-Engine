@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                             |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                          |
-| Current Branch      | `agent/phase-01-webgpu-core`                                                      |
-| Current Commit      | `077c43d36159d9ae93e841e2e512f5d2db7643fc` (last verified remote checkpoint)      |
-| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                    |
-| Current Task        | P1-04 — Native Buffer, Texture, Sampler, Shader, Pipeline, and Encoder ownership  |
-| Last Completed Task | P1-03 — Surface lifecycle, aspect-safe Resize/DPR, suspension, multi-canvas tests |
-| Next Action         | Add typed backend resource descriptors and private native creation/destruction    |
-| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                      |
-| Acceptance Status   | In Development                                                                    |
-| Known Blockers      | No active blockers                                                                |
-| Last Updated        | 2026-07-21 06:07 PDT                                                              |
+| Field               | Value                                                                         |
+| ------------------- | ----------------------------------------------------------------------------- |
+| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                      |
+| Current Branch      | `agent/phase-01-webgpu-core`                                                  |
+| Current Commit      | `82d923171429e49843fd2ef8e5902c6827661228` (last verified remote checkpoint)  |
+| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                |
+| Current Task        | P1-05 — Command recording, clear, triangle, sphere, and WGSL validation       |
+| Last Completed Task | P1-04 — Typed native resources, compilation diagnostics, accounting, disposal |
+| Next Action         | Add render-pass commands, uploads, indexed draws, submission, and basic WGSL  |
+| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                  |
+| Acceptance Status   | In Development                                                                |
+| Known Blockers      | No active blockers                                                            |
+| Last Updated        | 2026-07-21 06:16 PDT                                                          |
 
 ## Phase Progress
 

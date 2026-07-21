@@ -6,16 +6,29 @@ import {
   createKyxosRenderer,
 } from '../src/index.js';
 import type {
+  BackendBufferDescriptor,
+  BackendBufferHandle,
+  BackendCommandEncoderDescriptor,
+  BackendCommandEncoderHandle,
   BackendEvents,
   BackendLifecycleState,
+  BackendPipelineHandle,
+  BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSamplerDescriptor,
+  BackendSamplerHandle,
+  BackendShaderCompilationInfo,
+  BackendShaderModuleDescriptor,
+  BackendShaderModuleHandle,
   BackendSurfaceDescriptor,
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureDescriptor,
+  BackendTextureHandle,
   FrameRequestDriver,
   GraphicsBackend,
 } from '../src/index.js';
@@ -39,6 +52,45 @@ class SdkOnlyBackend implements GraphicsBackend {
 
   async waitForIdle(): Promise<void> {
     await Promise.resolve();
+  }
+
+  createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate buffers.');
+  }
+
+  createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate textures.');
+  }
+
+  createSampler(descriptor?: BackendSamplerDescriptor): BackendSamplerHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate samplers.');
+  }
+
+  createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate Shader Modules.');
+  }
+
+  async getShaderCompilationInfo(
+    handle: BackendShaderModuleHandle,
+  ): Promise<BackendShaderCompilationInfo> {
+    void handle;
+    throw new Error('The SDK-only foundation fixture does not allocate Shader Modules.');
+  }
+
+  async createRenderPipeline(
+    descriptor: BackendRenderPipelineDescriptor,
+  ): Promise<BackendPipelineHandle> {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate Render Pipelines.');
+  }
+
+  createCommandEncoder(descriptor?: BackendCommandEncoderDescriptor): BackendCommandEncoderHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate Command Encoders.');
   }
 
   on<EventName extends keyof BackendEvents>(

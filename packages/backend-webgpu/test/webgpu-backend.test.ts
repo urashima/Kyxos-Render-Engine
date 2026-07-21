@@ -10,11 +10,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { createWebGpuBackendForPlatform } from '../src/backend.js';
 import type {
   WebGpuAdapterPort,
+  WebGpuBufferPort,
+  WebGpuCommandEncoderPort,
   WebGpuDevicePort,
   WebGpuDeviceRequest,
+  WebGpuPipelinePort,
   WebGpuPlatformPort,
+  WebGpuRenderPipelineRequest,
+  WebGpuSamplerPort,
+  WebGpuShaderModulePort,
   WebGpuSurfacePort,
   WebGpuSurfaceRequest,
+  WebGpuTexturePort,
 } from '../src/platform.js';
 
 const TEST_LIMITS: BackendLimits = Object.freeze({
@@ -47,6 +54,25 @@ class FakeSurface implements WebGpuSurfacePort {
   readonly unconfigure = vi.fn();
 }
 
+class FakeBuffer implements WebGpuBufferPort {
+  readonly destroy = vi.fn();
+}
+
+class FakeTexture implements WebGpuTexturePort {
+  readonly destroy = vi.fn();
+}
+
+class FakeShaderModule implements WebGpuShaderModulePort {
+  readonly getCompilationInfo = vi.fn(() =>
+    Promise.resolve(
+      Object.freeze({
+        messages: Object.freeze([]),
+        valid: true,
+      }),
+    ),
+  );
+}
+
 class FakeDevice implements WebGpuDevicePort {
   readonly #loss = new Deferred<BackendLossInfo>();
   readonly destroy = vi.fn();
@@ -55,6 +81,41 @@ class FakeDevice implements WebGpuDevicePort {
     onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
   });
   readonly createSurface = vi.fn<(request: WebGpuSurfaceRequest) => WebGpuSurfacePort>();
+  readonly buffers: FakeBuffer[] = [];
+  readonly textures: FakeTexture[] = [];
+  readonly shaders: FakeShaderModule[] = [];
+  readonly createBuffer = vi.fn<
+    (descriptor: Parameters<WebGpuDevicePort['createBuffer']>[0]) => WebGpuBufferPort
+  >(() => {
+    const buffer = new FakeBuffer();
+    this.buffers.push(buffer);
+    return buffer;
+  });
+  readonly createTexture = vi.fn<
+    (descriptor: Parameters<WebGpuDevicePort['createTexture']>[0]) => WebGpuTexturePort
+  >(() => {
+    const texture = new FakeTexture();
+    this.textures.push(texture);
+    return texture;
+  });
+  readonly createSampler = vi.fn<
+    (descriptor: Parameters<WebGpuDevicePort['createSampler']>[0]) => WebGpuSamplerPort
+  >(() => ({ kind: 'sampler' }));
+  readonly createShaderModule = vi.fn<
+    (descriptor: Parameters<WebGpuDevicePort['createShaderModule']>[0]) => WebGpuShaderModulePort
+  >(() => {
+    const shader = new FakeShaderModule();
+    this.shaders.push(shader);
+    return shader;
+  });
+  readonly createRenderPipeline = vi.fn<
+    (request: WebGpuRenderPipelineRequest) => Promise<WebGpuPipelinePort>
+  >(() => Promise.resolve({ kind: 'pipeline' }));
+  readonly createCommandEncoder = vi.fn<
+    (
+      descriptor: Parameters<WebGpuDevicePort['createCommandEncoder']>[0],
+    ) => WebGpuCommandEncoderPort
+  >(() => ({ kind: 'command-encoder' }));
 
   constructor(surfaces: readonly FakeSurface[] = []) {
     for (const surface of surfaces) {
@@ -197,6 +258,12 @@ describe('WebGpuBackend device lifecycle', () => {
     const onLost = vi.fn();
     backend.on('lost', onLost);
     await backend.initialize();
+    backend.createBuffer({ size: 64, usage: ['vertex'] });
+    backend.createTexture({
+      format: 'rgba8unorm',
+      size: { height: 4, width: 4 },
+      usage: ['sampled'],
+    });
 
     firstDevice.lose({ message: 'simulated device loss', reason: 'unknown', recoverable: true });
     await vi.waitFor(() => expect(backend.state).toBe('lost'));
@@ -206,6 +273,14 @@ describe('WebGpuBackend device lifecycle', () => {
       reason: 'unknown',
       recoverable: true,
     });
+    expect(backend.getResourceStatistics()).toMatchObject({
+      activeCount: 0,
+      activeEstimatedBytes: 0,
+      createdTotal: 2,
+      destroyedTotal: 2,
+    });
+    expect(firstDevice.buffers[0]?.destroy).not.toHaveBeenCalled();
+    expect(firstDevice.textures[0]?.destroy).not.toHaveBeenCalled();
     await backend.initialize();
     expect(backend.state).toBe('ready');
     expect(platform.requestAdapter).toHaveBeenCalledTimes(2);
@@ -257,6 +332,135 @@ describe('WebGpuBackend device lifecycle', () => {
       activeCount: 0,
       activeEstimatedBytes: 0,
     });
+  });
+
+  it('creates typed native resources, validates Shaders, and accounts for disposal', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter(['compute'], [device])]),
+    );
+    await backend.initialize();
+
+    const buffer = backend.createBuffer({
+      label: 'vertices',
+      size: 64,
+      usage: ['copy-dst', 'vertex'],
+    });
+    const texture = backend.createTexture({
+      format: 'rgba8unorm',
+      mipLevelCount: 2,
+      size: { height: 4, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    backend.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+    const shader = backend.createShaderModule({
+      code: '@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    expect(await backend.getShaderCompilationInfo(shader)).toEqual({
+      messages: [],
+      valid: true,
+    });
+    await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'bgra8unorm' }],
+      },
+      primitive: { cullMode: 'back', topology: 'triangle-list' },
+      vertex: {
+        buffers: [
+          {
+            arrayStride: 20,
+            attributes: [
+              { format: 'float32x3', offset: 0, shaderLocation: 0 },
+              { format: 'float32x2', offset: 12, shaderLocation: 1 },
+            ],
+          },
+        ],
+        entryPoint: 'vertexMain',
+        module: shader,
+      },
+    });
+    backend.createCommandEncoder({ label: 'frame' });
+
+    expect(device.createBuffer).toHaveBeenCalledWith({
+      label: 'vertices',
+      size: 64,
+      usage: ['copy-dst', 'vertex'],
+    });
+    expect(device.createRenderPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fragment: expect.objectContaining({ module: device.shaders[0] }),
+        vertex: expect.objectContaining({ module: device.shaders[0] }),
+      }),
+    );
+    expect(backend.getResourceStatistics()).toMatchObject({
+      activeCount: 6,
+      byKind: {
+        buffer: { activeCount: 1, activeEstimatedBytes: 64 },
+        'command-encoder': { activeCount: 1 },
+        pipeline: { activeCount: 1 },
+        sampler: { activeCount: 1 },
+        'shader-module': { activeCount: 1 },
+        texture: { activeCount: 1, activeEstimatedBytes: 80 },
+      },
+    });
+
+    expect(backend.destroyResource(buffer)).toBe(true);
+    expect(backend.destroyResource(texture)).toBe(true);
+    expect(device.buffers[0]?.destroy).toHaveBeenCalledTimes(1);
+    expect(device.textures[0]?.destroy).toHaveBeenCalledTimes(1);
+    backend.dispose();
+    expect(backend.getResourceStatistics()).toMatchObject({
+      activeCount: 0,
+      activeEstimatedBytes: 0,
+      createdTotal: 6,
+      destroyedTotal: 6,
+    });
+  });
+
+  it('rejects invalid typed resource descriptors and foreign Shader handles', async () => {
+    const firstDevice = new FakeDevice();
+    const secondDevice = new FakeDevice();
+    const first = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter(['compute'], [firstDevice])]),
+    );
+    const second = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter(['compute'], [secondDevice])]),
+    );
+    await Promise.all([first.initialize(), second.initialize()]);
+
+    expect(() => first.createBuffer({ size: 0, usage: ['vertex'] })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
+    expect(() =>
+      first.createTexture({
+        format: 'rgba8unorm',
+        size: { height: 32_768, width: 32_768 },
+        usage: ['sampled'],
+      }),
+    ).toThrow(expect.objectContaining({ code: 'UNSUPPORTED_CAPABILITY' }));
+    expect(() => first.createSampler({ maxAnisotropy: 17 })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
+    expect(() => first.createShaderModule({ code: '   ', language: 'wgsl' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
+
+    const foreignShader = second.createShaderModule({
+      code: '@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    await expect(
+      first.createRenderPipeline({
+        vertex: { entryPoint: 'main', module: foreignShader },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_ARGUMENT' });
+    expect(first.getResourceStatistics().activeCount).toBe(0);
   });
 
   it('owns surface configure, Resize, DPR, suspension, and disposal', async () => {

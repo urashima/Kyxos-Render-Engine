@@ -20,7 +20,22 @@ describe('browser WebGPU platform port', () => {
   it('contains native adapter, device, queue, and Canvas context objects', async () => {
     const context = { configure: vi.fn(), unconfigure: vi.fn() };
     const queue = { onSubmittedWorkDone: vi.fn(() => Promise.resolve()) };
+    const nativeBuffer = { destroy: vi.fn() };
+    const nativeTexture = { destroy: vi.fn() };
+    const nativeShader = {
+      getCompilationInfo: vi.fn(() => Promise.resolve({ messages: [] })),
+    };
+    const nativePipeline = {};
+    const nativeCommandEncoder = {};
     const nativeDevice = {
+      createBuffer: vi.fn(() => nativeBuffer as unknown as GPUBuffer),
+      createCommandEncoder: vi.fn(() => nativeCommandEncoder as unknown as GPUCommandEncoder),
+      createRenderPipelineAsync: vi.fn(() =>
+        Promise.resolve(nativePipeline as unknown as GPURenderPipeline),
+      ),
+      createSampler: vi.fn(() => ({}) as GPUSampler),
+      createShaderModule: vi.fn(() => nativeShader as unknown as GPUShaderModule),
+      createTexture: vi.fn(() => nativeTexture as unknown as GPUTexture),
       destroy: vi.fn(),
       lost: new Promise<GPUDeviceLostInfo>(() => undefined),
       queue,
@@ -55,6 +70,53 @@ describe('browser WebGPU platform port', () => {
     });
     await device.queue.onSubmittedWorkDone();
     expect(queue.onSubmittedWorkDone).toHaveBeenCalledTimes(1);
+
+    const buffer = device.createBuffer({ size: 64, usage: ['copy-dst', 'vertex'] });
+    expect(nativeDevice.createBuffer).toHaveBeenCalledExactlyOnceWith({
+      mappedAtCreation: false,
+      size: 64,
+      usage: 0x28,
+    });
+    const texture = device.createTexture({
+      format: 'rgba8unorm',
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(nativeDevice.createTexture).toHaveBeenCalledExactlyOnceWith({
+      dimension: '2d',
+      format: 'rgba8unorm',
+      mipLevelCount: 1,
+      sampleCount: 1,
+      size: { depthOrArrayLayers: 1, height: 4, width: 8 },
+      usage: 0x14,
+    });
+    device.createSampler({ magFilter: 'linear' });
+    expect(nativeDevice.createSampler).toHaveBeenCalledExactlyOnceWith({ magFilter: 'linear' });
+    const shader = device.createShaderModule({ code: '@vertex fn main() {}', language: 'wgsl' });
+    expect(await shader.getCompilationInfo()).toEqual({ messages: [], valid: true });
+    await device.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'bgra8unorm' }],
+      },
+      label: 'pipeline',
+      primitive: { topology: 'triangle-list' },
+      vertex: { buffers: [], entryPoint: 'vertexMain', module: shader },
+    });
+    expect(nativeDevice.createRenderPipelineAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fragment: expect.objectContaining({ module: nativeShader }),
+        label: 'pipeline',
+        vertex: expect.objectContaining({ module: nativeShader }),
+      }),
+    );
+    device.createCommandEncoder({ label: 'frame' });
+    expect(nativeDevice.createCommandEncoder).toHaveBeenCalledExactlyOnceWith({ label: 'frame' });
+    buffer.destroy();
+    texture.destroy();
+    expect(nativeBuffer.destroy).toHaveBeenCalledTimes(1);
+    expect(nativeTexture.destroy).toHaveBeenCalledTimes(1);
 
     const target = {
       getContext: vi.fn(() => context),

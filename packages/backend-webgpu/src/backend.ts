@@ -1,16 +1,29 @@
 import type {
+  BackendBufferDescriptor,
+  BackendBufferHandle,
   BackendCapabilityReport,
+  BackendCommandEncoderDescriptor,
+  BackendCommandEncoderHandle,
   BackendEvents,
   BackendFeature,
   BackendLifecycleState,
+  BackendPipelineHandle,
+  BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSamplerDescriptor,
+  BackendSamplerHandle,
+  BackendShaderCompilationInfo,
+  BackendShaderModuleDescriptor,
+  BackendShaderModuleHandle,
   BackendSurfaceDescriptor,
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureDescriptor,
+  BackendTextureHandle,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import {
@@ -26,6 +39,7 @@ import type {
   WebGpuDevicePort,
   WebGpuPlatformPort,
   WebGpuPowerPreference,
+  WebGpuShaderModulePort,
   WebGpuSurfacePort,
 } from './platform.js';
 import { WebGpuResourceRegistry } from './resource-registry.js';
@@ -54,6 +68,118 @@ function validateOptions(options: WebGpuBackendOptions): readonly BackendFeature
     }
   }
   return Object.freeze(requiredFeatures);
+}
+
+function requirePositiveSafeInteger(name: string, value: number): void {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new KyxosEngineError(`${name} must be a positive safe integer.`, {
+      code: 'INVALID_ARGUMENT',
+      module: 'backend',
+      recoverable: false,
+    });
+  }
+}
+
+function requireNonEmpty(name: string, values: readonly unknown[]): void {
+  if (values.length === 0) {
+    throw new KyxosEngineError(`${name} must contain at least one value.`, {
+      code: 'INVALID_ARGUMENT',
+      module: 'backend',
+      recoverable: false,
+    });
+  }
+}
+
+function validateBufferDescriptor(descriptor: BackendBufferDescriptor): void {
+  requirePositiveSafeInteger('Buffer size', descriptor.size);
+  requireNonEmpty('Buffer usage', descriptor.usage);
+}
+
+function validateTextureDescriptor(
+  descriptor: BackendTextureDescriptor,
+  maxTextureDimension2D: number,
+): void {
+  requirePositiveSafeInteger('Texture width', descriptor.size.width);
+  requirePositiveSafeInteger('Texture height', descriptor.size.height);
+  requirePositiveSafeInteger('Texture depthOrArrayLayers', descriptor.size.depthOrArrayLayers ?? 1);
+  requirePositiveSafeInteger('Texture mipLevelCount', descriptor.mipLevelCount ?? 1);
+  requireNonEmpty('Texture usage', descriptor.usage);
+  if (
+    descriptor.size.width > maxTextureDimension2D ||
+    descriptor.size.height > maxTextureDimension2D
+  ) {
+    throw new KyxosEngineError(
+      `Texture dimensions exceed maxTextureDimension2D (${maxTextureDimension2D}).`,
+      {
+        code: 'UNSUPPORTED_CAPABILITY',
+        module: 'backend',
+        recoverable: true,
+        suggestedAction: 'Downscale the texture or choose a device with a larger limit.',
+      },
+    );
+  }
+  const maximumMipLevels =
+    Math.floor(Math.log2(Math.max(descriptor.size.width, descriptor.size.height))) + 1;
+  if ((descriptor.mipLevelCount ?? 1) > maximumMipLevels) {
+    throw new KyxosEngineError(
+      `Texture mipLevelCount exceeds the maximum ${maximumMipLevels} for its dimensions.`,
+      {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      },
+    );
+  }
+}
+
+function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
+  const layers = descriptor.size.depthOrArrayLayers ?? 1;
+  const samples = descriptor.sampleCount ?? 1;
+  const mipLevels = descriptor.mipLevelCount ?? 1;
+  let width = descriptor.size.width;
+  let height = descriptor.size.height;
+  let texels = 0;
+  for (let mip = 0; mip < mipLevels; mip += 1) {
+    texels += width * height * layers;
+    width = Math.max(1, Math.floor(width / 2));
+    height = Math.max(1, Math.floor(height / 2));
+  }
+  return texels * samples * 4;
+}
+
+function validateSamplerDescriptor(descriptor: BackendSamplerDescriptor): void {
+  if (
+    descriptor.maxAnisotropy !== undefined &&
+    (!Number.isSafeInteger(descriptor.maxAnisotropy) ||
+      descriptor.maxAnisotropy < 1 ||
+      descriptor.maxAnisotropy > 16)
+  ) {
+    throw new KyxosEngineError('Sampler maxAnisotropy must be an integer from 1 through 16.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'backend',
+      recoverable: false,
+    });
+  }
+}
+
+function validateShaderDescriptor(descriptor: BackendShaderModuleDescriptor): void {
+  if (descriptor.language !== 'wgsl' || descriptor.code.trim().length === 0) {
+    throw new KyxosEngineError('Shader Module must contain non-empty WGSL source.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'backend',
+      recoverable: false,
+    });
+  }
+}
+
+function resourceAccounting(
+  label: string | undefined,
+  estimatedBytes: number,
+): BackendResourceDescriptor {
+  return {
+    estimatedBytes,
+    ...(label === undefined ? {} : { label }),
+  };
 }
 
 export class WebGpuBackend implements GraphicsBackend {
@@ -145,6 +271,192 @@ export class WebGpuBackend implements GraphicsBackend {
         recoverable: true,
         suggestedAction: 'Reinitialize the renderer and recreate device-owned resources.',
       });
+    }
+  }
+
+  createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle {
+    validateBufferDescriptor(descriptor);
+    const device = this.#requireDevice('create a Buffer');
+    try {
+      const buffer = device.createBuffer(descriptor);
+      return this.#resources.register(
+        'buffer',
+        resourceAccounting(descriptor.label, descriptor.size),
+        buffer,
+        () => buffer.destroy(),
+      );
+    } catch (error) {
+      throw this.#resourceCreationError('Buffer', error);
+    }
+  }
+
+  createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
+    validateTextureDescriptor(descriptor, this.#capabilities.limits.maxTextureDimension2D);
+    const device = this.#requireDevice('create a Texture');
+    try {
+      const texture = device.createTexture(descriptor);
+      return this.#resources.register(
+        'texture',
+        resourceAccounting(descriptor.label, estimateTextureBytes(descriptor)),
+        texture,
+        () => texture.destroy(),
+      );
+    } catch (error) {
+      throw this.#resourceCreationError('Texture', error);
+    }
+  }
+
+  createSampler(descriptor: BackendSamplerDescriptor = {}): BackendSamplerHandle {
+    validateSamplerDescriptor(descriptor);
+    const device = this.#requireDevice('create a Sampler');
+    try {
+      const sampler = device.createSampler(descriptor);
+      return this.#resources.register('sampler', resourceAccounting(descriptor.label, 0), sampler);
+    } catch (error) {
+      throw this.#resourceCreationError('Sampler', error);
+    }
+  }
+
+  createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle {
+    validateShaderDescriptor(descriptor);
+    const device = this.#requireDevice('create a Shader Module');
+    try {
+      const shader = device.createShaderModule(descriptor);
+      return this.#resources.register(
+        'shader-module',
+        resourceAccounting(descriptor.label, new TextEncoder().encode(descriptor.code).byteLength),
+        shader,
+      );
+    } catch (error) {
+      throw this.#resourceCreationError('Shader Module', error);
+    }
+  }
+
+  async getShaderCompilationInfo(
+    handle: BackendShaderModuleHandle,
+  ): Promise<BackendShaderCompilationInfo> {
+    this.#assertReady('read Shader Module compilation information');
+    const shader = this.#resources.resolve<'shader-module', WebGpuShaderModulePort>(
+      handle,
+      'shader-module',
+    );
+    try {
+      return await shader.getCompilationInfo();
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to read WebGPU Shader Module compilation information.',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+  }
+
+  async createRenderPipeline(
+    descriptor: BackendRenderPipelineDescriptor,
+  ): Promise<BackendPipelineHandle> {
+    const device = this.#requireDevice('create a Render Pipeline');
+    if (descriptor.vertex.entryPoint.trim().length === 0) {
+      throw new KyxosEngineError('Render Pipeline vertex entryPoint must not be empty.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    const vertexModule = this.#resources.resolve<'shader-module', WebGpuShaderModulePort>(
+      descriptor.vertex.module,
+      'shader-module',
+    );
+    const fragmentModule =
+      descriptor.fragment === undefined
+        ? undefined
+        : this.#resources.resolve<'shader-module', WebGpuShaderModulePort>(
+            descriptor.fragment.module,
+            'shader-module',
+          );
+    if (descriptor.fragment !== undefined) {
+      if (descriptor.fragment.entryPoint.trim().length === 0) {
+        throw new KyxosEngineError('Render Pipeline fragment entryPoint must not be empty.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      requireNonEmpty('Render Pipeline color targets', descriptor.fragment.targets);
+      if (
+        descriptor.fragment.targets.some(
+          (target) => target.format === 'depth24plus' || target.format === 'depth32float',
+        )
+      ) {
+        throw new KyxosEngineError('Render Pipeline color targets cannot use a depth format.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+    }
+    for (const buffer of descriptor.vertex.buffers ?? []) {
+      requirePositiveSafeInteger('Vertex Buffer arrayStride', buffer.arrayStride);
+      for (const attribute of buffer.attributes) {
+        if (
+          !Number.isSafeInteger(attribute.offset) ||
+          attribute.offset < 0 ||
+          !Number.isSafeInteger(attribute.shaderLocation) ||
+          attribute.shaderLocation < 0
+        ) {
+          throw new KyxosEngineError(
+            'Vertex attributes require non-negative safe integer offsets and Shader locations.',
+            {
+              code: 'INVALID_ARGUMENT',
+              module: 'backend',
+              recoverable: false,
+            },
+          );
+        }
+      }
+    }
+
+    try {
+      const pipeline = await device.createRenderPipeline({
+        fragment:
+          descriptor.fragment === undefined || fragmentModule === undefined
+            ? undefined
+            : {
+                entryPoint: descriptor.fragment.entryPoint,
+                module: fragmentModule,
+                targets: descriptor.fragment.targets,
+              },
+        label: descriptor.label,
+        primitive: descriptor.primitive,
+        vertex: {
+          buffers: descriptor.vertex.buffers ?? [],
+          entryPoint: descriptor.vertex.entryPoint,
+          module: vertexModule,
+        },
+      });
+      return this.#resources.register(
+        'pipeline',
+        resourceAccounting(descriptor.label, 0),
+        pipeline,
+      );
+    } catch (error) {
+      throw this.#resourceCreationError('Render Pipeline', error);
+    }
+  }
+
+  createCommandEncoder(
+    descriptor: BackendCommandEncoderDescriptor = {},
+  ): BackendCommandEncoderHandle {
+    const device = this.#requireDevice('create a Command Encoder');
+    try {
+      const encoder = device.createCommandEncoder(descriptor);
+      return this.#resources.register(
+        'command-encoder',
+        resourceAccounting(descriptor.label, 0),
+        encoder,
+      );
+    } catch (error) {
+      throw this.#resourceCreationError('Command Encoder', error);
     }
   }
 
@@ -414,6 +726,16 @@ export class WebGpuBackend implements GraphicsBackend {
       code: this.#state === 'disposed' ? 'ALREADY_DISPOSED' : 'INVALID_STATE',
       module: 'backend',
       recoverable: false,
+    });
+  }
+
+  #resourceCreationError(resourceName: string, error: unknown): KyxosEngineError {
+    return toKyxosEngineError(error, {
+      code: 'RESOURCE_CREATION_FAILED',
+      message: `Failed to create WebGPU ${resourceName}.`,
+      module: 'backend',
+      recoverable: false,
+      suggestedAction: 'Inspect the descriptor, device limits, and Shader compilation diagnostics.',
     });
   }
 

@@ -149,3 +149,13 @@
 - **Reason:** Independent clamping can deform geometry, while backend-owned DOM observation would couple graphics code to page layout and invite permanent work. Explicit inputs are deterministic for Canvas, OffscreenCanvas, tests, multiple viewports, and future Worker adapters.
 - **Impact:** SDK/platform adapters own ResizeObserver and DPR change detection. WebGPU and future WebGL2 implementations share identical physical-size math. Hidden Canvas instances allocate no swapchain size until restored.
 - **ADR required:** No; this refines the existing Canvas/backend responsibility without changing public product scope.
+
+## ED-016 — Translate portable resource descriptors only inside a concrete backend
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Backend API represents Buffer/Texture usages, formats, Sampler state, vertex layouts, WGSL modules, Pipeline state, and Command Encoders as immutable string/data descriptors plus opaque handles. Only `backend-webgpu` translates those values to native flags and objects. Shader compilation diagnostics are copied into immutable backend-neutral messages, and Render Pipeline creation is asynchronous.
+- **Candidates:** Expose WebGPU descriptors and native resources through SDK; use untyped `unknown` descriptors; define a portable typed subset and translate per backend.
+- **Reason:** Native WebGPU objects would bind Renderer and products to one backend, while untyped descriptors would defer errors and make WebGL2 mapping untestable. The Phase 1 subset covers actual draws and can expand deliberately as later material/render-graph phases require it.
+- **Impact:** Buffer and Texture byte estimates are tracked by kind; destructive resources call native `destroy()`, while immutable Shader/Pipeline/Sampler objects release by dropping registry ownership. WebGL2 can map the same descriptors to its distinct implementation in Phase 10 without emulating WebGPU objects.
+- **ADR required:** No; this implements the accepted Backend API boundary. A future public descriptor compatibility change may require an ADR before 1.0.

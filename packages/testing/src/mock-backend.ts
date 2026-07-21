@@ -1,18 +1,31 @@
 import type {
+  BackendBufferDescriptor,
+  BackendBufferHandle,
   BackendCapabilityReport,
+  BackendCommandEncoderDescriptor,
+  BackendCommandEncoderHandle,
   BackendEvents,
   BackendLifecycleState,
   BackendLossInfo,
+  BackendPipelineHandle,
+  BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceHandleKind,
   BackendResourceKind,
   BackendResourceKindStatistics,
   BackendResourceStatistics,
+  BackendSamplerDescriptor,
+  BackendSamplerHandle,
+  BackendShaderCompilationInfo,
+  BackendShaderModuleDescriptor,
+  BackendShaderModuleHandle,
   BackendSurfaceDescriptor,
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureDescriptor,
+  BackendTextureHandle,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import {
@@ -68,6 +81,7 @@ export class MockBackend implements GraphicsBackend {
   readonly #allocators = createAllocators();
   readonly #events = new TypedEventEmitter<BackendEvents>();
   readonly #resources = new Map<BackendResourceHandle, MockResourceRecord>();
+  readonly #shaderInfo = new Map<BackendShaderModuleHandle, BackendShaderCompilationInfo>();
   readonly #surfaces = new Map<BackendSurfaceHandle, MockSurfaceRecord>();
   #createdTotal = 0;
   #destroyedTotal = 0;
@@ -134,6 +148,89 @@ export class MockBackend implements GraphicsBackend {
     await Promise.resolve();
   }
 
+  createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle {
+    if (!Number.isSafeInteger(descriptor.size) || descriptor.size < 1) {
+      throw new KyxosEngineError('Mock Buffer size must be a positive safe integer.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    return this.createResource('buffer', {
+      estimatedBytes: descriptor.size,
+      ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
+    });
+  }
+
+  createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
+    const layers = descriptor.size.depthOrArrayLayers ?? 1;
+    const estimatedBytes =
+      descriptor.size.width * descriptor.size.height * layers * (descriptor.sampleCount ?? 1) * 4;
+    return this.createResource('texture', {
+      estimatedBytes,
+      ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
+    });
+  }
+
+  createSampler(descriptor: BackendSamplerDescriptor = {}): BackendSamplerHandle {
+    return this.createResource(
+      'sampler',
+      descriptor.label === undefined ? {} : { label: descriptor.label },
+    );
+  }
+
+  createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle {
+    if (descriptor.code.trim().length === 0) {
+      throw new KyxosEngineError('Mock Shader Module source must not be empty.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    const handle = this.createResource('shader-module', {
+      estimatedBytes: new TextEncoder().encode(descriptor.code).byteLength,
+      ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
+    });
+    this.#shaderInfo.set(handle, Object.freeze({ messages: Object.freeze([]), valid: true }));
+    return handle;
+  }
+
+  async getShaderCompilationInfo(
+    handle: BackendShaderModuleHandle,
+  ): Promise<BackendShaderCompilationInfo> {
+    const info = this.#shaderInfo.get(handle);
+    if (info === undefined) {
+      throw new KyxosEngineError('Mock Shader Module handle is stale or foreign.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    return info;
+  }
+
+  async createRenderPipeline(
+    descriptor: BackendRenderPipelineDescriptor,
+  ): Promise<BackendPipelineHandle> {
+    await this.getShaderCompilationInfo(descriptor.vertex.module);
+    if (descriptor.fragment !== undefined) {
+      await this.getShaderCompilationInfo(descriptor.fragment.module);
+    }
+    return this.createResource(
+      'pipeline',
+      descriptor.label === undefined ? {} : { label: descriptor.label },
+    );
+  }
+
+  createCommandEncoder(
+    descriptor: BackendCommandEncoderDescriptor = {},
+  ): BackendCommandEncoderHandle {
+    return this.createResource(
+      'command-encoder',
+      descriptor.label === undefined ? {} : { label: descriptor.label },
+    );
+  }
+
   createResource<Kind extends BackendResourceKind>(
     kind: Kind,
     descriptor: BackendResourceDescriptor = {},
@@ -188,6 +285,9 @@ export class MockBackend implements GraphicsBackend {
 
     if (handle.kind === backendResourceHandleKind('surface')) {
       this.#surfaces.delete(handle as BackendSurfaceHandle);
+    }
+    if (handle.kind === backendResourceHandleKind('shader-module')) {
+      this.#shaderInfo.delete(handle as BackendShaderModuleHandle);
     }
     this.#destroyedTotal += 1;
     return true;
@@ -285,6 +385,7 @@ export class MockBackend implements GraphicsBackend {
   #releaseAllResources(): void {
     this.#destroyedTotal += this.#resources.size;
     this.#resources.clear();
+    this.#shaderInfo.clear();
     this.#surfaces.clear();
   }
 

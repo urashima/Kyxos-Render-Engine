@@ -619,3 +619,27 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-03 checkpoint.
 - Add typed Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder descriptors plus native lifecycle accounting.
+
+## 2026-07-21 06:16 PDT — P1-04 typed native resources
+
+### Completed
+
+- Added backend-neutral Buffer and Texture usage sets, formats, sizes, Sampler state, WGSL Shader descriptors, immutable compilation messages, vertex layouts, Pipeline stages/state, and Command Encoder descriptors.
+- Added typed `GraphicsBackend` creation methods while retaining opaque Handle ownership and generic debug statistics.
+- Implemented real WebGPU Buffer/Texture/Sampler/Shader/Pipeline/Command Encoder creation inside the browser port, including portable-to-native usage-flag translation and asynchronous Pipeline creation.
+- Added Shader compilation-info mapping without exposing `GPUShaderModule` or `GPUCompilationInfo`.
+- Added descriptor validation for sizes, usages, device limits, mip counts, anisotropy, source presence, Shader Handle ownership, entry points, attributes, and color/depth target misuse.
+- Added exact Buffer bytes and mip-aware Texture bytes; Device Lost clears all active records without calling native Buffer/Texture destruction, while explicit disposal calls native destruction once.
+- Extended Mock Backend and the SDK-only boundary fixture to the same typed contract.
+
+### Validation
+
+- Full unit suite: 13 files / 56 tests PASS.
+- Browser port test proves native descriptor mapping, usage flags, Shader/Pipeline unwrapping, compilation messages, Command Encoder creation, and Buffer/Texture destruction.
+- Backend tests cover all typed resource kinds, foreign Shader Handle rejection, invalid descriptors, mip-aware byte estimates, explicit disposal, and Device Lost resource baselines.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-04 checkpoint.
+- Add backend-neutral upload/render-pass/indexed-draw commands, queue submission, validated Phase 1 WGSL, and generated triangle/sphere geometry.

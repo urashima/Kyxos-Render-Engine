@@ -2,10 +2,23 @@ import type { Disposable, EventListener, Unsubscribe } from '@kyxos/render-core'
 
 import type { BackendCapabilityReport, BackendType } from './capabilities.js';
 import type {
+  BackendBufferDescriptor,
+  BackendBufferHandle,
+  BackendCommandEncoderDescriptor,
+  BackendCommandEncoderHandle,
+  BackendPipelineHandle,
+  BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSamplerDescriptor,
+  BackendSamplerHandle,
+  BackendShaderCompilationInfo,
+  BackendShaderModuleDescriptor,
+  BackendShaderModuleHandle,
+  BackendTextureDescriptor,
+  BackendTextureHandle,
 } from './resources.js';
 import type {
   BackendSurfaceDescriptor,
@@ -38,12 +51,21 @@ export interface GraphicsBackend extends Disposable {
   readonly state: BackendLifecycleState;
   readonly type: BackendType;
 
+  createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle;
+  createCommandEncoder(descriptor?: BackendCommandEncoderDescriptor): BackendCommandEncoderHandle;
+  createRenderPipeline(descriptor: BackendRenderPipelineDescriptor): Promise<BackendPipelineHandle>;
   createResource<Kind extends BackendResourceKind>(
     kind: Kind,
     descriptor?: BackendResourceDescriptor,
   ): BackendResourceHandle<Kind>;
+  createSampler(descriptor?: BackendSamplerDescriptor): BackendSamplerHandle;
+  createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle;
   createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle;
+  createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle;
   destroyResource(handle: BackendResourceHandle): boolean;
+  getShaderCompilationInfo(
+    handle: BackendShaderModuleHandle,
+  ): Promise<BackendShaderCompilationInfo>;
   getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo;
   getResourceStatistics(): BackendResourceStatistics;
   initialize(): Promise<void>;
