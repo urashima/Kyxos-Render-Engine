@@ -2,6 +2,7 @@ import {
   VisibilitySystem,
   createCubeGeometry,
   createKyxosSceneRenderer,
+  createMeshData,
   createPlaneGeometry,
   createUvSphereGeometry,
   quaternionFromAxisAngle,
@@ -10,7 +11,7 @@ import type { BackendClearColor, EntityHandle, KyxosSceneCanvasRenderer } from '
 
 const ALL_LAYERS = 0xffff_ffff;
 const COMMIT_SHA = import.meta.env.VITE_COMMIT_SHA ?? 'local-working-tree';
-const INITIAL_RESOURCE_BASELINE = 21;
+const INITIAL_RESOURCE_BASELINE = 25;
 
 interface SceneHandles {
   readonly disabled: EntityHandle;
@@ -159,6 +160,7 @@ function acceptanceMarkup(): string {
           </div>
           <dl class="metric-list scene-contract">
             <div><dt>Hierarchy</dt><dd data-testid="hierarchy">Root → Child</dd></div>
+            <div><dt>Geometry</dt><dd data-testid="geometry-contract">Plane · Cube · Sphere · Custom</dd></div>
             <div><dt>Camera aspect</dt><dd data-testid="camera-aspect">—</dd></div>
             <div><dt>Orbit yaw / pitch</dt><dd data-testid="orbit-angle">—</dd></div>
             <div><dt>Orbit distance</dt><dd data-testid="orbit-distance">—</dd></div>
@@ -239,6 +241,13 @@ function populateScene(renderer: KyxosSceneCanvasRenderer): SceneHandles {
   const plane = createPlaneGeometry({ depth: 7, width: 7 });
   const cube = createCubeGeometry({ height: 1.25, width: 1.25 });
   const sphere = createUvSphereGeometry({ heightSegments: 8, radius: 0.62, widthSegments: 16 });
+  const custom = createMeshData({
+    name: 'custom-tetrahedron',
+    positions: [
+      0, 0.8, 0, -0.65, -0.5, 0.5, 0.65, -0.5, 0.5, 0, 0.8, 0, 0.65, -0.5, 0.5, 0, -0.5, -0.65, 0,
+      0.8, 0, 0, -0.5, -0.65, -0.65, -0.5, 0.5, -0.65, -0.5, 0.5, 0, -0.5, -0.65, 0.65, -0.5, 0.5,
+    ],
+  });
   const ground = renderer.scene.createEntity({
     name: 'Ground',
     transform: { translation: [0, -1, 0] },
@@ -276,6 +285,16 @@ function populateScene(renderer: KyxosSceneCanvasRenderer): SceneHandles {
     baseColor: [0.67, 0.38, 0.95, 0.38],
     materialKey: 'glass-far',
     mesh: sphere,
+  });
+
+  const customMesh = renderer.scene.createEntity({
+    name: 'Custom Tetrahedron',
+    transform: { translation: [1.75, -0.2, -0.55], scale: [0.8, 0.8, 0.8] },
+  });
+  renderer.meshRenderers.attach(customMesh, {
+    baseColor: [0.93, 0.66, 0.18, 1],
+    materialKey: 'custom-mesh',
+    mesh: custom,
   });
 
   const offscreen = renderer.scene.createEntity({
