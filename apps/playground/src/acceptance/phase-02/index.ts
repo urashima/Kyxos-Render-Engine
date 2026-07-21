@@ -556,6 +556,7 @@ async function createRenderer(root: ParentNode, runtime: AcceptanceRuntime): Pro
   runtime.hierarchyOffscreen = false;
   runtime.transparentSwapped = false;
   runtime.rotationStep = 0;
+  requireElement(root, '[data-testid="geometry-focus"]').textContent = 'All';
   setError(root, undefined);
   const canvas = requireElement<HTMLCanvasElement>(root, '[data-canvas="scene"]');
   canvas.classList.remove('is-hidden');

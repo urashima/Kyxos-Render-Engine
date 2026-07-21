@@ -1088,3 +1088,24 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Require deployment checkpoint `887fb80d33e73bc3fcf190b26f1e95d42588a425` to pass clean official PR CI, including the canonical Phase 0/1 images and full Phase 2 WebGPU evidence flow.
 - Resume P2-08 evidence finalization after the deployment infrastructure head is green; Phase 2 remains In Development until its own public Pages deployment succeeds after merge.
+
+## 2026-07-21 10:27 PDT — P2-07 Owner controls and performance diagnostics verified
+
+### Completed
+
+- Added visible dirty-driven FPS, measured CPU Frame Time, and explicit GPU timestamp-query availability without fabricating a GPU duration.
+- Added online-executable geometry focus controls that cycle Plane, Cube, Sphere, Custom Mesh, and the complete scene while retaining the immutable Geometry contract.
+- Added a hierarchy move-out/restore operation that proves parent/child Transform propagation and Frustum exclusion with live Draw and visible-object counts.
+- Expanded the canonical Phase 2 browser flow to exercise every geometry focus, exact per-geometry triangle counts, the offscreen hierarchy, predictable transparency, Orbit/dolly/framing, culling/layers, suspension, loss/recovery, and disposal.
+
+### Validation
+
+- GitHub Actions Run `29852642508`, job `88709155622`: PASS; all 10 browser tests passed, including all 3 Phase 2 WebGPU flows.
+- Canonical diagnostics artifact `8504096148`, digest `sha256:16c31f9b776e1984ee3afbdb04b1082395a929c2fa88fce4508e21909249b086`, retained the final screenshot, scene capture, performance metrics, and zero-resource lifecycle record.
+- Format, zero-warning Lint, strict typecheck, build, route-aware Bundle budget, and isolated Phase 0/1/2 plus `latest` Pages artifact checks: PASS.
+- No threshold, prior baseline, or test was disabled; no active blocker was found.
+
+### Next
+
+- Verify the same Phase 2 owner-control operations against the public Pages route after deployment and use the next clean CI artifact as the P2-08 source checkpoint.
+- Freeze Reference/Current/Difference, performance comparison, technical QA, and autonomous owner evidence behind a fail-closed Phase 2 acceptance schema.

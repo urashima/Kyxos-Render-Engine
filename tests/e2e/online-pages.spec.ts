@@ -46,6 +46,21 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('shader-status')).toHaveText('pass');
     expect(Number(await page.getByTestId('draw-calls').textContent())).toBeGreaterThan(0);
   }
+  if (phase === 2) {
+    await expect(page.getByTestId('fps')).toHaveText('0 · sleeping');
+    await expect(page.getByTestId('cpu-frame-time')).toHaveAttribute('data-milliseconds', /\d+/u);
+    await expect(page.getByTestId('gpu-frame-time')).toContainText('unavailable');
+
+    for (const focus of ['Plane', 'Cube', 'Sphere', 'Custom', 'All']) {
+      await page.locator('[data-action="cycle-geometry"]').click();
+      await expect(page.getByTestId('geometry-focus')).toHaveText(focus);
+    }
+    await expect(page.getByTestId('draw-calls')).toHaveText('6');
+    await page.locator('[data-action="move-hierarchy"]').click();
+    await expect(page.getByTestId('frustum-culled-count')).toHaveText('3');
+    await page.locator('[data-action="move-hierarchy"]').click();
+    await expect(page.getByTestId('frustum-culled-count')).toHaveText('1');
+  }
   expect(runtimeErrors).toEqual([]);
 }
 

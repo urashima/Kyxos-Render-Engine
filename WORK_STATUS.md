@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                 |
-| ------------------- | --------------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                |
-| Current Branch      | `agent/phase-02-scene-camera`                                         |
-| Current Commit      | `3a37219107a0da74225d1df2f1b4a5af3d44ec8e` (P2-07 route checkpoint)   |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                        |
-| Current Task        | P2-07 — Official Chromium WebGPU acceptance verification              |
-| Last Completed Task | P2-06 — Scene submission through Renderer and public SDK              |
-| Next Action         | Inspect P2-07 GitHub Actions results and fix any browser-only failure |
-| CI Status           | P2-05 Run 29846146006 PASS; P2-07 local non-browser gates PASS        |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                   |
-| Known Blockers      | No active blockers                                                    |
-| Last Updated        | 2026-07-21 09:41 PDT                                                  |
+| Field               | Value                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                                    |
+| Current Branch      | `agent/phase-02-scene-camera`                                                             |
+| Current Commit      | `947163ae975b98e056f5e2210491bb6e9903bb26` (last verified remote)                         |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                                            |
+| Current Task        | P2-08 — Final deterministic visual, performance, and lifecycle evidence                   |
+| Last Completed Task | P2-07 — Scene Playground, owner controls, Pages build/deploy pipeline                     |
+| Next Action         | Push public owner-control smoke checks, pass CI, then freeze the canonical P2-08 evidence |
+| CI Status           | Run 29852642508 PASS; 10/10 browser tests; artifact 8504096148                            |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                                       |
+| Known Blockers      | No active blockers                                                                        |
+| Last Updated        | 2026-07-21 10:27 PDT                                                                      |
 
 ## Phase Progress
 
