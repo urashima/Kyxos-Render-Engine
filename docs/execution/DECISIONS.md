@@ -49,3 +49,13 @@
 - **Reason:** The renderer and tests need a real replaceable seam before WebGPU code arrives. Conservative capability defaults and active-count baselines make unsupported features and leaks observable without coupling callers to one API.
 - **Impact:** WebGPU and WebGL2 may implement different capabilities behind one contract. Estimated bytes are diagnostics rather than an assertion of exact driver allocation.
 - **ADR required:** Yes; ADR-002 will freeze backend abstraction and fallback responsibilities.
+
+## ED-006 — Drive Phase 0 rendering only from explicit invalidation
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** The foundation scheduler receives an injected frame-request driver, coalesces dirty flags into one requested frame, and returns immediately to Sleeping unless the frame itself raises another invalidation. Renderer Core contains no DOM or global RAF access.
+- **Candidates:** Permanent RAF loop; direct browser RAF calls inside Renderer; injected dirty-driven frame scheduling.
+- **Reason:** The engine's defining temporal requirement starts at the foundation boundary. Driver injection makes scheduling deterministic in tests and keeps browser/platform behavior outside Renderer Core.
+- **Impact:** Phase 0 supports Interactive and Sleeping behavior only; Stabilizing and Accumulating policies remain explicitly deferred to Phase 4. The SDK browser adapter is the sole current global RAF access point.
+- **ADR required:** Yes; ADR-003 will capture scheduler ownership, sleeping guarantees, and future temporal extension points.

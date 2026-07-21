@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@kyxos/render-core": "workspace:*",
-    "@kyxos/render-backend-api": "workspace:*"
+    "@kyxos/render-backend-api": "workspace:*",
+    "@kyxos/render-frame-scheduler": "workspace:*"
   }
 }

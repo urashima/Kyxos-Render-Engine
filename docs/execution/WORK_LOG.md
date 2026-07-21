@@ -147,3 +147,36 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-05 checkpoint.
 - Implement the dirty-driven scheduler shell, renderer registrations, and SDK-only factory/consumer flow.
+
+## 2026-07-21 04:01 PDT — P0-06 scheduler, renderer, and SDK checkpoint
+
+### Completed
+
+- Added the full Dirty Flag vocabulary and a driver-injected foundation Frame Scheduler.
+- Added coalesced one-frame invalidation, wake/sleep events, explicit suspension, pending-frame cancellation, and idempotent disposal without a permanent RAF loop.
+- Added Renderer lifecycle, typed events, diagnostics, backend-loss handling, and resource-owning disposal.
+- Added `registerRenderFeature`, `registerMaterialExtension`, `registerAssetDecoder`, and `registerPreviewPreset` with stable duplicate-ID failures and unregister/dispose ownership.
+- Added the public `createKyxosRenderer` SDK factory and isolated browser frame-driver adapter.
+- Added a public-entry-only SDK consumer test plus scheduler and Mock Backend renderer integration tests.
+
+### Validation
+
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS for source and tests.
+- `pnpm test:unit`: PASS — 9 files and 28 tests.
+- All seven packages built successfully before the test run.
+- Two invalidations before a frame produced one pending request and one emitted frame.
+- Renderer returned to Sleeping after the frame; Backend Lost and Dispose both canceled pending work.
+- Renderer Dispose returned Mock Backend active resource count and estimated bytes to zero.
+- SDK-only fixture imported exclusively from the SDK root entry and completed create/invalidate/frame/dispose.
+
+### Performance
+
+- Idle state schedules zero frames. Multiple synchronous invalidations are coalesced into one frame request.
+- No DOM, React, Texture Lab, or global RAF dependency entered Renderer Core.
+
+### Next
+
+- Commit and remotely verify the P0-06 checkpoint.
+- Build the framework-independent Vite Playground and `/acceptance/phase-00` route, then run browser smoke checks.

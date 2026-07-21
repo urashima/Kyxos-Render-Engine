@@ -12,6 +12,9 @@
     },
     {
       "path": "../backend-api"
+    },
+    {
+      "path": "../frame-scheduler"
     }
   ]
 }

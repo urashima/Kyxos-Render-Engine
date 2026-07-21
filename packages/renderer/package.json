@@ -24,5 +24,8 @@
     "@kyxos/render-core": "workspace:*",
     "@kyxos/render-backend-api": "workspace:*",
     "@kyxos/render-frame-scheduler": "workspace:*"
+  },
+  "devDependencies": {
+    "@kyxos/render-testing": "workspace:*"
   }
 }

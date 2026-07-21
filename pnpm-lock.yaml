@@ -67,6 +67,10 @@ importers:
       '@kyxos/render-frame-scheduler':
         specifier: workspace:*
         version: link:../frame-scheduler
+    devDependencies:
+      '@kyxos/render-testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/sdk:
     dependencies:
@@ -76,6 +80,9 @@ importers:
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
+      '@kyxos/render-frame-scheduler':
+        specifier: workspace:*
+        version: link:../frame-scheduler
       '@kyxos/render-renderer':
         specifier: workspace:*
         version: link:../renderer
@@ -88,6 +95,9 @@ importers:
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
+      '@kyxos/render-frame-scheduler':
+        specifier: workspace:*
+        version: link:../frame-scheduler
 
 packages:
 
