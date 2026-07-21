@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                    |
-| ------------------- | ---------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 0 — Repository and Architecture Baseline                                           |
-| Current Branch      | `agent/phase-00-foundation`                                                              |
-| Current Commit      | `8ae37d3ce9706be7ba7fb1f87a5f7ea14c7eb2b0` (last verified remote checkpoint)             |
-| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                           |
-| Current Task        | P0-11 — Run the full gate, open the draft Phase PR, repair CI, and perform technical QA  |
-| Last Completed Task | P0-10 — Acceptance schema, visual baseline, performance, and resource evidence pass      |
-| Next Action         | Push the deterministic WebFont repair and regenerated evidence, then inspect the new run |
-| CI Status           | PR #1 run 29827965870 passed all gates except system-font visual drift; repair prepared  |
-| Acceptance Status   | Development Complete                                                                     |
-| Known Blockers      | No active blockers                                                                       |
-| Last Updated        | 2026-07-21 05:02 PDT                                                                     |
+| Field               | Value                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 0 — Repository and Architecture Baseline                                          |
+| Current Branch      | `agent/phase-00-foundation`                                                             |
+| Current Commit      | `70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d` (last verified remote checkpoint)            |
+| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                          |
+| Current Task        | P0-11 — Run the full gate, open the draft Phase PR, repair CI, and perform technical QA |
+| Last Completed Task | P0-10 — Acceptance schema, visual baseline, performance, and resource evidence pass     |
+| Next Action         | Push canonical CI and strict sandbox visual profiles, then inspect the new clean run    |
+| CI Status           | PR #1 run 29828781956 proved byte-stable CI pixels; canonical-reference repair prepared |
+| Acceptance Status   | Development Complete                                                                    |
+| Known Blockers      | No active blockers                                                                      |
+| Last Updated        | 2026-07-21 05:14 PDT                                                                    |
 
 ## Phase Progress
 

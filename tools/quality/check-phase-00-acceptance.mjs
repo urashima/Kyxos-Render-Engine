@@ -130,6 +130,42 @@ if (
 ) {
   failures.push('visual evidence: zero-difference baseline is not proven');
 }
+const migration = visual?.referenceMigration;
+for (const [label, expected] of [
+  ['sandbox reference', migration?.oldReference],
+  ['environment difference', migration?.environmentDifference],
+]) {
+  try {
+    const buffer = await readFile(path.join(imageDirectory, expected?.path ?? 'missing.png'));
+    const actual = imageInfo(buffer);
+    if (
+      actual.sha256 !== expected?.sha256 ||
+      actual.width !== expected?.width ||
+      actual.height !== expected?.height ||
+      buffer.length !== expected?.bytes
+    ) {
+      failures.push(`visual evidence: ${label} metadata does not match the PNG`);
+    }
+  } catch (error) {
+    failures.push(`visual evidence: ${label}: ${String(error)}`);
+  }
+}
+if (
+  migration?.oldProfile !== 'sandbox-chromium-149' ||
+  migration?.newProfile !== 'canonical' ||
+  migration?.playwrightDifferentPixels !== 2983 ||
+  migration?.absoluteDifferentPixels !== 20028 ||
+  migration?.oldReference?.sha256 === visual?.files?.reference?.sha256
+) {
+  failures.push('visual evidence: canonical reference migration is incomplete');
+}
+if (
+  visual?.canonicalProvenance?.attemptsByteIdentical !== true ||
+  visual?.canonicalProvenance?.attemptHashes?.length !== 2 ||
+  visual.canonicalProvenance.attemptHashes.some((hash) => hash !== visual?.files?.reference?.sha256)
+) {
+  failures.push('visual evidence: canonical CI attempts are not byte-identical');
+}
 
 const acceptancePath = path.join(root, 'docs/acceptance/phase-00/PHASE_00_ACCEPTANCE.md');
 try {
@@ -156,6 +192,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `${JSON.stringify({ evidenceFiles: requiredTextFiles.length + imageNames.length, phase: '00', status: 'PASS' }, null, 2)}\n`,
+    `${JSON.stringify({ evidenceFiles: requiredTextFiles.length + imageNames.length + 2, phase: '00', status: 'PASS' }, null, 2)}\n`,
   );
 }

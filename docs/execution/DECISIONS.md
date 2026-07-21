@@ -109,3 +109,13 @@
 - **Reason:** The second clean CI run passed every nonvisual gate and produced the same 2,763 text-edge differences on both attempts. Artifact inspection showed identical layout, colors, panels, and vector content; only glyph rasterization differed because the original local fallback resolved to DejaVu Sans while the GitHub runner supplied another system typeface. A versioned OFL font removes that undeclared input without hiding differences.
 - **Impact:** The Playground output grows by 48,256 raw bytes and 48,254 gzip bytes. Total output remains below a recorded 128 KiB raw / 64 KiB gzip budget. The reference is regenerated because the previous reference encoded an unspecified system font; the zero-pixel maximum and image threshold remain unchanged. No engine runtime package gains a font dependency.
 - **ADR required:** No; this is an acceptance-fixture and asset-provenance decision.
+
+## ED-012 — Make official Playwright CI the canonical pixel environment
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Use the pinned Playwright Chromium v1228 browser on GitHub Actions Ubuntu as the canonical Phase 0 pixel environment. Keep the network-restricted sandbox Chromium 149 build as an explicitly selected development profile with its own versioned exact reference. Both profiles use `maxDiffPixels: 0` and the same image threshold.
+- **Candidates:** Silently replace the reference; raise the pixel allowance; require a sandbox-specific browser in CI; define one canonical acceptance profile plus a strict, disclosed development profile.
+- **Reason:** The acceptance plan requires a fixed environment and rejects results that work only on a developer machine. After the WebFont fix, both official CI attempts were byte-identical, while the remaining cross-profile Difference was confined to glyph antialiasing from different Chromium builds. Layout, controls, panels, colors, and vector geometry were unchanged.
+- **Impact:** `reference.png`, `current.png`, and `difference.png` represent only the canonical CI profile. The previous sandbox reference and the 2,983-pixel Playwright / 20,028-pixel absolute environment Difference remain versioned migration evidence. The sandbox profile must be opted into by name and cannot update canonical evidence. No test is skipped, and no visual threshold is widened.
+- **ADR required:** No; this is acceptance-environment policy rather than runtime architecture.

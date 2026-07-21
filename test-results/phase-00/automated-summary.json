@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "phase": "00",
-  "sourceCheckpoint": "8ae37d3ce9706be7ba7fb1f87a5f7ea14c7eb2b0",
-  "generatedAt": "2026-07-21T05:02:35-07:00",
+  "sourceCheckpoint": "70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d",
+  "generatedAt": "2026-07-21T05:14:00-07:00",
   "localStatus": "PASS",
   "remoteCiStatus": "PENDING_PULL_REQUEST",
   "gates": [
@@ -69,13 +69,17 @@
       "status": "PASS",
       "command": "pnpm test:e2e",
       "browser": "Chromium 149.0.7827.0",
+      "visualProfile": "sandbox-chromium-149",
       "tests": 4
     },
     {
       "id": "visual",
       "status": "PASS",
+      "profile": "sandbox-chromium-149",
       "actualDiffPixels": 0,
-      "maximumDiffPixels": 0
+      "maximumDiffPixels": 0,
+      "canonicalAttemptHash": "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
+      "canonicalAttemptsByteIdentical": true
     },
     {
       "id": "performance",
@@ -87,6 +91,7 @@
   "requiredFailures": [],
   "notes": [
     "Remote CI is not marked PASS until the pull-request-triggered GitHub Actions run is inspected.",
+    "The local sandbox profile and canonical CI profile each enforce zero differing pixels against their own versioned reference.",
     "GPU rendering, CPU/GPU frame timers, Shader compilation, and asset loading are not Phase 0 capabilities."
   ]
 }

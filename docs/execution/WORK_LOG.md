@@ -402,3 +402,36 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and push the deterministic visual-input repair to draft PR #1.
 - Inspect the new clean GitHub Actions run and complete technical QA only after all remote gates pass.
+
+## 2026-07-21 05:17 PDT — P0-11 canonical visual environment repair
+
+### CI diagnosis
+
+- Observed workflow run `29828781956` for commit `70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d` through completion and fetched job `88628203423` logs.
+- Every nonvisual gate passed, including the pinned font install, supply-chain policy, all static and unit gates, acceptance evidence, build, bundle budget, and three nonvisual browser tests.
+- The canonical Playwright Chromium screenshot differed from the sandbox-generated reference at 2,983 thresholded pixels. Both CI attempts produced byte-identical 1440 × 1306 images with SHA-256 `f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7`.
+- Downloaded artifact `8494401336` (digest `sha256:b51c3a0199362e80652af3efb7f0a792fd50d15ea7bf18fc48acecdc701de418`) and inspected Reference, Actual, Difference, failure context, and retry evidence.
+- The remaining Difference is confined to glyph antialiasing between the network-restricted sandbox Chromium 149.0.7827.0 build and Playwright's official Chrome Headless Shell 149.0.7827.55. Layout, panels, controls, colors, and vector geometry are unchanged.
+
+### Repair
+
+- Made the official Playwright browser on GitHub Actions Ubuntu the canonical acceptance profile, as required by the fixed-environment rule in `PHASE_ACCEPTANCE_PLAN.md`.
+- Promoted the two-attempt byte-stable CI capture to canonical Reference and Current, then regenerated the canonical all-black Difference at 0 pixels.
+- Retained the previous sandbox reference plus the CI-generated environment Difference as auditable migration evidence: 2,983 Playwright-thresholded pixels and 20,028 absolute pixels.
+- Added an explicit `sandbox-chromium-149` development profile. It must be selected by name, cannot update canonical Current, and retains the same zero-pixel maximum and image threshold.
+- Extended the acceptance schema gate to validate canonical provenance, both byte-identical CI attempt hashes, the development reference, the environment Difference, and the recorded migration counts.
+- Added an executable assertion that the bundled `Kyxos Inter` face is loaded before capture.
+
+### Validation
+
+- Full sandbox-profile `pnpm verify`: PASS on the repaired tree.
+- Unit tests: PASS — 9 files and 28 tests.
+- Acceptance evidence gate: PASS — 12 required evidence files.
+- Browser acceptance: PASS — 4 / 4; the sandbox visual comparison is exactly 0 pixels.
+- Canonical reference provenance: PASS — both official CI attempts are byte-identical.
+- No test is skipped, no screenshot region beyond the existing wall-clock glyphs is hidden, and no threshold or assertion is weakened.
+
+### Next
+
+- Commit and push the canonical/development profile repair.
+- Require a new clean GitHub Actions run to prove the default canonical profile at 0 pixels before technical QA can pass.

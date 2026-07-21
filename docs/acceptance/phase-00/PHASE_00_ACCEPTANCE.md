@@ -3,8 +3,8 @@
 - **Evidence status:** Local evidence complete
 - **Phase status:** Development Complete; formal CI and technical QA pending
 - **Branch:** `agent/phase-00-foundation`
-- **Source checkpoint:** `8ae37d3ce9706be7ba7fb1f87a5f7ea14c7eb2b0`
-- **Evidence generated:** 2026-07-21 05:02 PDT
+- **Source checkpoint:** `70d13c68f7c7f8f5d1ae0cc1575b87cf37138e5d`
+- **Evidence generated:** 2026-07-21 05:14 PDT
 
 This document proves the Phase 0 deliverables defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It does not claim Phase Accepted: the pull-request CI run, technical QA review, autonomous owner evidence review, merge, and accepted tag are later gates.
 
@@ -74,15 +74,17 @@ No `integration-texture-lab` package exists in Phase 0. Therefore excluding it c
 
 ## Visual evidence
 
-The screenshot is a 1440 × 1306 full-page Chromium capture at DPR 1 and dark color scheme. Animations and transitions are disabled. Only the wall-clock text inside `.event-log time` is hidden during capture; event identity, runtime state, diagnostics, dependency direction, and all controls remain visible.
+The screenshot is a 1440 × 1306 full-page Chrome Headless Shell 149.0.7827.55 capture at DPR 1 and dark color scheme on the GitHub Actions Ubuntu 24.04 canonical environment. Animations and transitions are disabled. Only the wall-clock text inside `.event-log time` is hidden during capture; event identity, runtime state, diagnostics, dependency direction, and all controls remain visible.
 
 | Reference                                                         | Current                                                       | Difference                                                          |
 | ----------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
 | [reference.png](../../../visual-baselines/phase-00/reference.png) | [current.png](../../../visual-baselines/phase-00/current.png) | [difference.png](../../../visual-baselines/phase-00/difference.png) |
 
-Reference and Current have identical SHA-256 `bcf3737e7185f49d6925b7a0fc392653cc4152b61e9a1ebe5863176dafeebf41`. Absolute error is 0 pixels. [`metadata.json`](../../../visual-baselines/phase-00/metadata.json) records dimensions, hashes, capture settings, threshold, and known limitations.
+Reference and Current have identical SHA-256 `f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7`. Absolute error is 0 pixels. [`metadata.json`](../../../visual-baselines/phase-00/metadata.json) records dimensions, hashes, capture settings, threshold, and known limitations.
 
-The first remote visual run exposed 2,763 text-edge pixels caused by the original implicit system-font fallback. The corrected baseline bundles the normal Latin weight-variable Inter v20 subset from `@fontsource-variable/inter@5.2.8`; its source and OFL-1.1 license are recorded in [`THIRD_PARTY_ASSETS.md`](../../assets/THIRD_PARTY_ASSETS.md). Reference was regenerated only after this deterministic input fix. The zero-pixel limit and comparison threshold are unchanged.
+The first remote visual run exposed 2,763 text-edge pixels caused by the original implicit system-font fallback. The corrected page bundles the normal Latin weight-variable Inter v20 subset from `@fontsource-variable/inter@5.2.8`; its source and OFL-1.1 license are recorded in [`THIRD_PARTY_ASSETS.md`](../../assets/THIRD_PARTY_ASSETS.md).
+
+The subsequent official Playwright run exposed the remaining browser-build rasterizer difference: both CI attempts produced the byte-identical canonical hash above, while the network-restricted sandbox Chromium 149.0.7827.0 development reference differed at 2,983 Playwright-thresholded pixels (20,028 pixels by absolute comparison), all confined to glyph antialiasing. The old development reference and [environment Difference](../../../visual-baselines/phase-00/environment-difference.png) are retained as migration evidence. The canonical reference changed because the acceptance plan requires a fixed CI environment, not a sandbox-specific browser build. Both profiles keep a 0-pixel limit against their own versioned reference; no comparison threshold or assertion was weakened.
 
 This is the initial visual baseline. It proves the Phase 0 UI and Mock Backend diagnostics, not GPU-rendered geometry; Phase 1 establishes the first GPU scene baseline.
 
@@ -125,6 +127,7 @@ Owner Acceptance is not marked passed in this checkpoint. P0-12 will mechanicall
 - WebGPU device creation, clear, triangle rendering, GPU timing, and Shader compilation begin in Phase 1.
 - WebGL2 implementation and cross-backend visual comparison begin in Phase 10.
 - CPU/GPU frame times and asset-load metrics are unavailable because their capabilities do not yet exist.
+- Canonical visual acceptance requires the pinned official Playwright browser on GitHub Actions; the explicit sandbox profile is development evidence only.
 - Remote GitHub Actions is pending the repaired pull-request run and is not represented as green.
 
 ## P0-10 conclusion

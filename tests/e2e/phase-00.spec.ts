@@ -3,6 +3,24 @@ import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
+const visualSnapshots = {
+  canonical: 'reference.png',
+  'sandbox-chromium-149': 'reference-sandbox-chromium-149.png',
+} as const;
+
+function resolveVisualProfile() {
+  const profile = process.env['PLAYWRIGHT_VISUAL_PROFILE'] ?? 'canonical';
+  if (!(profile in visualSnapshots)) {
+    throw new Error(
+      `Unknown PLAYWRIGHT_VISUAL_PROFILE "${profile}". Expected one of: ${Object.keys(visualSnapshots).join(', ')}.`,
+    );
+  }
+  return {
+    name: profile,
+    snapshot: visualSnapshots[profile as keyof typeof visualSnapshots],
+  };
+}
+
 test.describe('Phase 0 independent Playground', () => {
   test('runs the SDK, resource, scheduler, loss, recovery, and disposal acceptance flow', async ({
     page,
@@ -63,6 +81,7 @@ test.describe('Phase 0 independent Playground', () => {
     await page.goto('/acceptance/phase-00');
     await expect(page.getByTestId('phase-00-acceptance')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.fonts.check('400 16px "Kyxos Inter"'))).toBe(true);
     await page.addStyleTag({
       content: `
         *, *::before, *::after {
@@ -82,13 +101,17 @@ test.describe('Phase 0 independent Playground', () => {
     await mkdir(runtimeDirectory, { recursive: true });
     await writeFile(path.join(runtimeDirectory, 'current.png'), screenshot);
 
-    if (process.env['UPDATE_ACCEPTANCE_EVIDENCE'] === 'true') {
+    const visualProfile = resolveVisualProfile();
+    if (
+      process.env['UPDATE_ACCEPTANCE_EVIDENCE'] === 'true' &&
+      visualProfile.name === 'canonical'
+    ) {
       const evidenceDirectory = path.resolve('visual-baselines/phase-00');
       await mkdir(evidenceDirectory, { recursive: true });
       await writeFile(path.join(evidenceDirectory, 'current.png'), screenshot);
     }
 
-    expect(screenshot).toMatchSnapshot('reference.png', {
+    expect(screenshot).toMatchSnapshot(visualProfile.snapshot, {
       maxDiffPixels: 0,
       threshold: 0.2,
     });
