@@ -1,14 +1,14 @@
 # Phase 00 Acceptance — Repository and Architecture Baseline
 
 - **Evidence status:** Automated verification, technical QA, and owner evidence review complete
-- **Phase status:** Owner Acceptance Passed; final CI, merge, and accepted tag pending
+- **Phase status:** Owner Acceptance Passed; freeze-automation CI, merge, and accepted tag pending
 - **Branch:** `agent/phase-00-foundation`
 - **Pull request:** [#1](https://github.com/urashima/Kyxos-Render-Engine/pull/1)
-- **Source checkpoint:** `565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7`
-- **CI run:** [29829946332](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29829946332)
-- **Evidence generated:** 2026-07-21 05:26 PDT
+- **Owner-evidence checkpoint:** `be995152a985ab2318b5e5e90849de1dba138b68`
+- **CI run:** [29830386590](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29830386590)
+- **Evidence generated:** 2026-07-21 05:37 PDT
 
-This document proves the Phase 0 deliverables defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It does not claim Phase Accepted: the owner-evidence commit's final CI, merge, and accepted tag remain freeze gates.
+This document proves the Phase 0 deliverables defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It does not claim Phase Accepted: the freeze-automation commit's final CI, merge, and accepted tag remain freeze gates. The owner-evidence checkpoint has passed the full remote pipeline.
 
 ## Acceptance surface
 
@@ -33,7 +33,7 @@ The surface exposes and tests:
 | ESLint and Prettier                      | Zero-warning lint and formatting gates                                                   | PASS   |
 | Vitest                                   | 9 files, 28 tests                                                                        | PASS   |
 | Playwright                               | 5 Chromium tests, including refresh/resize/DPR and canonical visual regression           | PASS   |
-| GitHub Actions                           | Run `29829543107`, job `88630686057`; complete `pnpm verify` on merge checkout           | PASS   |
+| GitHub Actions                           | Run `29830386590`, job `88633434507`; complete `pnpm verify` on merge checkout           | PASS   |
 | Package boundaries and cycles            | Runtime graph has zero cycles/violations; deliberate Renderer-to-SDK fixture is rejected | PASS   |
 | Mock Backend                             | Capability, resource accounting, loss, recovery, and disposal tests                      | PASS   |
 | ADR baseline                             | ADR-001 through ADR-005 accepted and mechanically checked                                | PASS   |
@@ -61,10 +61,10 @@ Local result: **PASS**. The machine-readable record is [`test-results/phase-00/a
 | Shader validation     | NOT APPLICABLE | No Phase 0 Shader capability or sources        |
 | Build                 | PASS           | 7 packages, 1 application                      |
 | Bundle budget         | PASS           | 77,075 B raw; 57,665 B gzip                    |
-| Browser acceptance    | PASS           | 5 / 5 local; final owner-evidence CI required  |
+| Browser acceptance    | PASS           | 5 / 5 local and owner-evidence CI              |
 | Visual regression     | PASS           | 0 differing pixels                             |
 | Static-to-sleep       | PASS           | p95 66.2 ms against 250 ms Phase 0 budget      |
-| Pull-request CI       | PASS           | Run `29829946332`; all steps successful        |
+| Pull-request CI       | PASS           | Run `29830386590`; all steps successful        |
 
 Shader validation is deliberately not marked PASS: the current gate reports `NOT_APPLICABLE` and will fail if Shader files appear before a compiler-backed validator is added.
 
@@ -119,12 +119,12 @@ The browser benchmark measures a user dirty event through frame completion and t
 | -------------------------------------------------------------- | ----------------------------------------------- | ------ |
 | Open the Playground                                            | Chromium route and visibility test              | PASS   |
 | Confirm no Texture Lab dependency                              | Manifest/source boundary scan                   | PASS   |
-| View all CI checks                                             | Runs `29829543107` and `29829946332` inspected  | PASS   |
+| View all CI checks                                             | Runs through `29830386590` inspected            | PASS   |
 | View the dependency graph                                      | Versioned JSON graph and architecture document  | PASS   |
 | Exclude `integration-texture-lab` and rebuild                  | Package is absent; full standalone build passes | PASS   |
 | Import only `@kyxos/render-sdk` from a blank consumer boundary | SDK-only consumer test                          | PASS   |
 
-Owner Acceptance Passed — Autonomous Evidence Review. The general checklist additionally verifies refresh, live resize, DPR 2, empty console/page-error collectors, visual judgment, performance, degradation behavior, and standalone operation. The owner-evidence commit must still pass its final CI before merge or tag.
+Owner Acceptance Passed — Autonomous Evidence Review. The general checklist additionally verifies refresh, live resize, DPR 2, empty console/page-error collectors, visual judgment, performance, degradation behavior, and standalone operation. GitHub Actions run `29830386590` passed the owner-evidence checkpoint with all five browser tests. The freeze-automation commit must pass the same pipeline before merge.
 
 ## Known limitations
 
@@ -133,8 +133,8 @@ Owner Acceptance Passed — Autonomous Evidence Review. The general checklist ad
 - WebGL2 implementation and cross-backend visual comparison begin in Phase 10.
 - CPU/GPU frame times and asset-load metrics are unavailable because their capabilities do not yet exist.
 - Canonical visual acceptance requires the pinned official Playwright browser on GitHub Actions; the explicit sandbox profile is development evidence only.
-- GitHub Actions run `29829946332` passed the complete canonical verification pipeline for the reviewed checkpoint.
+- GitHub Actions run `29830386590` passed the complete canonical verification pipeline for the owner-evidence checkpoint.
 
 ## P0-12 owner conclusion
 
-Owner Acceptance passes for the reviewed checkpoint `565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7`. Commit this owner evidence, mark PR #1 ready, and require one final clean CI on the owner-evidence head before merge and `phase-00-accepted` freeze.
+Owner Acceptance passes for the reviewed checkpoint `565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7`, and its versioned evidence at `be995152a985ab2318b5e5e90849de1dba138b68` passed clean CI. Require the freeze-automation head to pass before merge. The narrowly scoped main-push workflow then creates the immutable `phase-00-accepted` tag at the accepted merge and preserves any existing tag target.

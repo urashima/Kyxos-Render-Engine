@@ -119,3 +119,13 @@
 - **Reason:** The acceptance plan requires a fixed environment and rejects results that work only on a developer machine. After the WebFont fix, both official CI attempts were byte-identical, while the remaining cross-profile Difference was confined to glyph antialiasing from different Chromium builds. Layout, controls, panels, colors, and vector geometry were unchanged.
 - **Impact:** `reference.png`, `current.png`, and `difference.png` represent only the canonical CI profile. The previous sandbox reference and the 2,983-pixel Playwright / 20,028-pixel absolute environment Difference remain versioned migration evidence. The sandbox profile must be opted into by name and cannot update canonical evidence. No test is skipped, and no visual threshold is widened.
 - **ADR required:** No; this is acceptance-environment policy rather than runtime architecture.
+
+## ED-013 — Freeze Phase 0 with a phase-specific main-push workflow
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Add a Phase 0-only GitHub Actions workflow that runs when the accepted Phase 0 evidence reaches `main`, receives only `contents: write`, and creates the fixed annotated tag `phase-00-accepted` at that main commit. If the tag already exists, the workflow exits successfully without moving it.
+- **Candidates:** Pause for a manual tag because the active connector has no tag-ref mutation; create a branch that merely resembles a tag; use a broad reusable write workflow; use a narrowly triggered immutable phase-freeze workflow.
+- **Reason:** A real Git tag is a mandatory acceptance gate, while a similarly named branch would be false evidence. The repository's own post-merge workflow can use GitHub's short-lived token without exposing credentials or granting write access to the read-only PR verification job.
+- **Impact:** Only the phase-freeze job has `contents: write`, only on `main`, with no pull-request or user-controlled input. The fixed tag cannot be overwritten or moved. The tag target is verified after merge by reading repository content through that ref.
+- **ADR required:** No; this is release automation for one acceptance checkpoint.

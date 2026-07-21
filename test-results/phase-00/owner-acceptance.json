@@ -13,6 +13,13 @@
     "artifactId": 8494859109,
     "artifactDigest": "sha256:b99d0b08114708fb391dba2d7c54a0b1c8190ed6e0ae1098c38b0938bebaa712"
   },
+  "finalOwnerEvidenceCi": {
+    "runId": 29830386590,
+    "jobId": 88633434507,
+    "sourceCommit": "be995152a985ab2318b5e5e90849de1dba138b68",
+    "conclusion": "success",
+    "browserTests": 5
+  },
   "phaseOperations": {
     "openPlayground": "PASS",
     "noTextureLabDependency": "PASS",
@@ -46,9 +53,9 @@
   },
   "blockers": [],
   "remainingFreezeGates": [
-    "Owner-evidence commit passes final GitHub Actions.",
+    "Freeze-automation commit passes final GitHub Actions.",
     "PR #1 merges to main.",
-    "Tag phase-00-accepted is created at the accepted merge."
+    "The phase-specific main-push workflow creates phase-00-accepted at the accepted merge."
   ],
-  "nextAction": "Commit owner evidence, mark PR #1 ready, and require final CI before merge."
+  "nextAction": "Commit the immutable tag workflow, require its final CI, merge PR #1, and verify the accepted tag."
 }

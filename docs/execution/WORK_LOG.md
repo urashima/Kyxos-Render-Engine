@@ -489,3 +489,42 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit the owner evidence, update PR #1, and mark it ready for review.
 - Require the owner-evidence head to pass all five browser tests in clean CI before merge and accepted-tag freeze.
+
+## 2026-07-21 05:33 PDT — P0-12 immutable tag freeze automation
+
+### Completed
+
+- Confirmed the active GitHub connector can merge PRs and update branch refs but exposes no tag-ref mutation; the environment has no `gh`, GitHub token, or authenticated Git transport.
+- Rejected a tag-like branch because it would not satisfy the acceptance plan.
+- Added `.github/workflows/phase-00-freeze.yml`, triggered only when Phase 0 acceptance content reaches `main`.
+- Restricted the phase-specific workflow to `contents: write`, the fixed repository, the fixed tag `phase-00-accepted`, and a fixed main commit. It accepts no pull-request or user-controlled input.
+- The workflow first checks the remote tag. If it exists, it exits without moving it; otherwise it creates one annotated tag at `GITHUB_SHA` and pushes only that ref.
+- The read-only pull-request verification workflow remains unchanged and continues not to persist credentials.
+- Extended the Phase 0 acceptance gate to require the main-only trigger, exact tag, write scope, annotated-tag command, fixed tag push, immutability guard, and absence of `pull_request_target`.
+- Recorded the release-automation choice as ED-013.
+
+### Next
+
+- Push and verify the freeze workflow through the full pull-request gate.
+- Merge PR #1 only after the new head passes; then verify repository content resolves through `phase-00-accepted` before starting Phase 1.
+
+## 2026-07-21 05:37 PDT — P0-12 owner-evidence CI passed
+
+### Remote verification
+
+- GitHub Actions run `29830386590`, job `88633434507`, completed successfully for owner-evidence commit `be995152a985ab2318b5e5e90849de1dba138b68`.
+- Every job step passed, including frozen installation, the complete `pnpm verify` pipeline, canonical visual regression, and all 5 Playwright acceptance tests.
+- PR #1 is open, Ready, and mergeable. The successful run removes the previous owner-evidence CI pending state.
+
+### Local freeze-head validation
+
+- Full `pnpm verify`: PASS after adding the immutable tag workflow and updating the acceptance schema.
+- Unit tests: 9 files / 28 tests PASS.
+- Acceptance schema: 17 required evidence files PASS.
+- Boundary, architecture, strict typecheck, build, Shader capability state, and bundle budget gates: PASS.
+- Sandbox-profile Playwright acceptance: 5 / 5 PASS, including zero-pixel visual regression and static-to-sleep budget.
+
+### Next
+
+- Commit and push the immutable tag workflow and updated evidence.
+- Require that exact new head to pass the same full CI before merging and verifying `phase-00-accepted`.

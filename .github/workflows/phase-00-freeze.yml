@@ -1,0 +1,41 @@
+name: Freeze accepted Phase 0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-00-freeze.yml
+      - docs/acceptance/phase-00/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-00-freeze
+  cancel-in-progress: false
+
+jobs:
+  create-accepted-tag:
+    if: github.repository == 'urashima/Kyxos-Render-Engine'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out accepted main commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create immutable accepted tag
+        env:
+          TAG_NAME: phase-00-accepted
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG_NAME}" >/dev/null 2>&1; then
+            echo "${TAG_NAME} already exists; preserving its original target."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "${TAG_NAME}" "${GITHUB_SHA}" --message "Phase 00 accepted"
+          git push origin "refs/tags/${TAG_NAME}"

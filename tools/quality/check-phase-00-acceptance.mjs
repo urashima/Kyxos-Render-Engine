@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const requiredTextFiles = [
+  '.github/workflows/phase-00-freeze.yml',
   'docs/acceptance/phase-00/PHASE_00_ACCEPTANCE.md',
   'docs/acceptance/phase-00/OWNER_ACCEPTANCE.md',
   'docs/acceptance/phase-00/TECHNICAL_QA.md',
@@ -56,7 +57,9 @@ if (summary?.phase !== '00' || summary?.localStatus !== 'PASS') {
 }
 if (
   summary?.remoteCiStatus !== 'PASS' ||
-  summary?.remoteCi?.runId !== 29829946332 ||
+  summary?.sourceCheckpoint !== 'be995152a985ab2318b5e5e90849de1dba138b68' ||
+  summary?.remoteCi?.runId !== 29830386590 ||
+  summary?.remoteCi?.sourceCommit !== 'be995152a985ab2318b5e5e90849de1dba138b68' ||
   summary?.remoteCi?.conclusion !== 'success'
 ) {
   failures.push('automated summary: inspected Phase 0 pull-request CI must pass');
@@ -94,6 +97,11 @@ if (
   ownerAcceptance?.reviewedCheckpoint !== '565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7' ||
   ownerAcceptance?.ci?.runId !== 29829946332 ||
   ownerAcceptance?.ci?.conclusion !== 'success' ||
+  ownerAcceptance?.finalOwnerEvidenceCi?.runId !== 29830386590 ||
+  ownerAcceptance?.finalOwnerEvidenceCi?.sourceCommit !==
+    'be995152a985ab2318b5e5e90849de1dba138b68' ||
+  ownerAcceptance?.finalOwnerEvidenceCi?.conclusion !== 'success' ||
+  ownerAcceptance?.finalOwnerEvidenceCi?.browserTests !== 5 ||
   ownerAcceptance?.evidence?.localBrowserTests !== 5 ||
   ownerAcceptance?.evidence?.canonicalVisualDiffPixels !== 0 ||
   Object.values(ownerAcceptance?.phaseOperations ?? {}).some((status) => status !== 'PASS') ||
@@ -216,7 +224,7 @@ try {
   ]) {
     if (!acceptance.includes(heading)) failures.push(`acceptance document: missing ${heading}`);
   }
-  if (!acceptance.includes('GitHub Actions run `29829946332` passed')) {
+  if (!acceptance.includes('GitHub Actions run `29830386590` passed')) {
     failures.push('acceptance document: successful inspected CI run is not declared');
   }
   if (!acceptance.includes('Owner Acceptance Passed — Autonomous Evidence Review')) {
@@ -224,6 +232,30 @@ try {
   }
 } catch (error) {
   failures.push(`acceptance document: ${String(error)}`);
+}
+
+try {
+  const freezeWorkflow = await readFile(
+    path.join(root, '.github/workflows/phase-00-freeze.yml'),
+    'utf8',
+  );
+  for (const requiredFragment of [
+    'branches:\n      - main',
+    'contents: write',
+    'TAG_NAME: phase-00-accepted',
+    'git tag --annotate',
+    'git push origin "refs/tags/${TAG_NAME}"',
+    'preserving its original target',
+  ]) {
+    if (!freezeWorkflow.includes(requiredFragment)) {
+      failures.push(`phase freeze workflow: missing ${requiredFragment}`);
+    }
+  }
+  if (freezeWorkflow.includes('pull_request_target')) {
+    failures.push('phase freeze workflow: pull_request_target is forbidden');
+  }
+} catch (error) {
+  failures.push(`phase freeze workflow: ${String(error)}`);
 }
 
 if (failures.length > 0) {
