@@ -1,5 +1,7 @@
 import type {
+  BackendBufferData,
   BackendBufferDescriptor,
+  BackendClearColor,
   BackendColorTargetDescriptor,
   BackendCommandEncoderDescriptor,
   BackendFeature,
@@ -32,6 +34,8 @@ export interface WebGpuDeviceRequest {
 
 export interface WebGpuQueuePort {
   onSubmittedWorkDone(): Promise<void>;
+  submit(commandBuffers: readonly WebGpuCommandBufferPort[]): void;
+  writeBuffer(buffer: WebGpuBufferPort, offset: number, data: BackendBufferData): void;
 }
 
 export interface WebGpuSurfaceRequest {
@@ -49,6 +53,10 @@ export interface WebGpuSurfacePort {
 
 export interface WebGpuBufferPort {
   destroy(): void;
+}
+
+export interface WebGpuCommandBufferPort {
+  readonly kind: 'command-buffer';
 }
 
 export interface WebGpuTexturePort {
@@ -69,6 +77,41 @@ export interface WebGpuPipelinePort {
 
 export interface WebGpuCommandEncoderPort {
   readonly kind: 'command-encoder';
+  encodeRenderPass(request: WebGpuRenderPassRequest): void;
+  finish(): WebGpuCommandBufferPort;
+}
+
+export interface WebGpuVertexBufferBinding {
+  readonly buffer: WebGpuBufferPort;
+  readonly offset: number;
+  readonly size: number | undefined;
+  readonly slot: number;
+}
+
+export interface WebGpuIndexBufferBinding {
+  readonly buffer: WebGpuBufferPort;
+  readonly format: 'uint16' | 'uint32';
+  readonly offset: number;
+  readonly size: number | undefined;
+}
+
+export interface WebGpuDrawRequest {
+  readonly firstIndex: number;
+  readonly firstInstance: number;
+  readonly firstVertex: number;
+  readonly indexBuffer: WebGpuIndexBufferBinding | undefined;
+  readonly indexCount: number | undefined;
+  readonly instanceCount: number;
+  readonly pipeline: WebGpuPipelinePort;
+  readonly vertexBuffers: readonly WebGpuVertexBufferBinding[];
+  readonly vertexCount: number | undefined;
+}
+
+export interface WebGpuRenderPassRequest {
+  readonly clearColor: BackendClearColor;
+  readonly draws: readonly WebGpuDrawRequest[];
+  readonly label: string | undefined;
+  readonly surface: WebGpuSurfacePort;
 }
 
 export interface WebGpuVertexStageRequest {

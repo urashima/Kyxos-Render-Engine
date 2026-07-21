@@ -2,6 +2,11 @@ import type { Disposable, EventListener, Unsubscribe } from '@kyxos/render-core'
 
 import type { BackendCapabilityReport, BackendType } from './capabilities.js';
 import type {
+  BackendBufferData,
+  BackendFrameSubmission,
+  BackendRenderPassStatistics,
+} from './commands.js';
+import type {
   BackendBufferDescriptor,
   BackendBufferHandle,
   BackendCommandEncoderDescriptor,
@@ -63,6 +68,7 @@ export interface GraphicsBackend extends Disposable {
   createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle;
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle;
   destroyResource(handle: BackendResourceHandle): boolean;
+  executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics;
   getShaderCompilationInfo(
     handle: BackendShaderModuleHandle,
   ): Promise<BackendShaderCompilationInfo>;
@@ -71,6 +77,7 @@ export interface GraphicsBackend extends Disposable {
   initialize(): Promise<void>;
   resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo;
   waitForIdle(): Promise<void>;
+  writeBuffer(handle: BackendBufferHandle, data: BackendBufferData, offset?: number): void;
   on<EventName extends keyof BackendEvents>(
     eventName: EventName,
     listener: EventListener<BackendEvents[EventName]>,

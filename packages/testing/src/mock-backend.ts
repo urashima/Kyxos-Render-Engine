@@ -1,13 +1,16 @@
 import type {
+  BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
   BackendCapabilityReport,
   BackendCommandEncoderDescriptor,
   BackendCommandEncoderHandle,
   BackendEvents,
+  BackendFrameSubmission,
   BackendLifecycleState,
   BackendLossInfo,
   BackendPipelineHandle,
+  BackendRenderPassStatistics,
   BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
@@ -79,8 +82,11 @@ function validateEstimatedBytes(estimatedBytes: number): void {
 
 export class MockBackend implements GraphicsBackend {
   readonly #allocators = createAllocators();
+  readonly #buffers = new Map<BackendBufferHandle, BackendBufferDescriptor>();
+  readonly #commandEncoders = new Set<BackendCommandEncoderHandle>();
   readonly #events = new TypedEventEmitter<BackendEvents>();
   readonly #resources = new Map<BackendResourceHandle, MockResourceRecord>();
+  readonly #pipelines = new Map<BackendPipelineHandle, BackendRenderPipelineDescriptor>();
   readonly #shaderInfo = new Map<BackendShaderModuleHandle, BackendShaderCompilationInfo>();
   readonly #surfaces = new Map<BackendSurfaceHandle, MockSurfaceRecord>();
   #createdTotal = 0;
@@ -156,10 +162,15 @@ export class MockBackend implements GraphicsBackend {
         recoverable: false,
       });
     }
-    return this.createResource('buffer', {
+    const handle = this.createResource('buffer', {
       estimatedBytes: descriptor.size,
       ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
     });
+    this.#buffers.set(
+      handle,
+      Object.freeze({ ...descriptor, usage: Object.freeze([...descriptor.usage]) }),
+    );
+    return handle;
   }
 
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
@@ -216,19 +227,23 @@ export class MockBackend implements GraphicsBackend {
     if (descriptor.fragment !== undefined) {
       await this.getShaderCompilationInfo(descriptor.fragment.module);
     }
-    return this.createResource(
+    const handle = this.createResource(
       'pipeline',
       descriptor.label === undefined ? {} : { label: descriptor.label },
     );
+    this.#pipelines.set(handle, descriptor);
+    return handle;
   }
 
   createCommandEncoder(
     descriptor: BackendCommandEncoderDescriptor = {},
   ): BackendCommandEncoderHandle {
-    return this.createResource(
+    const handle = this.createResource(
       'command-encoder',
       descriptor.label === undefined ? {} : { label: descriptor.label },
     );
+    this.#commandEncoders.add(handle);
+    return handle;
   }
 
   createResource<Kind extends BackendResourceKind>(
@@ -289,6 +304,15 @@ export class MockBackend implements GraphicsBackend {
     if (handle.kind === backendResourceHandleKind('shader-module')) {
       this.#shaderInfo.delete(handle as BackendShaderModuleHandle);
     }
+    if (handle.kind === backendResourceHandleKind('buffer')) {
+      this.#buffers.delete(handle as BackendBufferHandle);
+    }
+    if (handle.kind === backendResourceHandleKind('pipeline')) {
+      this.#pipelines.delete(handle as BackendPipelineHandle);
+    }
+    if (handle.kind === backendResourceHandleKind('command-encoder')) {
+      this.#commandEncoders.delete(handle as BackendCommandEncoderHandle);
+    }
     this.#destroyedTotal += 1;
     return true;
   }
@@ -332,6 +356,81 @@ export class MockBackend implements GraphicsBackend {
       createdTotal: this.#createdTotal,
       destroyedTotal: this.#destroyedTotal,
     });
+  }
+
+  writeBuffer(handle: BackendBufferHandle, data: BackendBufferData, offset = 0): void {
+    this.#assertReady('write Buffer data');
+    const descriptor = this.#buffers.get(handle);
+    if (
+      descriptor === undefined ||
+      !descriptor.usage.includes('copy-dst') ||
+      !Number.isSafeInteger(offset) ||
+      offset < 0 ||
+      offset + data.byteLength > descriptor.size
+    ) {
+      throw new KyxosEngineError('Mock Buffer write is invalid or uses a foreign Handle.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+  }
+
+  executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
+    this.#assertReady('execute a frame');
+    if (!this.#commandEncoders.has(submission.commandEncoder)) {
+      throw new KyxosEngineError('Mock Command Encoder Handle is stale or foreign.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    let drawCalls = 0;
+    let instances = 0;
+    let triangles = 0;
+    let vertices = 0;
+    for (const renderPass of submission.renderPasses) {
+      if (this.getSurfaceInfo(renderPass.surface).size.suspended) {
+        throw new KyxosEngineError('Mock Surface is suspended.', {
+          code: 'INVALID_STATE',
+          module: 'backend',
+          recoverable: true,
+        });
+      }
+      for (const draw of renderPass.draws ?? []) {
+        const pipeline = this.#pipelines.get(draw.pipeline);
+        if (pipeline === undefined) {
+          throw new KyxosEngineError('Mock Pipeline Handle is stale or foreign.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+        for (const binding of draw.vertexBuffers ?? []) {
+          if (!this.#buffers.has(binding.buffer)) {
+            throw new KyxosEngineError('Mock Vertex Buffer Handle is stale or foreign.', {
+              code: 'INVALID_ARGUMENT',
+              module: 'backend',
+              recoverable: false,
+            });
+          }
+        }
+        const count = draw.indexCount ?? draw.vertexCount ?? 0;
+        const drawInstances = draw.instanceCount ?? 1;
+        const topology = pipeline.primitive?.topology ?? 'triangle-list';
+        drawCalls += 1;
+        instances += drawInstances;
+        vertices += count * drawInstances;
+        triangles +=
+          topology === 'triangle-list'
+            ? Math.floor(count / 3) * drawInstances
+            : topology === 'triangle-strip'
+              ? Math.max(0, count - 2) * drawInstances
+              : 0;
+      }
+    }
+    this.destroyResource(submission.commandEncoder);
+    return Object.freeze({ drawCalls, instances, triangles, vertices });
   }
 
   resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo {
@@ -385,6 +484,9 @@ export class MockBackend implements GraphicsBackend {
   #releaseAllResources(): void {
     this.#destroyedTotal += this.#resources.size;
     this.#resources.clear();
+    this.#buffers.clear();
+    this.#commandEncoders.clear();
+    this.#pipelines.clear();
     this.#shaderInfo.clear();
     this.#surfaces.clear();
   }

@@ -643,3 +643,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-04 checkpoint.
 - Add backend-neutral upload/render-pass/indexed-draw commands, queue submission, validated Phase 1 WGSL, and generated triangle/sphere geometry.
+
+## 2026-07-21 06:30 PDT — P1-05a command recording and submission
+
+### Completed
+
+- Added backend-neutral Buffer upload, clear color, vertex/index bindings, Draw, Render Pass, frame submission, and immutable submission-statistics contracts.
+- Implemented WebGPU queue upload/submission plus Command Encoder Render Pass recording without exposing native command objects outside the concrete backend.
+- Added native browser translation for pipelines, vertex/index buffers, non-indexed/indexed Draw calls, Render Pass completion, Command Buffer finish, and queue submission.
+- Made a Command Encoder single-use after an encode attempt and retained it after pre-encode validation failure so callers can explicitly dispose it.
+- Added ownership, usage, four-byte upload/vertex alignment, index-format alignment, binding-range, indexed-read-range, duplicate-slot, positive-count, and safe-integer validation.
+- Extended Mock Backend and the SDK-only consumer fixture to the command contract.
+
+### Validation
+
+- Full unit suite: 13 files / 57 tests PASS.
+- Indexed Draw coverage proves instance/triangle/vertex statistics, exact encoded native bindings, and rejection before submission when `firstIndex + indexCount` exceeds the bound region.
+- Browser wrapper coverage proves native `writeBuffer`, `beginRenderPass`, pipeline/buffer bindings, Draw calls, pass end, encoder finish, and queue submit order.
+- Format, zero-warning lint, strict source/test/application typecheck, and all package builds: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-05a checkpoint.
+- Add canonical WGSL, generated triangle/sphere geometry, a Renderer-owned basic-geometry feature, and compiler-backed Shader validation.

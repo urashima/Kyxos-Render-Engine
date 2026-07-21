@@ -2,16 +2,22 @@
 export const SDK_PACKAGE_NAME = '@kyxos/render-sdk' as const;
 
 export type {
-  BackendCapabilityReport,
+  BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
+  BackendCapabilityReport,
+  BackendClearColor,
   BackendCommandEncoderDescriptor,
   BackendCommandEncoderHandle,
+  BackendDrawCommand,
   BackendEvents,
+  BackendFrameSubmission,
   BackendLifecycleState,
   BackendLossInfo,
   BackendPipelineHandle,
   BackendRenderPipelineDescriptor,
+  BackendRenderPassDescriptor,
+  BackendRenderPassStatistics,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceKind,

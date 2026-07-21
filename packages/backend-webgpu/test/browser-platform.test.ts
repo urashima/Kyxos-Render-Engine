@@ -18,15 +18,36 @@ afterEach(() => {
 
 describe('browser WebGPU platform port', () => {
   it('contains native adapter, device, queue, and Canvas context objects', async () => {
-    const context = { configure: vi.fn(), unconfigure: vi.fn() };
-    const queue = { onSubmittedWorkDone: vi.fn(() => Promise.resolve()) };
+    const nativeTextureView = {};
+    const context = {
+      configure: vi.fn(),
+      getCurrentTexture: vi.fn(() => ({ createView: vi.fn(() => nativeTextureView) })),
+      unconfigure: vi.fn(),
+    };
+    const queue = {
+      onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
+      submit: vi.fn(),
+      writeBuffer: vi.fn(),
+    };
     const nativeBuffer = { destroy: vi.fn() };
     const nativeTexture = { destroy: vi.fn() };
     const nativeShader = {
       getCompilationInfo: vi.fn(() => Promise.resolve({ messages: [] })),
     };
     const nativePipeline = {};
-    const nativeCommandEncoder = {};
+    const nativeRenderPass = {
+      draw: vi.fn(),
+      drawIndexed: vi.fn(),
+      end: vi.fn(),
+      setIndexBuffer: vi.fn(),
+      setPipeline: vi.fn(),
+      setVertexBuffer: vi.fn(),
+    };
+    const nativeCommandBuffer = {};
+    const nativeCommandEncoder = {
+      beginRenderPass: vi.fn(() => nativeRenderPass),
+      finish: vi.fn(() => nativeCommandBuffer),
+    };
     const nativeDevice = {
       createBuffer: vi.fn(() => nativeBuffer as unknown as GPUBuffer),
       createCommandEncoder: vi.fn(() => nativeCommandEncoder as unknown as GPUCommandEncoder),
@@ -77,6 +98,8 @@ describe('browser WebGPU platform port', () => {
       size: 64,
       usage: 0x28,
     });
+    device.queue.writeBuffer(buffer, 0, new Float32Array(16));
+    expect(queue.writeBuffer).toHaveBeenCalledWith(nativeBuffer, 0, expect.any(Float32Array));
     const texture = device.createTexture({
       format: 'rgba8unorm',
       size: { height: 4, width: 8 },
@@ -94,7 +117,7 @@ describe('browser WebGPU platform port', () => {
     expect(nativeDevice.createSampler).toHaveBeenCalledExactlyOnceWith({ magFilter: 'linear' });
     const shader = device.createShaderModule({ code: '@vertex fn main() {}', language: 'wgsl' });
     expect(await shader.getCompilationInfo()).toEqual({ messages: [], valid: true });
-    await device.createRenderPipeline({
+    const pipeline = await device.createRenderPipeline({
       fragment: {
         entryPoint: 'fragmentMain',
         module: shader,
@@ -111,7 +134,7 @@ describe('browser WebGPU platform port', () => {
         vertex: expect.objectContaining({ module: nativeShader }),
       }),
     );
-    device.createCommandEncoder({ label: 'frame' });
+    const commandEncoder = device.createCommandEncoder({ label: 'frame' });
     expect(nativeDevice.createCommandEncoder).toHaveBeenCalledExactlyOnceWith({ label: 'frame' });
     buffer.destroy();
     texture.destroy();
@@ -134,6 +157,43 @@ describe('browser WebGPU platform port', () => {
       16_384,
     );
     surface.configure(visible);
+
+    commandEncoder.encodeRenderPass({
+      clearColor: { a: 1, b: 0.3, g: 0.2, r: 0.1 },
+      draws: [
+        {
+          firstIndex: 0,
+          firstInstance: 0,
+          firstVertex: 0,
+          indexBuffer: undefined,
+          indexCount: undefined,
+          instanceCount: 1,
+          pipeline,
+          vertexBuffers: [{ buffer, offset: 0, size: undefined, slot: 0 }],
+          vertexCount: 3,
+        },
+      ],
+      label: 'basic-pass',
+      surface,
+    });
+    expect(nativeCommandEncoder.beginRenderPass).toHaveBeenCalledWith({
+      colorAttachments: [
+        {
+          clearValue: { a: 1, b: 0.3, g: 0.2, r: 0.1 },
+          loadOp: 'clear',
+          storeOp: 'store',
+          view: nativeTextureView,
+        },
+      ],
+      label: 'basic-pass',
+    });
+    expect(nativeRenderPass.setPipeline).toHaveBeenCalledWith(nativePipeline);
+    expect(nativeRenderPass.setVertexBuffer).toHaveBeenCalledWith(0, nativeBuffer, 0);
+    expect(nativeRenderPass.draw).toHaveBeenCalledWith(3, 1, 0, 0);
+    expect(nativeRenderPass.end).toHaveBeenCalledTimes(1);
+    const commandBuffer = commandEncoder.finish();
+    device.queue.submit([commandBuffer]);
+    expect(queue.submit).toHaveBeenCalledExactlyOnceWith([nativeCommandBuffer]);
 
     expect(target).toMatchObject({ height: 360, width: 640 });
     expect(context.configure).toHaveBeenCalledExactlyOnceWith({

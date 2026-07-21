@@ -11,11 +11,13 @@ import { createWebGpuBackendForPlatform } from '../src/backend.js';
 import type {
   WebGpuAdapterPort,
   WebGpuBufferPort,
+  WebGpuCommandBufferPort,
   WebGpuCommandEncoderPort,
   WebGpuDevicePort,
   WebGpuDeviceRequest,
   WebGpuPipelinePort,
   WebGpuPlatformPort,
+  WebGpuRenderPassRequest,
   WebGpuRenderPipelineRequest,
   WebGpuSamplerPort,
   WebGpuShaderModulePort,
@@ -73,17 +75,31 @@ class FakeShaderModule implements WebGpuShaderModulePort {
   );
 }
 
+class FakeCommandBuffer implements WebGpuCommandBufferPort {
+  readonly kind = 'command-buffer' as const;
+}
+
+class FakeCommandEncoder implements WebGpuCommandEncoderPort {
+  readonly kind = 'command-encoder' as const;
+  readonly commandBuffer = new FakeCommandBuffer();
+  readonly encodeRenderPass = vi.fn<(request: WebGpuRenderPassRequest) => void>();
+  readonly finish = vi.fn(() => this.commandBuffer);
+}
+
 class FakeDevice implements WebGpuDevicePort {
   readonly #loss = new Deferred<BackendLossInfo>();
   readonly destroy = vi.fn();
   readonly lost = this.#loss.promise;
   readonly queue = Object.freeze({
     onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
+    submit: vi.fn<(commandBuffers: readonly WebGpuCommandBufferPort[]) => void>(),
+    writeBuffer: vi.fn<WebGpuDevicePort['queue']['writeBuffer']>(),
   });
   readonly createSurface = vi.fn<(request: WebGpuSurfaceRequest) => WebGpuSurfacePort>();
   readonly buffers: FakeBuffer[] = [];
   readonly textures: FakeTexture[] = [];
   readonly shaders: FakeShaderModule[] = [];
+  readonly encoders: FakeCommandEncoder[] = [];
   readonly createBuffer = vi.fn<
     (descriptor: Parameters<WebGpuDevicePort['createBuffer']>[0]) => WebGpuBufferPort
   >(() => {
@@ -115,7 +131,11 @@ class FakeDevice implements WebGpuDevicePort {
     (
       descriptor: Parameters<WebGpuDevicePort['createCommandEncoder']>[0],
     ) => WebGpuCommandEncoderPort
-  >(() => ({ kind: 'command-encoder' }));
+  >(() => {
+    const encoder = new FakeCommandEncoder();
+    this.encoders.push(encoder);
+    return encoder;
+  });
 
   constructor(surfaces: readonly FakeSurface[] = []) {
     for (const surface of surfaces) {
@@ -335,7 +355,8 @@ describe('WebGpuBackend device lifecycle', () => {
   });
 
   it('creates typed native resources, validates Shaders, and accounts for disposal', async () => {
-    const device = new FakeDevice();
+    const surfacePort = new FakeSurface();
+    const device = new FakeDevice([surfacePort]);
     const backend = createWebGpuBackendForPlatform(
       {},
       new FakePlatform(true, [new FakeAdapter(['compute'], [device])]),
@@ -362,7 +383,7 @@ describe('WebGpuBackend device lifecycle', () => {
       messages: [],
       valid: true,
     });
-    await backend.createRenderPipeline({
+    const pipeline = await backend.createRenderPipeline({
       fragment: {
         entryPoint: 'fragmentMain',
         module: shader,
@@ -383,7 +404,30 @@ describe('WebGpuBackend device lifecycle', () => {
         module: shader,
       },
     });
-    backend.createCommandEncoder({ label: 'frame' });
+    const surface = backend.createSurface({
+      cssHeight: 180,
+      cssWidth: 320,
+      devicePixelRatio: 2,
+      target: { getContext: () => ({}), height: 0, width: 0 },
+    });
+    backend.writeBuffer(buffer, new Float32Array(16));
+    const commandEncoder = backend.createCommandEncoder({ label: 'frame' });
+    const frame = backend.executeFrame({
+      commandEncoder,
+      renderPasses: [
+        {
+          clearColor: { a: 1, b: 0.2, g: 0.1, r: 0.05 },
+          draws: [
+            {
+              pipeline,
+              vertexBuffers: [{ buffer, slot: 0 }],
+              vertexCount: 3,
+            },
+          ],
+          surface,
+        },
+      ],
+    });
 
     expect(device.createBuffer).toHaveBeenCalledWith({
       label: 'vertices',
@@ -396,14 +440,31 @@ describe('WebGpuBackend device lifecycle', () => {
         vertex: expect.objectContaining({ module: device.shaders[0] }),
       }),
     );
+    expect(device.queue.writeBuffer).toHaveBeenCalledExactlyOnceWith(
+      device.buffers[0],
+      0,
+      expect.any(Float32Array),
+    );
+    expect(frame).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
+    expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draws: [expect.objectContaining({ pipeline: expect.any(Object), vertexCount: 3 })],
+        surface: surfacePort,
+      }),
+    );
+    expect(device.encoders[0]?.finish).toHaveBeenCalledTimes(1);
+    expect(device.queue.submit).toHaveBeenCalledExactlyOnceWith([
+      device.encoders[0]?.commandBuffer,
+    ]);
     expect(backend.getResourceStatistics()).toMatchObject({
       activeCount: 6,
       byKind: {
         buffer: { activeCount: 1, activeEstimatedBytes: 64 },
-        'command-encoder': { activeCount: 1 },
+        'command-encoder': { activeCount: 0 },
         pipeline: { activeCount: 1 },
         sampler: { activeCount: 1 },
         'shader-module': { activeCount: 1 },
+        surface: { activeCount: 1 },
         texture: { activeCount: 1, activeEstimatedBytes: 80 },
       },
     });
@@ -416,9 +477,98 @@ describe('WebGpuBackend device lifecycle', () => {
     expect(backend.getResourceStatistics()).toMatchObject({
       activeCount: 0,
       activeEstimatedBytes: 0,
-      createdTotal: 6,
-      destroyedTotal: 6,
+      createdTotal: 7,
+      destroyedTotal: 7,
     });
+  });
+
+  it('records indexed Draws and rejects reads outside the bound Index Buffer range', async () => {
+    const surfacePort = new FakeSurface();
+    const device = new FakeDevice([surfacePort]);
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'bgra8unorm' }],
+      },
+      primitive: { topology: 'triangle-list' },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const surface = backend.createSurface({
+      cssHeight: 180,
+      cssWidth: 320,
+      devicePixelRatio: 1,
+      target: { getContext: () => ({}), height: 0, width: 0 },
+    });
+    const vertexBuffer = backend.createBuffer({ size: 48, usage: ['copy-dst', 'vertex'] });
+    const indexBuffer = backend.createBuffer({ size: 16, usage: ['copy-dst', 'index'] });
+    backend.writeBuffer(indexBuffer, new Uint16Array([0, 1, 2, 2, 3, 0, 0, 0]));
+
+    const frame = backend.executeFrame({
+      commandEncoder: backend.createCommandEncoder(),
+      renderPasses: [
+        {
+          clearColor: { a: 1, b: 0, g: 0, r: 0 },
+          draws: [
+            {
+              indexBuffer: { buffer: indexBuffer, format: 'uint16', size: 12 },
+              indexCount: 6,
+              instanceCount: 2,
+              pipeline,
+              vertexBuffers: [{ buffer: vertexBuffer, slot: 0 }],
+            },
+          ],
+          surface,
+        },
+      ],
+    });
+
+    expect(frame).toEqual({ drawCalls: 1, instances: 2, triangles: 4, vertices: 12 });
+    expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draws: [
+          expect.objectContaining({
+            indexBuffer: expect.objectContaining({ buffer: device.buffers[1], size: 12 }),
+            indexCount: 6,
+            instanceCount: 2,
+          }),
+        ],
+      }),
+    );
+
+    const invalidEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: invalidEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            draws: [
+              {
+                firstIndex: 5,
+                indexBuffer: { buffer: indexBuffer, format: 'uint16', size: 12 },
+                indexCount: 2,
+                pipeline,
+              },
+            ],
+            surface,
+          },
+        ],
+      }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
+    expect(device.queue.submit).toHaveBeenCalledTimes(1);
+    expect(backend.destroyResource(invalidEncoder)).toBe(true);
+    backend.dispose();
   });
 
   it('rejects invalid typed resource descriptors and foreign Shader handles', async () => {

@@ -14,6 +14,15 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 | P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Planned        |
 | P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | Planned        |
 
+### P1-05 checkpoints
+
+- [x] Backend-neutral Buffer upload, Render Pass, Draw, indexed Draw, Command Encoder consumption, queue submission, and immutable statistics.
+- [x] Browser-native command translation and deterministic fake-native command-order coverage.
+- [x] Vertex/Index usage, ownership, alignment, range, count, duplicate-slot, and safe-integer validation.
+- [ ] Canonical WGSL module with compiler-backed validation.
+- [ ] Generated triangle and indexed sphere geometry wired through a Renderer feature.
+- [ ] Real WebGPU smoke covering clear, triangle, and sphere submissions.
+
 ## Required architecture boundaries
 
 - Browser `navigator.gpu`, `GPUAdapter`, `GPUDevice`, queue, context, and native resources remain private to `@kyxos/render-backend-webgpu`.

@@ -159,3 +159,13 @@
 - **Reason:** Native WebGPU objects would bind Renderer and products to one backend, while untyped descriptors would defer errors and make WebGL2 mapping untestable. The Phase 1 subset covers actual draws and can expand deliberately as later material/render-graph phases require it.
 - **Impact:** Buffer and Texture byte estimates are tracked by kind; destructive resources call native `destroy()`, while immutable Shader/Pipeline/Sampler objects release by dropping registry ownership. WebGL2 can map the same descriptors to its distinct implementation in Phase 10 without emulating WebGPU objects.
 - **ADR required:** No; this implements the accepted Backend API boundary. A future public descriptor compatibility change may require an ADR before 1.0.
+
+## ED-017 — Submit complete backend-neutral frames through single-use Command Encoders
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Renderer-side code describes complete Render Passes with opaque Pipeline/Buffer/Surface Handles and portable Draw fields. The concrete backend validates the full submission before native encoding, consumes the Command Encoder after any encode attempt, submits one finished Command Buffer, and returns immutable aggregate statistics. Buffer uploads use a separate typed queue operation.
+- **Candidates:** Expose a stateful native-like Render Pass API; expose `GPUCommandEncoder`; submit immutable backend-neutral frame descriptions.
+- **Reason:** A stateful or native API would leak WebGPU ordering and object types into Renderer Core and complicate WebGL2 mapping. Complete descriptions can be validated deterministically before mutation, mocked without a GPU, and translated by each backend.
+- **Impact:** Phase 1 supports clear, non-indexed, and indexed geometry while preserving backend isolation. Command Encoders cannot be accidentally resubmitted; failed pre-encode validation leaves them explicitly disposable. Later Render Graph compilation can emit the same contract without changing product integrations.
+- **ADR required:** No; this extends the portable Backend API under ADR-004 without changing dependency direction.

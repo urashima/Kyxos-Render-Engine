@@ -16,12 +16,14 @@ import type {
   WebGpuAdapterPort,
   WebGpuAdapterRequest,
   WebGpuBufferPort,
+  WebGpuCommandBufferPort,
   WebGpuCommandEncoderPort,
   WebGpuDevicePort,
   WebGpuDeviceRequest,
   WebGpuPipelinePort,
   WebGpuPlatformPort,
   WebGpuQueuePort,
+  WebGpuRenderPassRequest,
   WebGpuRenderPipelineRequest,
   WebGpuSamplerPort,
   WebGpuShaderModulePort,
@@ -135,17 +137,21 @@ class BrowserWebGpuSurface implements WebGpuSurfacePort {
   unconfigure(): void {
     this.#context.unconfigure();
   }
+
+  createCurrentTextureView(): GPUTextureView {
+    return this.#context.getCurrentTexture().createView();
+  }
 }
 
 class BrowserWebGpuBuffer implements WebGpuBufferPort {
-  readonly #buffer: GPUBuffer;
+  readonly native: GPUBuffer;
 
   constructor(buffer: GPUBuffer) {
-    this.#buffer = buffer;
+    this.native = buffer;
   }
 
   destroy(): void {
-    this.#buffer.destroy();
+    this.native.destroy();
   }
 }
 
@@ -212,6 +218,132 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
   constructor(encoder: GPUCommandEncoder) {
     this.native = encoder;
   }
+
+  encodeRenderPass(request: WebGpuRenderPassRequest): void {
+    if (!(request.surface instanceof BrowserWebGpuSurface)) {
+      throw new Error('Render Pass Surface belongs to another WebGPU device port.');
+    }
+    const pass = this.native.beginRenderPass({
+      colorAttachments: [
+        {
+          clearValue: request.clearColor,
+          loadOp: 'clear',
+          storeOp: 'store',
+          view: request.surface.createCurrentTextureView(),
+        },
+      ],
+      ...(request.label === undefined ? {} : { label: request.label }),
+    });
+    try {
+      for (const draw of request.draws) {
+        if (!(draw.pipeline instanceof BrowserWebGpuPipeline)) {
+          throw new Error('Draw Pipeline belongs to another WebGPU device port.');
+        }
+        pass.setPipeline(draw.pipeline.native);
+        for (const vertexBuffer of draw.vertexBuffers) {
+          if (!(vertexBuffer.buffer instanceof BrowserWebGpuBuffer)) {
+            throw new Error('Vertex Buffer belongs to another WebGPU device port.');
+          }
+          if (vertexBuffer.size === undefined) {
+            pass.setVertexBuffer(
+              vertexBuffer.slot,
+              vertexBuffer.buffer.native,
+              vertexBuffer.offset,
+            );
+          } else {
+            pass.setVertexBuffer(
+              vertexBuffer.slot,
+              vertexBuffer.buffer.native,
+              vertexBuffer.offset,
+              vertexBuffer.size,
+            );
+          }
+        }
+        if (draw.indexBuffer === undefined) {
+          pass.draw(
+            draw.vertexCount ?? 0,
+            draw.instanceCount,
+            draw.firstVertex,
+            draw.firstInstance,
+          );
+          continue;
+        }
+        if (!(draw.indexBuffer.buffer instanceof BrowserWebGpuBuffer)) {
+          throw new Error('Index Buffer belongs to another WebGPU device port.');
+        }
+        if (draw.indexBuffer.size === undefined) {
+          pass.setIndexBuffer(
+            draw.indexBuffer.buffer.native,
+            draw.indexBuffer.format,
+            draw.indexBuffer.offset,
+          );
+        } else {
+          pass.setIndexBuffer(
+            draw.indexBuffer.buffer.native,
+            draw.indexBuffer.format,
+            draw.indexBuffer.offset,
+            draw.indexBuffer.size,
+          );
+        }
+        pass.drawIndexed(
+          draw.indexCount ?? 0,
+          draw.instanceCount,
+          draw.firstIndex,
+          0,
+          draw.firstInstance,
+        );
+      }
+    } finally {
+      pass.end();
+    }
+  }
+
+  finish(): WebGpuCommandBufferPort {
+    return new BrowserWebGpuCommandBuffer(this.native.finish());
+  }
+}
+
+class BrowserWebGpuCommandBuffer implements WebGpuCommandBufferPort {
+  readonly kind = 'command-buffer' as const;
+  readonly native: GPUCommandBuffer;
+
+  constructor(commandBuffer: GPUCommandBuffer) {
+    this.native = commandBuffer;
+  }
+}
+
+class BrowserWebGpuQueue implements WebGpuQueuePort {
+  readonly #queue: GPUQueue;
+
+  constructor(queue: GPUQueue) {
+    this.#queue = queue;
+  }
+
+  onSubmittedWorkDone(): Promise<void> {
+    return this.#queue.onSubmittedWorkDone();
+  }
+
+  submit(commandBuffers: readonly WebGpuCommandBufferPort[]): void {
+    this.#queue.submit(
+      commandBuffers.map((commandBuffer) => {
+        if (!(commandBuffer instanceof BrowserWebGpuCommandBuffer)) {
+          throw new Error('Command Buffer belongs to another WebGPU device port.');
+        }
+        return commandBuffer.native;
+      }),
+    );
+  }
+
+  writeBuffer(
+    buffer: WebGpuBufferPort,
+    offset: number,
+    data: Parameters<WebGpuQueuePort['writeBuffer']>[2],
+  ): void {
+    if (!(buffer instanceof BrowserWebGpuBuffer)) {
+      throw new Error('Queue write Buffer belongs to another WebGPU device port.');
+    }
+    this.#queue.writeBuffer(buffer.native, offset, data);
+  }
 }
 
 function requireBrowserShaderModule(module: WebGpuShaderModulePort): GPUShaderModule {
@@ -232,9 +364,7 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
 
   constructor(device: GPUDevice) {
     this.#device = device;
-    this.queue = Object.freeze({
-      onSubmittedWorkDone: () => device.queue.onSubmittedWorkDone(),
-    });
+    this.queue = new BrowserWebGpuQueue(device.queue);
     this.lost = device.lost.then((info) =>
       Object.freeze({
         message: info.message || 'WebGPU device lost.',

@@ -2,6 +2,18 @@
 export const BACKEND_API_PACKAGE_NAME = '@kyxos/render-backend-api' as const;
 
 export type {
+  BackendBufferData,
+  BackendClearColor,
+  BackendDrawCommand,
+  BackendFrameSubmission,
+  BackendIndexBufferBinding,
+  BackendIndexFormat,
+  BackendRenderPassDescriptor,
+  BackendRenderPassStatistics,
+  BackendVertexBufferBinding,
+} from './commands.js';
+
+export type {
   BackendEvents,
   BackendLifecycleState,
   BackendLossInfo,

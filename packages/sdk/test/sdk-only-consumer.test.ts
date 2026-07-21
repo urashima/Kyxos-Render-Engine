@@ -6,13 +6,16 @@ import {
   createKyxosRenderer,
 } from '../src/index.js';
 import type {
+  BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
   BackendCommandEncoderDescriptor,
   BackendCommandEncoderHandle,
   BackendEvents,
+  BackendFrameSubmission,
   BackendLifecycleState,
   BackendPipelineHandle,
+  BackendRenderPassStatistics,
   BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
@@ -91,6 +94,18 @@ class SdkOnlyBackend implements GraphicsBackend {
   createCommandEncoder(descriptor?: BackendCommandEncoderDescriptor): BackendCommandEncoderHandle {
     void descriptor;
     throw new Error('The SDK-only foundation fixture does not allocate Command Encoders.');
+  }
+
+  writeBuffer(handle: BackendBufferHandle, data: BackendBufferData, offset?: number): void {
+    void handle;
+    void data;
+    void offset;
+    throw new Error('The SDK-only foundation fixture does not allocate buffers.');
+  }
+
+  executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
+    void submission;
+    throw new Error('The SDK-only foundation fixture does not execute frames.');
   }
 
   on<EventName extends keyof BackendEvents>(

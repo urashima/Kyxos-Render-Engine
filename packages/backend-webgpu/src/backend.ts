@@ -1,13 +1,18 @@
 import type {
+  BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
   BackendCapabilityReport,
   BackendCommandEncoderDescriptor,
   BackendCommandEncoderHandle,
+  BackendDrawCommand,
   BackendEvents,
   BackendFeature,
+  BackendFrameSubmission,
   BackendLifecycleState,
   BackendPipelineHandle,
+  BackendPrimitiveTopology,
+  BackendRenderPassStatistics,
   BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
@@ -36,7 +41,11 @@ import type { EventListener, Unsubscribe } from '@kyxos/render-core';
 
 import { createBrowserWebGpuPlatform } from './browser-platform.js';
 import type {
+  WebGpuBufferPort,
+  WebGpuCommandEncoderPort,
   WebGpuDevicePort,
+  WebGpuDrawRequest,
+  WebGpuPipelinePort,
   WebGpuPlatformPort,
   WebGpuPowerPreference,
   WebGpuShaderModulePort,
@@ -47,6 +56,27 @@ import { WebGpuResourceRegistry } from './resource-registry.js';
 interface WebGpuSurfaceRecord {
   info: BackendSurfaceInfo;
   readonly surface: WebGpuSurfacePort;
+}
+
+interface WebGpuBufferRecord {
+  readonly buffer: WebGpuBufferPort;
+  readonly descriptor: BackendBufferDescriptor;
+}
+
+interface WebGpuPipelineRecord {
+  readonly pipeline: WebGpuPipelinePort;
+  readonly topology: BackendPrimitiveTopology;
+}
+
+interface WebGpuCommandEncoderRecord {
+  readonly encoder: WebGpuCommandEncoderPort;
+}
+
+interface PreparedDraw {
+  readonly instances: number;
+  readonly request: WebGpuDrawRequest;
+  readonly triangles: number;
+  readonly vertices: number;
 }
 
 export interface WebGpuBackendOptions {
@@ -182,6 +212,44 @@ function resourceAccounting(
   };
 }
 
+function requireNonNegativeSafeInteger(name: string, value: number): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new KyxosEngineError(`${name} must be a non-negative safe integer.`, {
+      code: 'INVALID_ARGUMENT',
+      module: 'backend',
+      recoverable: false,
+    });
+  }
+}
+
+function requireFiniteClearColor(
+  clearColor: BackendFrameSubmission['renderPasses'][number]['clearColor'],
+): void {
+  for (const [channel, value] of Object.entries(clearColor)) {
+    if (!Number.isFinite(value)) {
+      throw new KyxosEngineError(`Clear color channel ${channel} must be finite.`, {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+  }
+}
+
+function triangleCount(
+  topology: BackendPrimitiveTopology,
+  elementCount: number,
+  instances: number,
+): number {
+  if (topology === 'triangle-list') {
+    return Math.floor(elementCount / 3) * instances;
+  }
+  if (topology === 'triangle-strip') {
+    return Math.max(0, elementCount - 2) * instances;
+  }
+  return 0;
+}
+
 export class WebGpuBackend implements GraphicsBackend {
   readonly #events = new TypedEventEmitter<BackendEvents>();
   readonly #forceFallbackAdapter: boolean;
@@ -279,10 +347,17 @@ export class WebGpuBackend implements GraphicsBackend {
     const device = this.#requireDevice('create a Buffer');
     try {
       const buffer = device.createBuffer(descriptor);
+      const record: WebGpuBufferRecord = {
+        buffer,
+        descriptor: Object.freeze({
+          ...descriptor,
+          usage: Object.freeze([...descriptor.usage]),
+        }),
+      };
       return this.#resources.register(
         'buffer',
         resourceAccounting(descriptor.label, descriptor.size),
-        buffer,
+        record,
         () => buffer.destroy(),
       );
     } catch (error) {
@@ -434,11 +509,10 @@ export class WebGpuBackend implements GraphicsBackend {
           module: vertexModule,
         },
       });
-      return this.#resources.register(
-        'pipeline',
-        resourceAccounting(descriptor.label, 0),
+      return this.#resources.register('pipeline', resourceAccounting(descriptor.label, 0), {
         pipeline,
-      );
+        topology: descriptor.primitive?.topology ?? 'triangle-list',
+      } satisfies WebGpuPipelineRecord);
     } catch (error) {
       throw this.#resourceCreationError('Render Pipeline', error);
     }
@@ -450,11 +524,9 @@ export class WebGpuBackend implements GraphicsBackend {
     const device = this.#requireDevice('create a Command Encoder');
     try {
       const encoder = device.createCommandEncoder(descriptor);
-      return this.#resources.register(
-        'command-encoder',
-        resourceAccounting(descriptor.label, 0),
+      return this.#resources.register('command-encoder', resourceAccounting(descriptor.label, 0), {
         encoder,
-      );
+      } satisfies WebGpuCommandEncoderRecord);
     } catch (error) {
       throw this.#resourceCreationError('Command Encoder', error);
     }
@@ -528,6 +600,116 @@ export class WebGpuBackend implements GraphicsBackend {
 
   getResourceStatistics(): BackendResourceStatistics {
     return this.#resources.getStatistics();
+  }
+
+  writeBuffer(handle: BackendBufferHandle, data: BackendBufferData, offset = 0): void {
+    const device = this.#requireDevice('write Buffer data');
+    const record = this.#resources.resolve<'buffer', WebGpuBufferRecord>(handle, 'buffer');
+    requireNonNegativeSafeInteger('Buffer write offset', offset);
+    if (offset % 4 !== 0 || data.byteLength % 4 !== 0) {
+      throw new KyxosEngineError('Buffer write offset and byte length must be multiples of 4.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    if (offset + data.byteLength > record.descriptor.size) {
+      throw new KyxosEngineError('Buffer write exceeds the allocated Buffer size.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    if (!record.descriptor.usage.includes('copy-dst')) {
+      throw new KyxosEngineError('Buffer write requires the copy-dst usage.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    try {
+      device.queue.writeBuffer(record.buffer, offset, data);
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to upload WebGPU Buffer data.',
+        module: 'backend',
+        recoverable: true,
+      });
+    }
+  }
+
+  executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
+    const device = this.#requireDevice('execute a frame');
+    requireNonEmpty('Frame render passes', submission.renderPasses);
+    const encoder = this.#resources.resolve<'command-encoder', WebGpuCommandEncoderRecord>(
+      submission.commandEncoder,
+      'command-encoder',
+    );
+    let drawCalls = 0;
+    let instances = 0;
+    let triangles = 0;
+    let vertices = 0;
+    const renderPasses = submission.renderPasses.map((renderPass) => {
+      requireFiniteClearColor(renderPass.clearColor);
+      const surface = this.#resources.resolve<'surface', WebGpuSurfaceRecord>(
+        renderPass.surface,
+        'surface',
+      );
+      if (surface.info.size.suspended) {
+        throw new KyxosEngineError('Cannot render to a suspended zero-area Canvas surface.', {
+          code: 'INVALID_STATE',
+          module: 'backend',
+          recoverable: true,
+          suggestedAction: 'Resize the Canvas to nonzero dimensions before rendering.',
+        });
+      }
+      const draws = (renderPass.draws ?? []).map((draw) => this.#prepareDraw(draw));
+      for (const draw of draws) {
+        drawCalls += 1;
+        instances += draw.instances;
+        triangles += draw.triangles;
+        vertices += draw.vertices;
+        if (
+          !Number.isSafeInteger(drawCalls) ||
+          !Number.isSafeInteger(instances) ||
+          !Number.isSafeInteger(triangles) ||
+          !Number.isSafeInteger(vertices)
+        ) {
+          throw new KyxosEngineError('Frame statistics exceed the safe integer range.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+      }
+      return {
+        clearColor: renderPass.clearColor,
+        draws: draws.map((draw) => draw.request),
+        label: renderPass.label,
+        surface: surface.surface,
+      };
+    });
+
+    try {
+      for (const renderPass of renderPasses) {
+        encoder.encoder.encodeRenderPass(renderPass);
+      }
+      const commandBuffer = encoder.encoder.finish();
+      device.queue.submit([commandBuffer]);
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to encode or submit the WebGPU frame.',
+        module: 'backend',
+        recoverable: true,
+        suggestedAction: 'Inspect render commands and recreate resources after device loss.',
+      });
+    } finally {
+      this.#resources.destroy(submission.commandEncoder);
+    }
+
+    return Object.freeze({ drawCalls, instances, triangles, vertices });
   }
 
   resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo {
@@ -693,6 +875,172 @@ export class WebGpuBackend implements GraphicsBackend {
       throw this.#stateError(`WebGPU device is unavailable while attempting to ${action}.`);
     }
     return this.#device;
+  }
+
+  #prepareDraw(draw: BackendDrawCommand): PreparedDraw {
+    const pipeline = this.#resources.resolve<'pipeline', WebGpuPipelineRecord>(
+      draw.pipeline,
+      'pipeline',
+    );
+    const instanceCount = draw.instanceCount ?? 1;
+    requirePositiveSafeInteger('Draw instanceCount', instanceCount);
+    const firstInstance = draw.firstInstance ?? 0;
+    const firstIndex = draw.firstIndex ?? 0;
+    const firstVertex = draw.firstVertex ?? 0;
+    requireNonNegativeSafeInteger('Draw firstInstance', firstInstance);
+    requireNonNegativeSafeInteger('Draw firstIndex', firstIndex);
+    requireNonNegativeSafeInteger('Draw firstVertex', firstVertex);
+
+    const slots = new Set<number>();
+    const vertexBuffers = (draw.vertexBuffers ?? []).map((binding) => {
+      requireNonNegativeSafeInteger('Vertex Buffer slot', binding.slot);
+      if (slots.has(binding.slot)) {
+        throw new KyxosEngineError(`Vertex Buffer slot ${binding.slot} is bound more than once.`, {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      slots.add(binding.slot);
+      const record = this.#resources.resolve<'buffer', WebGpuBufferRecord>(
+        binding.buffer,
+        'buffer',
+      );
+      if (!record.descriptor.usage.includes('vertex')) {
+        throw new KyxosEngineError('Vertex Buffer binding requires the vertex usage.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      const offset = binding.offset ?? 0;
+      const size = binding.size;
+      requireNonNegativeSafeInteger('Vertex Buffer offset', offset);
+      if (size !== undefined) requirePositiveSafeInteger('Vertex Buffer size', size);
+      if (offset % 4 !== 0 || (size !== undefined && size % 4 !== 0)) {
+        throw new KyxosEngineError('Vertex Buffer offset and size must be multiples of 4.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      if (offset + (size ?? 0) > record.descriptor.size || offset >= record.descriptor.size) {
+        throw new KyxosEngineError('Vertex Buffer binding exceeds the Buffer size.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      return { buffer: record.buffer, offset, size, slot: binding.slot };
+    });
+
+    let indexBuffer: WebGpuDrawRequest['indexBuffer'];
+    let elementCount: number;
+    if (draw.indexBuffer === undefined) {
+      if (draw.indexCount !== undefined || draw.vertexCount === undefined) {
+        throw new KyxosEngineError(
+          'A non-indexed Draw requires vertexCount and must not provide indexCount.',
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          },
+        );
+      }
+      requirePositiveSafeInteger('Draw vertexCount', draw.vertexCount);
+      elementCount = draw.vertexCount;
+    } else {
+      if (draw.indexCount === undefined || draw.vertexCount !== undefined) {
+        throw new KyxosEngineError(
+          'An indexed Draw requires indexCount and must not provide vertexCount.',
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          },
+        );
+      }
+      requirePositiveSafeInteger('Draw indexCount', draw.indexCount);
+      const record = this.#resources.resolve<'buffer', WebGpuBufferRecord>(
+        draw.indexBuffer.buffer,
+        'buffer',
+      );
+      if (!record.descriptor.usage.includes('index')) {
+        throw new KyxosEngineError('Index Buffer binding requires the index usage.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      const offset = draw.indexBuffer.offset ?? 0;
+      const size = draw.indexBuffer.size;
+      const alignment = draw.indexBuffer.format === 'uint16' ? 2 : 4;
+      requireNonNegativeSafeInteger('Index Buffer offset', offset);
+      if (offset % alignment !== 0) {
+        throw new KyxosEngineError(`Index Buffer offset must be aligned to ${alignment} bytes.`, {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      if (size !== undefined) requirePositiveSafeInteger('Index Buffer size', size);
+      if (size !== undefined && size % alignment !== 0) {
+        throw new KyxosEngineError(`Index Buffer size must be aligned to ${alignment} bytes.`, {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      if (offset + (size ?? 0) > record.descriptor.size || offset >= record.descriptor.size) {
+        throw new KyxosEngineError('Index Buffer binding exceeds the Buffer size.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      const boundSize = size ?? record.descriptor.size - offset;
+      const requiredSize = (firstIndex + draw.indexCount) * alignment;
+      if (!Number.isSafeInteger(requiredSize) || requiredSize > boundSize) {
+        throw new KyxosEngineError('Indexed Draw exceeds the bound Index Buffer range.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      indexBuffer = {
+        buffer: record.buffer,
+        format: draw.indexBuffer.format,
+        offset,
+        size,
+      };
+      elementCount = draw.indexCount;
+    }
+
+    const submittedVertices = elementCount * instanceCount;
+    const triangles = triangleCount(pipeline.topology, elementCount, instanceCount);
+    if (!Number.isSafeInteger(submittedVertices) || !Number.isSafeInteger(triangles)) {
+      throw new KyxosEngineError('Draw statistics exceed the safe integer range.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    return {
+      instances: instanceCount,
+      request: {
+        firstIndex,
+        firstInstance,
+        firstVertex,
+        indexBuffer,
+        indexCount: draw.indexCount,
+        instanceCount,
+        pipeline: pipeline.pipeline,
+        vertexBuffers,
+        vertexCount: draw.vertexCount,
+      },
+      triangles,
+      vertices: submittedVertices,
+    };
   }
 
   #handleDeviceLost(
