@@ -7,8 +7,17 @@ if (root === null) {
 }
 
 const normalizedPath = window.location.pathname.replace(/\/$/, '') || '/';
-if (normalizedPath !== '/' && normalizedPath !== '/acceptance/phase-00') {
+if (
+  normalizedPath !== '/' &&
+  normalizedPath !== '/acceptance/phase-00' &&
+  normalizedPath !== '/acceptance/phase-01'
+) {
   window.history.replaceState({}, '', '/acceptance/phase-00');
 }
 
-await mountPhase00Acceptance(root);
+if (normalizedPath === '/acceptance/phase-01') {
+  const { mountPhase01Acceptance } = await import('./acceptance/phase-01/index.js');
+  await mountPhase01Acceptance(root);
+} else {
+  await mountPhase00Acceptance(root);
+}

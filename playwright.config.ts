@@ -3,6 +3,16 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 4173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const chromiumExecutablePath = process.env['PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'];
+const webGpuLaunchArguments = [
+  '--disable-vulkan-surface',
+  '--enable-features=Vulkan',
+  '--enable-unsafe-swiftshader',
+  '--enable-unsafe-webgpu',
+  '--use-angle=swiftshader',
+  '--use-gpu-in-tests',
+  '--use-vulkan=swiftshader',
+  '--use-webgpu-adapter=swiftshader',
+];
 
 export default defineConfig({
   expect: {
@@ -15,9 +25,12 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        ...(chromiumExecutablePath === undefined
-          ? {}
-          : { launchOptions: { executablePath: chromiumExecutablePath } }),
+        launchOptions: {
+          args: webGpuLaunchArguments,
+          ...(chromiumExecutablePath === undefined
+            ? {}
+            : { executablePath: chromiumExecutablePath }),
+        },
       },
     },
   ],
