@@ -8,6 +8,9 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../camera"
+    },
+    {
       "path": "../core"
     },
     {
@@ -15,6 +18,18 @@
     },
     {
       "path": "../frame-scheduler"
+    },
+    {
+      "path": "../geometry"
+    },
+    {
+      "path": "../math"
+    },
+    {
+      "path": "../scene"
+    },
+    {
+      "path": "../visibility"
     }
   ]
 }

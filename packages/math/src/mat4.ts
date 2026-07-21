@@ -159,6 +159,44 @@ export function maxScaleOnAxisMat4(matrix: Mat4): number {
   return result;
 }
 
+/** Returns the inverse-transpose of a Matrix's upper-left 3x3 for transforming normals. */
+export function normalMatrixMat4(matrix: Mat4): Mat4 {
+  assertMat4('matrix', matrix);
+  const a00 = matrix[0];
+  const a01 = matrix[4];
+  const a02 = matrix[8];
+  const a10 = matrix[1];
+  const a11 = matrix[5];
+  const a12 = matrix[9];
+  const a20 = matrix[2];
+  const a21 = matrix[6];
+  const a22 = matrix[10];
+  const determinant =
+    a00 * (a11 * a22 - a12 * a21) - a01 * (a10 * a22 - a12 * a20) + a02 * (a10 * a21 - a11 * a20);
+  if (Math.abs(determinant) <= NORMALIZATION_EPSILON) {
+    throw new RangeError('Normal Matrix requires an invertible upper-left 3x3 Matrix.');
+  }
+  const inverseDeterminant = 1 / determinant;
+  return immutableMat4([
+    (a11 * a22 - a12 * a21) * inverseDeterminant,
+    (a02 * a21 - a01 * a22) * inverseDeterminant,
+    (a01 * a12 - a02 * a11) * inverseDeterminant,
+    0,
+    (a12 * a20 - a10 * a22) * inverseDeterminant,
+    (a00 * a22 - a02 * a20) * inverseDeterminant,
+    (a02 * a10 - a00 * a12) * inverseDeterminant,
+    0,
+    (a10 * a21 - a11 * a20) * inverseDeterminant,
+    (a01 * a20 - a00 * a21) * inverseDeterminant,
+    (a00 * a11 - a01 * a10) * inverseDeterminant,
+    0,
+    0,
+    0,
+    0,
+    1,
+  ]);
+}
+
 export function perspectiveMat4(
   verticalFieldOfViewRadians: number,
   aspect: number,

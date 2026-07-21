@@ -13,6 +13,7 @@ describe('MeshRendererStore', () => {
     const mesh = createCubeGeometry();
     const component = store.attach(entity, {
       alphaMode: 'blend',
+      baseColor: [0.1, 0.2, 0.3, 0.4],
       materialKey: 'glass',
       mesh,
       pipelineKey: 'transparent',
@@ -21,6 +22,7 @@ describe('MeshRendererStore', () => {
 
     expect(component).toMatchObject({
       alphaMode: 'blend',
+      baseColor: [0.1, 0.2, 0.3, 0.4],
       materialKey: 'glass',
       mesh,
       pipelineKey: 'transparent',
@@ -65,6 +67,9 @@ describe('MeshRendererStore', () => {
     );
     expect(() => store.attach(scene.createEntity(), { mesh, renderOrder: 1.5 })).toThrow(
       /safe integer/u,
+    );
+    expect(() => store.attach(scene.createEntity(), { baseColor: [1, 0, 0, 1.1], mesh })).toThrow(
+      /baseColor/u,
     );
   });
 

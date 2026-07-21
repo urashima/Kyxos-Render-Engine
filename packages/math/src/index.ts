@@ -25,6 +25,7 @@ export {
   lookAtMat4,
   maxScaleOnAxisMat4,
   multiplyMat4,
+  normalMatrixMat4,
   perspectiveMat4,
   rotationMat4,
   scalingMat4,

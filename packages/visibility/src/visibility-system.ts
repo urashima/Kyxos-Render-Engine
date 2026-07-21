@@ -4,10 +4,16 @@ import type { PerspectiveCamera } from '@kyxos/render-camera';
 import type { MeshData } from '@kyxos/render-geometry';
 import type { Aabb, Mat4 } from '@kyxos/render-math';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
-import type { AlphaMode, MeshRendererComponent, MeshRendererStore } from './mesh-renderer-store.js';
+import type {
+  AlphaMode,
+  MeshRendererComponent,
+  MeshRendererStore,
+  RgbaColor,
+} from './mesh-renderer-store.js';
 
 export interface RenderItem {
   readonly alphaMode: AlphaMode;
+  readonly baseColor: RgbaColor;
   readonly distanceToCamera: number;
   readonly entity: EntityHandle;
   readonly materialKey: string;
@@ -187,6 +193,7 @@ export class VisibilitySystem {
   ): RenderItem {
     return Object.freeze({
       alphaMode: component.alphaMode,
+      baseColor: component.baseColor,
       distanceToCamera: distanceVec3(camera.position, aabbCenter(worldBounds)),
       entity,
       materialKey: component.materialKey,

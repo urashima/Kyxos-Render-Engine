@@ -35,3 +35,9 @@ export type {
   RendererRegistrationCounts,
 } from './renderer.js';
 export { KyxosRenderer } from './renderer.js';
+export {
+  SCENE_RENDER_FEATURE_ID,
+  SceneRenderFeature,
+  type SceneRenderFeatureDiagnostics,
+  type SceneRenderFeatureOptions,
+} from './scene-render-feature.js';

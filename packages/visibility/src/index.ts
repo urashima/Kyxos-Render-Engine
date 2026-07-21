@@ -3,6 +3,7 @@ export {
   type AlphaMode,
   type MeshRendererComponent,
   type MeshRendererDescriptor,
+  type RgbaColor,
 } from './mesh-renderer-store.js';
 export {
   VisibilitySystem,

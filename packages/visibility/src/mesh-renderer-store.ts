@@ -7,9 +7,11 @@ import type { Aabb } from '@kyxos/render-math';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
 
 export type AlphaMode = 'blend' | 'opaque';
+export type RgbaColor = readonly [red: number, green: number, blue: number, alpha: number];
 
 export interface MeshRendererDescriptor {
   readonly alphaMode?: AlphaMode;
+  readonly baseColor?: RgbaColor;
   readonly enabled?: boolean;
   readonly localBounds?: Aabb;
   readonly materialKey?: string;
@@ -20,6 +22,7 @@ export interface MeshRendererDescriptor {
 
 export interface MeshRendererComponent {
   readonly alphaMode: AlphaMode;
+  readonly baseColor: RgbaColor;
   readonly enabled: boolean;
   readonly localBounds: Aabb;
   readonly materialKey: string;
@@ -135,8 +138,12 @@ export class MeshRendererStore implements Disposable {
       throw this.#error('enabled must be boolean.', 'INVALID_ARGUMENT');
     }
     const sourceBounds = descriptor.localBounds ?? descriptor.mesh.bounds;
+    const baseColor = this.#color(
+      descriptor.baseColor ?? [0.42, 0.65, 0.95, alphaMode === 'blend' ? 0.55 : 1],
+    );
     return Object.freeze({
       alphaMode,
+      baseColor,
       enabled,
       localBounds: createAabb(sourceBounds.min, sourceBounds.max),
       materialKey,
@@ -145,6 +152,19 @@ export class MeshRendererStore implements Disposable {
       renderOrder,
       sequence,
     });
+  }
+
+  #color(value: RgbaColor): RgbaColor {
+    if (
+      value.length !== 4 ||
+      value.some((channel) => !Number.isFinite(channel) || channel < 0 || channel > 1)
+    ) {
+      throw this.#error(
+        'baseColor channels must be finite values from 0 through 1.',
+        'INVALID_ARGUMENT',
+      );
+    }
+    return Object.freeze([...value]) as unknown as RgbaColor;
   }
 
   #validateMesh(mesh: MeshData): void {

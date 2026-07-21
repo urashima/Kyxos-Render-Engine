@@ -6,8 +6,10 @@ import {
   identityMat4,
   lookAtMat4,
   multiplyMat4,
+  normalMatrixMat4,
   perspectiveMat4,
   quaternionFromAxisAngle,
+  scalingMat4,
   transformDirectionMat4,
   transformPointMat4,
   translationMat4,
@@ -66,5 +68,12 @@ describe('Mat4', () => {
     expect(() => transformPointMat4(perspectiveMat4(1, 1, 0.1, 100), [0, 0, 0])).toThrow(
       /homogeneous W/u,
     );
+  });
+
+  it('builds inverse-transpose normal matrices and rejects singular transforms', () => {
+    expect(normalMatrixMat4(scalingMat4([2, 4, 0.5]))).toEqual([
+      0.5, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1,
+    ]);
+    expect(() => normalMatrixMat4(scalingMat4([1, 0, 1]))).toThrow(/invertible/u);
   });
 });
