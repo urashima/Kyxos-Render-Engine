@@ -738,3 +738,23 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-07 checkpoint.
 - Inspect the triggered GitHub Actions run, fix any real WebGPU compiler/runtime failures, and retain the run artifacts as Phase 1 acceptance evidence.
+
+## 2026-07-21 07:19 PDT — P1-07 real WebGPU CI accepted
+
+### Completed
+
+- Pushed three fast-forward commits for diagnostic Device Lost control, the independent Phase 1 route, and its execution record; the remote comparison reported exactly 3 commits and 19 expected files with no branch divergence.
+- Opened Draft PR [#2](https://github.com/urashima/Kyxos-Render-Engine/pull/2) as the Phase 1 CI/evidence surface while retaining `In Development` status.
+- GitHub Actions Run `29838231647`, job `88660036420`, completed successfully in the pinned official Playwright Chromium environment.
+- Closed the remaining P1-05 real-compiler/render smoke and all P1-07 browser lifecycle checkpoints.
+
+### Validation
+
+- Complete remote pipeline PASS: format, zero-warning lint, strict typecheck, 15 unit files / 62 tests, dependency boundaries plus deliberate negative fixture, architecture docs, Phase 0 freeze, Shader gate, all builds, and all bundle budgets.
+- Browser acceptance: 7 / 7 PASS. The two real WebGPU tests compiled canonical WGSL, rendered distinct triangle and 1,024-triangle sphere frames, then passed DPR 2, Resize, hidden/restore, Canvas switch, Device Lost, six-to-zero resource cleanup, recovery, disposal, and recreation.
+- Real WebGPU render test duration: 18.2 seconds including adapter/device startup; lifecycle test duration: 6.8 seconds. No browser console or page errors were accepted.
+
+### Next
+
+- Add deterministic Phase 1 screenshot capture, canonical Reference/Current/Difference handling, and route-specific CI artifacts.
+- Record resource, Draw, triangle, vertex, Pipeline, bundle, static-to-sleep, and unavailable-capability metrics against `phase-00-accepted`.
