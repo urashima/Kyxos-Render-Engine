@@ -66,7 +66,7 @@ describe('public Canvas renderer SDK', () => {
     frameDriver.flush(30);
     expect(renderer.getDiagnostics().lastFrameStatistics.drawCalls).toBe(0);
 
-    backend.simulateLoss({ message: 'sdk recovery' });
+    renderer.debugSimulateDeviceLoss();
     expect(renderer.state).toBe('lost');
     await renderer.recover();
     expect(renderer.state).toBe('ready');

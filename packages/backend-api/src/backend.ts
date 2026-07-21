@@ -67,6 +67,8 @@ export interface GraphicsBackend extends Disposable {
   createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle;
   createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle;
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle;
+  /** Acceptance/debug hook. Implementations must not expose their native device. */
+  debugSimulateDeviceLoss?(): void;
   destroyResource(handle: BackendResourceHandle): boolean;
   executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics;
   getShaderCompilationInfo(

@@ -470,6 +470,10 @@ export class MockBackend implements GraphicsBackend {
     this.#events.emit('lost', info);
   }
 
+  debugSimulateDeviceLoss(): void {
+    this.simulateLoss({ message: 'Mock diagnostic Device Lost simulation.', reason: 'destroyed' });
+  }
+
   dispose(): void {
     if (this.#state === 'disposed') {
       return;

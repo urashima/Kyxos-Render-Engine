@@ -307,6 +307,20 @@ describe('WebGpuBackend device lifecycle', () => {
     expect(adapter.requestDevice).toHaveBeenCalledTimes(2);
   });
 
+  it('simulates Device Lost for diagnostics without exposing the native device', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+
+    backend.debugSimulateDeviceLoss();
+    expect(device.destroy).toHaveBeenCalledTimes(1);
+    device.lose({ message: 'diagnostic loss', reason: 'destroyed', recoverable: true });
+    await vi.waitFor(() => expect(backend.state).toBe('lost'));
+  });
+
   it('cancels in-flight initialization and ignores expected loss after idempotent disposal', async () => {
     const device = new FakeDevice();
     const adapterDeferred = new Deferred<WebGpuAdapterPort | null>();

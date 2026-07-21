@@ -549,6 +549,10 @@ export class WebGpuBackend implements GraphicsBackend {
     );
   }
 
+  debugSimulateDeviceLoss(): void {
+    this.#requireDevice('simulate Device Lost for diagnostics').destroy();
+  }
+
   createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle {
     const device = this.#requireDevice('create a Canvas surface');
     const size = normalizeBackendSurfaceSize(

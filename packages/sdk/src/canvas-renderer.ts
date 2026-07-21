@@ -5,6 +5,7 @@ import type {
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import type { DirtyFlag, FrameRequestDriver } from '@kyxos/render-frame-scheduler';
+import { KyxosEngineError } from '@kyxos/render-core';
 import { BasicGeometryFeature, KyxosRenderer } from '@kyxos/render-renderer';
 import type { BasicGeometryPrimitive } from '@kyxos/render-renderer';
 
@@ -15,10 +16,12 @@ export interface KyxosCanvasRendererOptions {
 }
 
 export class KyxosCanvasRenderer extends KyxosRenderer {
+  readonly #backend: GraphicsBackend;
   readonly #feature: BasicGeometryFeature;
 
   constructor(options: KyxosCanvasRendererOptions) {
     super({ backend: options.backend, frameDriver: options.frameDriver });
+    this.#backend = options.backend;
     this.#feature = options.feature;
     this.registerRenderFeature(options.feature);
   }
@@ -29,6 +32,18 @@ export class KyxosCanvasRenderer extends KyxosRenderer {
 
   getSurfaceInfo(): BackendSurfaceInfo {
     return this.#feature.getSurfaceInfo();
+  }
+
+  debugSimulateDeviceLoss(): void {
+    const simulate = this.#backend.debugSimulateDeviceLoss;
+    if (simulate === undefined) {
+      throw new KyxosEngineError('The selected backend does not provide Device Lost simulation.', {
+        code: 'UNSUPPORTED_CAPABILITY',
+        module: 'sdk',
+        recoverable: false,
+      });
+    }
+    simulate.call(this.#backend);
   }
 
   requestFrame(dirtyFlag: DirtyFlag = 'geometry'): void {
