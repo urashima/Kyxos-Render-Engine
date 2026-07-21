@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "status": "PASS",
+  "acceptanceState": "Technical QA Passed",
+  "sourceCommit": "390b1ecc3bfb1e94c5155470b6abec7b1fc4202c",
+  "ci": {
+    "runId": 29854505862,
+    "jobId": 88715390559,
+    "conclusion": "success",
+    "artifactId": 8504813925,
+    "artifactDigest": "sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33"
+  },
+  "evidencePackCi": {
+    "runId": 29855226827,
+    "jobId": 88717770835,
+    "sourceCommit": "552474486100cb1fb683d86fbafa4b900b48dcb8",
+    "conclusion": "success",
+    "artifactId": 8505082238
+  },
+  "checks": {
+    "architectureBoundaries": "PASS",
+    "browserAcceptance": "PASS",
+    "build": "PASS",
+    "bundleBudget": "PASS",
+    "cameraAndFraming": "PASS",
+    "geometryAndNormals": "PASS",
+    "lifecycle": "PASS",
+    "pagesArtifact": "PASS",
+    "performanceBudget": "PASS",
+    "sceneHierarchyAndDirtyPropagation": "PASS",
+    "shaderCompilation": "PASS",
+    "visibilityAndQueues": "PASS",
+    "visualRegression": "PASS"
+  },
+  "deploymentGate": {
+    "status": "PENDING",
+    "requiredWorkflow": "Deploy accepted Playgrounds",
+    "requiredOnlineVerification": "Verify public interactions"
+  },
+  "blockingDefects": [],
+  "remainingGates": [
+    "Final provenance head CI",
+    "Merge to main",
+    "GitHub Pages deployment",
+    "Public online interaction verification",
+    "Immutable phase-02-accepted tag"
+  ]
+}

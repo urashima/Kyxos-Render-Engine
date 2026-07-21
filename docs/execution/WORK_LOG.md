@@ -846,3 +846,350 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Push the freeze checkpoint and require its final GitHub Actions run to pass.
 - Mark Draft PR #2 ready, verify no unresolved review state, merge the exact tested head, and verify `phase-01-accepted` equals the merge commit.
+
+## 2026-07-21 08:11 PDT — Phase 1 accepted; Phase 2 started
+
+### Completed
+
+- Final freeze-head Run `29842315735`, job `88674018049`, passed the complete quality and acceptance pipeline on exact PR Head `7dfdc0e404dce3f3aeecf087f1c26f1617dc8ccd`.
+- Updated PR #2 with its acceptance evidence, marked it Ready, and confirmed zero issue comments, review submissions, or inline review threads.
+- Merged PR #2 with exact-head protection. Merge Commit `1244a06f9c02b3aed3bdbbd6bd7e883ae8ecf72f` is identical to both `main` and immutable tag `phase-01-accepted`.
+- Created `agent/phase-02-scene-camera` directly from the accepted Phase 1 commit and decomposed Phase 2 into dependency-ordered, independently verifiable tasks.
+
+### Validation
+
+- Phase 1 final CI: PASS.
+- Phase 1 technical QA and autonomous owner evidence review: PASS.
+- Phase 1 tag target versus merge commit: identical, zero commits ahead or behind.
+- No active blockers.
+
+### Next
+
+- Implement the dependency-free Math package with ADR-002 conventions and reference-vector tests.
+- Use its accepted transform, bounds, and frustum contracts as the only foundation for Geometry, Scene, Camera, and Visibility.
+
+## 2026-07-21 08:22 PDT — P2-01 Math contract complete
+
+### Completed
+
+- Added dependency-free `@kyxos/render-math` with immutable Vec3, normalized Quaternion, column-major Mat4, AABB, Bounding Sphere, Plane, and Frustum values.
+- Implemented ADR-002 right-handed positive rotation, Y-up camera basis, `parentWorld × local`, local `T × R × S`, negative-Z camera view, and canonical zero-to-one projection depth.
+- Added finite and degeneracy guards for NaN/Infinity, zero-length vectors and quaternions, invalid camera bases, invalid projection ranges, reversed/empty bounds, negative radii, and zero-normal planes.
+- Registered the package as a dependency-free architecture layer, updated the executable boundary graph, and recorded ED-023.
+
+### Validation
+
+- Math reference suite: 3 files / 19 tests PASS.
+- Full unit suite: 18 files / 81 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package/app builds, boundaries plus negative fixture, architecture, Phase 0/1 evidence schemas, Shader validation, and bundle budgets: PASS.
+- Complete Playground output remains 136,457 raw / 74,945 gzip bytes; the dependency-free Math package is not pulled into accepted Phase 0/1 routes.
+- No active blockers.
+
+### Next
+
+- Implement validated indexed Mesh data with deterministic Plane, Cube, and UV Sphere builders plus caller-owned Custom Mesh construction.
+- Derive all Mesh bounds through `@kyxos/render-math` and cover winding, normal direction, index width, and malformed data.
+
+## 2026-07-21 08:29 PDT — P2-02 Geometry contract complete
+
+### Completed
+
+- Added `@kyxos/render-geometry` above the Math layer with copied, frozen positions, normalized normals, optional UV0, validated triangle indices, immutable bounds, and conservative Bounding Spheres.
+- Implemented automatic normals for caller-owned Custom Mesh data, deterministic 16/32-bit index-format selection, and validation for nonfinite attributes, malformed counts, out-of-range indices, and degenerate triangles.
+- Added Y-up Plane, six-face/24-vertex sharp-normal Cube, and seam-safe UV Sphere builders with polar degenerate triangles omitted.
+- Kept Geometry CPU-only and backend-neutral; GPU Buffer, material, Scene, Renderer, and product responsibilities do not enter the package. Recorded this ownership choice in ED-024.
+
+### Validation
+
+- Geometry suite: 2 files / 8 tests PASS, including a 65,537-vertex 32-bit-index case.
+- Full unit suite: 20 files / 89 tests PASS.
+- Primitive winding agrees with every outward normal; Plane, Cube, and Sphere counts and bounds match their analytic references.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS.
+- P2-01 official PR CI Run `29843776139`: PASS; no active blockers.
+
+### Next
+
+- Implement Entity handles, parent/child ownership, safe reparent/removal behavior, local TRS, cached world matrices, visibility/layers, and deep dirty propagation.
+- Prove cycle rejection, parent-before-child world updates, unchanged-tree cache stability, and aggregate world bounds before adding Camera behavior.
+
+## 2026-07-21 08:39 PDT — P2-03 Scene Graph complete
+
+### Completed
+
+- Added `@kyxos/render-scene` with Scene-scoped non-reused Entity Handles, deterministic root/child order, controlled reparenting, subtree destruction, and idempotent owned stale-handle destruction.
+- Added immutable local TRS, partial updates that preserve unspecified fields, cached local/world matrices, iterative descendant dirty propagation, and on-demand parent-before-child recomputation.
+- Added local/world AABB caching, scene aggregate bounds, local and inherited visibility, independent 32-bit layer masks, revisioned change events, diagnostics, clear, and disposal.
+- Rejected cross-Scene handles, hierarchy cycles, stale reads, empty names, nonfinite transforms, invalid layer masks, and post-disposal operations with stable engine errors. Recorded the ownership/cache policy in ED-025.
+
+### Validation
+
+- Scene suite: 3 files / 14 tests PASS, including a 2,000-level hierarchy without recursive traversal.
+- Full unit suite: 23 files / 103 tests PASS.
+- Parent mutation dirties exactly its two-node test subtree; the first update recomputes both and subsequent unchanged reads recompute zero.
+- Geometry checkpoint official PR CI Run `29844282487`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Implement a finite perspective Camera using the canonical negative-Z/zero-to-one conventions, plus a DOM-independent Orbit Controller.
+- Fit the camera to Scene bounds across aspect ratios and empty/degenerate inputs, then prove every fitted AABB corner lies inside the resulting frustum.
+
+## 2026-07-21 08:46 PDT — P2-04 Camera and framing complete
+
+### Completed
+
+- Added `@kyxos/render-camera` with finite Perspective Camera state, cached view/projection/view-projection matrices, Frustum extraction, revisioned change events, diagnostics, and disposal.
+- Added conservative AABB framing through a padded Bounding Sphere and the limiting horizontal/vertical field-of-view angle while preserving the current viewing direction.
+- Added `frameScene()` for visible/layer-filtered automatic framing and explicit null behavior for empty scenes.
+- Added a DOM-independent Orbit Controller with clamped yaw/pitch/distance, camera-plane pan, dolly, Camera apply/sync, and post-framing synchronization. Recorded the policy in ED-026.
+
+### Validation
+
+- Camera suite: 3 files / 14 tests PASS.
+- Full unit suite: 26 files / 117 tests PASS.
+- Every corner of a non-symmetric AABB remains inside the fitted Frustum at aspect ratios 0.5, 1, and 2; degenerate point bounds produce a finite positive clip range.
+- Scene checkpoint official PR CI Run `29845122846`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Add backend-neutral Mesh Render Items associated with Scene Entities and immutable Geometry.
+- Cull by inherited visibility, camera layer mask, and Frustum before building stable opaque and predictable back-to-front transparent queues.
+
+## 2026-07-21 08:53 PDT — P2-05 Visibility and Render Queues complete
+
+### Completed
+
+- Added `@kyxos/render-visibility` with a Scene-bound Mesh Renderer component store over immutable Mesh data and Entity-owned local bounds.
+- Added enabled, inherited visibility, unsigned camera-layer, and Frustum gates before any Render Item enters a Draw List.
+- Added immutable Render Items with world matrix/bounds, material/pipeline state keys, explicit render order, camera distance, and stable registration sequence.
+- Added cached queue results and deterministic opaque state/front-to-back sorting plus transparent back-to-front sorting. Recorded the backend-neutral submission boundary in ED-027.
+
+### Validation
+
+- Visibility suite: 3 files / 12 tests PASS.
+- Full unit suite: 29 files / 129 tests PASS.
+- The fixed culling fixture reports exactly 6 total, 1 disabled, 1 hidden, 1 layer-culled, 2 Frustum-culled, and 1 submitted object.
+- Camera checkpoint official PR CI Run `29845630396`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Add Renderer-owned GPU mesh buffers and a Scene Render Feature that consumes only immutable Render Queues and backend-neutral command descriptors.
+- Expose Scene, Camera, Orbit, primitives, Mesh Renderer attachment, and diagnostics through the public SDK without leaking `GPUDevice` or internal package paths.
+
+## 2026-07-21 09:07 PDT — P2-06A Backend rendering contracts complete
+
+### Completed
+
+- Added backend-neutral Buffer Bind Group descriptors and Draw bindings without exposing `GPUDevice`, `GPUBindGroup`, pipeline layouts, or native resource objects.
+- Added depth-enabled Render Pipeline state, owned depth Texture attachments, and portable color Blend descriptors.
+- Implemented translation and command encoding in the browser WebGPU port, including native layout resolution, depth views, `setBindGroup`, depth state, and blend state.
+- Added strict ownership, usage, alignment, range, format, dimension, duplicate-slot, and pipeline-compatibility validation in both WebGPU and Mock backends. Recorded the contract in ED-028.
+
+### Validation
+
+- Browser platform, WebGPU backend, and Mock backend targeted suites: 3 files / 26 tests PASS.
+- Full unit suite: 29 files / 131 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package builds, and architecture boundaries plus negative fixture: PASS.
+- P2-05 official PR CI Run `29846146006`: PASS; P2-06A submitted as commit `92f9927dba999879bd6e5c4a257a24b650321a80`.
+- No active blockers.
+
+### Next
+
+- Implement the Scene Render Feature with shared immutable Mesh Buffer uploads, per-item Uniform data, depth lifecycle, and distinct opaque/transparent pipeline policy.
+- Expose the composed Scene renderer through the SDK, then prove wake, Resize, Device Lost, and Dispose behavior before building the acceptance route.
+
+## 2026-07-21 09:21 PDT — P2-06B Scene Render Feature complete
+
+### Completed
+
+- Added Renderer-owned shared immutable Mesh uploads with interleaved position/normal data and aligned 16/32-bit Index Buffers.
+- Added per-Entity model-view-projection, inverse-transpose normal Matrix, and RGBA Uniform uploads through opaque Bind Group Handles.
+- Added separate depth-writing opaque and depth-read-only alpha-blended pipelines over one validated Phase 2 WGSL module.
+- Added depth Texture ownership across visible, suspended, resized, lost-device, recovered, and disposed Surface states.
+- Reconciled removed Entity and unreferenced Mesh GPU state to baseline without deleting resources for merely culled objects. Recorded the ownership policy in ED-029.
+
+### Validation
+
+- Scene Render Feature suite covers shared Mesh allocation, ordered opaque/transparent Draws, exact frame statistics, Uniform payloads, culling diagnostics, Resize depth replacement, removal cleanup, Device Lost recovery, and final zero-resource baseline.
+- Full unit suite: 30 files / 134 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package builds, architecture boundaries plus negative fixture, and two Shader source/runtime mirrors: PASS.
+- Submitted as commit `f16ccaf994d9bfabe0545a2241de4d82366b5aa9`; no active blockers.
+
+### Next
+
+- Add the public Scene Canvas Renderer that owns Scene, Camera, Orbit Controller, Mesh Renderer Store, subscriptions, framing, Resize, screenshots-ready Surface access, and recovery.
+- Prove that SDK-only consumers can build and control the Scene renderer without native GPU types or private package imports.
+
+## 2026-07-21 09:29 PDT — P2-06 Public SDK composition complete
+
+### Completed
+
+- Added `createKyxosSceneRenderer()` and `KyxosSceneCanvasRenderer` as the public composition boundary for Scene, Perspective Camera, Orbit Controller, Mesh Renderer Store, Visibility, Renderer, and backend Surface ownership.
+- Added automatic Dirty Event mapping for Scene hierarchy/transform/visibility/layer/bounds changes, Camera changes, and Mesh Renderer attachment changes while suppressing invalidation during initialization, loss, and disposal.
+- Added public orbit, pan, dolly, automatic framing, Resize, clear color, layer/culling options, diagnostics, Device Lost simulation, recovery, and idempotent aggregate disposal.
+- Re-exported Phase 2 Camera, Geometry, Math, Scene, and Visibility contracts only through package roots; no native WebGPU object or private path enters SDK declarations.
+
+### Validation
+
+- Public Scene SDK suite proves hierarchy rendering, shared Geometry, opaque/transparent submission, automatic wake/sleep, framing/Orbit synchronization, Resize aspect/depth updates, Device Lost recovery, and zero-resource disposal.
+- Full unit suite: 31 files / 136 tests PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, two-Shader validation, package/app build, and bundle gates: PASS.
+- Playground bundle remains within all accepted budgets: 84,769 raw / 24,822 gzip JavaScript; 143,343 raw / 76,448 gzip total.
+- Submitted as commit `764a25588babccf5dd839ff3bd39c9baaa3ac7bc`; no active blockers.
+
+### Next
+
+- Build the lazy `/acceptance/phase-02` route with deterministic Plane/Cube/Sphere hierarchy, transparent ordering, orbit/framing and culling controls, live queue/resource diagnostics, and browser capability reporting.
+- Add browser automation for interactions, Resize/DPR, sleep/wake, and Device Lost before generating fixed visual evidence.
+
+## 2026-07-21 09:41 PDT — P2-07 Scene Playground implementation checkpoint
+
+### Completed
+
+- Added the lazy, SDK-only `/acceptance/phase-02` route with a real WebGPU Plane/Cube/Sphere scene, parent-child hierarchy, opaque and transparent objects, offscreen/layer/hidden/disabled fixtures, and live Scene/Camera/queue/resource diagnostics.
+- Added controls for Orbit, dolly, automatic framing, parent Transform propagation, transparent distance swapping, Frustum and layer masks, clear color, dirty-only wake, zero-height suspension, Device Lost recovery, disposal, and recreation.
+- Added three Playwright flows covering exact Draw/triangle/visible/culling/resource counts, predictable transparency ordering, interaction wake/sleep, Surface suspension, Device Lost recovery, zero-resource disposal, and compact-layout overflow.
+- Extended the manifest-driven bundle gate with frozen Phase 0 and Phase 1 route closures plus an independently measured Phase 2 route closure. Recorded the delivery policy in ED-030.
+
+### Validation
+
+- Format, zero-warning lint, strict package/test/app typecheck, 31 unit files / 136 tests, dependency boundaries plus negative fixture, architecture docs, Phase 0/1 acceptance schemas, two Shader mirrors, all builds, and bundle budgets: PASS.
+- Phase 2 route: 120,630 raw / 36,296 gzip JavaScript and 180,659 raw / 88,280 gzip total, below 128/40 KiB JavaScript and 192/96 KiB total limits.
+- Phase 0 initial and Phase 1 route budgets remain independently frozen and PASS.
+- Local Playwright launch could not begin because the managed environment lacks Playwright Chromium v1228 and rejected its download. The repository workflow installs the pinned official browser; this is an environment capability gap, not an active repository blocker or a skipped test.
+- Submitted implementation as `3a37219107a0da74225d1df2f1b4a5af3d44ec8e`.
+
+### Next
+
+- Run the unchanged `chromium-scene` suite in GitHub Actions, inspect exact WebGPU diagnostics, and fix any browser-only behavior before marking P2-07 complete.
+- Generate fixed visual, performance, and lifecycle evidence for P2-08 after the official browser flow passes.
+
+## 2026-07-21 10:10 PDT — Global Continuous Deployment Gate implementation checkpoint
+
+### Completed
+
+- Appended the mandatory Phase 0–14 Continuous Deployment Gate to `PHASE_ACCEPTANCE_PLAN.md`; the isolated documentation commit `34943e3efdd44a6a77f603e47b754b4530e1f754` passed official GitHub Actions Run `29850874660`.
+- Added base-aware Playground routing so local `/acceptance/phase-XX` routes and public `/phase-N/` snapshots use the same SDK-only acceptance modules without escaping the GitHub project subpath.
+- Added deterministic accepted-phase discovery from contiguous Owner-Acceptance PASS records, isolated per-Phase and `latest` Vite builds, a machine-readable deployment manifest, `.nojekyll`, root/404 redirects, and fail-closed static artifact validation.
+- Added the official GitHub Pages build/upload/deploy workflow with current Node 24 Actions, public URL reachability checks, and a separate Chromium/WebGPU suite that executes every historical route plus `latest` after deployment.
+- Added a generic post-deployment freeze workflow; a Phase tag is now created only after CI, Pages deployment, public reachability, and online browser interactions all succeed. Recorded the policy in ED-031.
+
+### Validation
+
+- Formatting, zero-warning Lint, strict package/test/app typecheck, 31 unit files / 136 tests, dependency boundaries plus negative fixture, architecture docs, Shader mirrors, Phase 0/1 acceptance schemas, builds, and all route/aggregate bundle budgets: PASS.
+- Pages artifact validation built isolated Phase 0, 1, 2, and `latest` directories; every HTML asset reference remained inside its target base path and every referenced file existed.
+- Chromium 149 loaded the built project-subpath URLs `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/` with the expected acceptance surface; the complete Phase 0 browser suite passed 5/5 against its unchanged zero-pixel sandbox baseline.
+- Local official Playwright Chromium is not cached, so real WebGPU and canonical zero-pixel results remain delegated to the unchanged official CI environment. No browser test, threshold, or baseline was disabled or relaxed.
+- Deployment source and workflow checkpoint submitted as `887fb80d33e73bc3fcf190b26f1e95d42588a425`; official PR CI remained pending when this record was written.
+
+### Next
+
+- Require deployment checkpoint `887fb80d33e73bc3fcf190b26f1e95d42588a425` to pass clean official PR CI, including the canonical Phase 0/1 images and full Phase 2 WebGPU evidence flow.
+- Resume P2-08 evidence finalization after the deployment infrastructure head is green; Phase 2 remains In Development until its own public Pages deployment succeeds after merge.
+
+## 2026-07-21 10:27 PDT — P2-07 Owner controls and performance diagnostics verified
+
+### Completed
+
+- Added visible dirty-driven FPS, measured CPU Frame Time, and explicit GPU timestamp-query availability without fabricating a GPU duration.
+- Added online-executable geometry focus controls that cycle Plane, Cube, Sphere, Custom Mesh, and the complete scene while retaining the immutable Geometry contract.
+- Added a hierarchy move-out/restore operation that proves parent/child Transform propagation and Frustum exclusion with live Draw and visible-object counts.
+- Expanded the canonical Phase 2 browser flow to exercise every geometry focus, exact per-geometry triangle counts, the offscreen hierarchy, predictable transparency, Orbit/dolly/framing, culling/layers, suspension, loss/recovery, and disposal.
+
+### Validation
+
+- GitHub Actions Run `29852642508`, job `88709155622`: PASS; all 10 browser tests passed, including all 3 Phase 2 WebGPU flows.
+- Canonical diagnostics artifact `8504096148`, digest `sha256:16c31f9b776e1984ee3afbdb04b1082395a929c2fa88fce4508e21909249b086`, retained the final screenshot, scene capture, performance metrics, and zero-resource lifecycle record.
+- Format, zero-warning Lint, strict typecheck, build, route-aware Bundle budget, and isolated Phase 0/1/2 plus `latest` Pages artifact checks: PASS.
+- No threshold, prior baseline, or test was disabled; no active blocker was found.
+
+### Next
+
+- Verify the same Phase 2 owner-control operations against the public Pages route after deployment and use the next clean CI artifact as the P2-08 source checkpoint.
+- Freeze Reference/Current/Difference, performance comparison, technical QA, and autonomous owner evidence behind a fail-closed Phase 2 acceptance schema.
+
+## 2026-07-21 10:35 PDT — P2-08 canonical evidence and owner review complete
+
+### Completed
+
+- Directly inspected official Run `29852642508` full-page and Scene captures; Plane, Cube, Sphere, Custom tetrahedron, depth overlap, transparent objects, and framing have no blocking visual defect.
+- Froze the reviewed images as Phase 2 Reference/Current/Scene plus an all-black Difference, then added `maxDiffPixels: 0` browser assertions for both captures.
+- Required the independent canonical rerun `29853253312` to pass; both images were byte-identical across the two official attempts.
+- Archived exact Scene/queue/resource metrics, DPR 2 Device Lost/disposal lifecycle, route-aware Bundle metrics, Phase 1 performance comparison, dependency graph, technical QA, and autonomous owner evidence.
+- Added a fail-closed Phase 2 acceptance schema and encoded every owner operation in both the local official-browser suite and post-deployment public Pages suite.
+- Added real pointer-drag Orbit and wheel dolly at the Playground boundary while Camera/Orbit math remains DOM-free.
+
+### Validation
+
+- GitHub Actions Run `29853253312`, job `88711213077`: PASS; 10/10 browser tests; Artifact `8504322478`, digest `sha256:0f2d4cc68c91f606238033cebc8b1a3220dee54cb4c4032652cab78bde789e93`.
+- Reference and Current SHA-256: `54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142`; Scene: `75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e`; 0 differing pixels.
+- CPU frame p95 7.4 ms / 16.7 ms; dirty-to-sleep p95 64.3 ms / 250 ms; DPR 2 resources/bytes 25 / 7,658,788 ready, 0 / 0 after loss/disposal, exact recovery.
+- Phase 2 route: 125,160 raw / 37,668 gzip JavaScript and 185,176 raw / 89,642 gzip total; all Phase 0/1/2 and aggregate budgets PASS.
+- Phase 2 remains not Accepted. The evidence-pack head, merge, GitHub Pages deployment, public interaction verification, and immutable tag remain mandatory.
+
+### Next
+
+- Pass the complete evidence-pack head in GitHub Actions, update final evidence provenance, and freeze the exact verified PR head.
+- Merge only that verified head, require public `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/` verification, then confirm `phase-02-accepted` points to the deployed main commit.
+
+## 2026-07-21 10:46 PDT — P2-09 lifecycle-memory gate and Canvas interaction diagnosis
+
+### Completed
+
+- Extended the Device Lost, recovery, disposal, recreation, and final-disposal browser flow to measure estimated GPU Buffer plus Texture bytes at every state.
+- Added hard assertions requiring ready bytes to be positive, loss/disposal bytes to be zero, and recovery/recreation bytes to return to the exact ready baseline.
+- Inspected failed Run `29853890127`, its full job log, failed screenshot, trace artifact, runtime metrics, and canonical image hashes instead of retrying blindly.
+- Determined that the pointer assertions reached the remote checkpoint before the concurrently prepared Playground pointer handler; also stabilized physical pointer acceptance by restoring the Canvas to the interactive viewport after the deterministic full-page screenshot.
+
+### Validation
+
+- Run `29853890127` proved `7,658,788` estimated bytes ready, `0` after Device Lost, `7,658,788` after recovery, `0` after Dispose, `7,658,788` after recreation, and `0` after final Dispose; resource counts were `25/0/25/0/25/0`.
+- Its canonical full-page and Scene captures remained byte-identical to the frozen Phase 2 baselines.
+- The only failing assertion was pointer drag: the remote checkpoint did not yet contain the handler, so both attempts retained orbit `0.530 / 0.220`. Commit `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` adds that handler and the same interaction contract to public Pages verification; scroll restoration remains an independent flake guard.
+- Local formatting, zero-warning Lint, strict typecheck, 31 unit files / 136 tests, build, and Bundle budgets passed. Local browser launch remains unavailable because this workspace has no cached Playwright Chromium executable.
+
+### Next
+
+- Require interaction checkpoint `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` to pass a clean official CI run.
+- Promote the successful runtime JSON into the Phase 2 evidence pack, then run the fail-closed evidence head before merge.
+
+## 2026-07-21 10:55 PDT — P2-09 authoritative interaction and lifecycle checkpoint passed
+
+### Completed
+
+- Added the browser Playground pointer handler and public Pages interaction coverage at commit `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c` on top of the Canvas scroll guard and lifecycle-memory assertions.
+- Promoted the successful Run `29854505862` runtime records into the Phase 2 visual, performance, lifecycle, technical QA, and owner evidence.
+- Strengthened the fail-closed Phase 2 checker with the exact source Commit, Run, Job, Artifact, digest, lifecycle bytes, and three-attempt image provenance.
+
+### Validation
+
+- Run `29854505862`, job `88715390559`: PASS; 31 unit files / 136 tests and 10 / 10 browser tests.
+- Artifact `8504813925`, digest `sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33`, records CPU p95 `2.9 ms`, dirty-to-sleep p95 `61.1 ms`, and DPR 2 lifecycle bytes `7,658,788/0/7,658,788/0/7,658,788/0`.
+- Full-page and Scene captures match both prior official attempts byte-for-byte; both snapshot gates remain zero-pixel.
+- No active blocker remains. Phase 2 is still deployment-pending and is not marked Accepted.
+
+### Next
+
+- Push the Phase 2 evidence pack and require its fail-closed schema to pass in official CI.
+- Record that evidence-pack Run in a final provenance commit, pass the immutable PR head, then merge and execute the public Pages gate.
+
+## 2026-07-21 11:02 PDT — P2-09 evidence-pack head passed
+
+### Completed
+
+- Submitted the 19-file Phase 2 evidence pack as commit `552474486100cb1fb683d86fbafa4b900b48dcb8` without changing the frozen PNGs or visual thresholds.
+- Enabled the Phase 2 fail-closed checker inside `pnpm verify`; it validates the exact source CI, three-attempt image hashes, performance, lifecycle bytes, dependency graph, owner checklist, and deployment-pending state.
+- Required the evidence pack itself to pass official GitHub Actions before recording final provenance.
+
+### Validation
+
+- GitHub Actions Run `29855226827`, job `88717770835`: PASS; the Phase 2 acceptance schema and all 10 browser tests passed.
+- Artifact `8505082238`, digest `sha256:5ee0d0b833ad4a757d5402b46d387a7cd4aff5e7f58f66f1909ae58dbc8f93b7`, was uploaded successfully.
+- Phase 2 remains `Owner Acceptance Passed — Deployment Pending`; no document or machine record marks it Accepted.
+
+### Next
+
+- Commit only the final evidence-pack provenance and require that immutable PR head to pass the complete pipeline.
+- Mark PR #3 Ready, verify review state, merge the exact head, then require GitHub Pages deployment, public route interactions, and the immutable Phase 2 tag.

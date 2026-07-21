@@ -12,8 +12,8 @@
     "rawBytes": 65536
   },
   "javascript": {
-    "gzipBytes": 32768,
-    "rawBytes": 98304
+    "gzipBytes": 49152,
+    "rawBytes": 163840
   },
   "phase0InitialJavascript": {
     "gzipBytes": 24576,
@@ -23,8 +23,24 @@
     "gzipBytes": 65536,
     "rawBytes": 131072
   },
-  "total": {
+  "phase1RouteJavascript": {
+    "gzipBytes": 32768,
+    "rawBytes": 98304
+  },
+  "phase1RouteTotal": {
     "gzipBytes": 98304,
     "rawBytes": 196608
+  },
+  "phase2RouteJavascript": {
+    "gzipBytes": 40960,
+    "rawBytes": 131072
+  },
+  "phase2RouteTotal": {
+    "gzipBytes": 98304,
+    "rawBytes": 196608
+  },
+  "total": {
+    "gzipBytes": 131072,
+    "rawBytes": 262144
   }
 }

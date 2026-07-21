@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "sourceCiRunId": 29854505862,
+  "budgetMs": 250,
+  "maxMs": 61.1,
+  "medianMs": 42,
+  "minMs": 9.2,
+  "p95Ms": 61.1,
+  "sampleCount": 10,
+  "status": "PASS",
+  "cpuFrameTimeMs": {
+    "budgetMs": 16.7,
+    "maxMs": 2.9,
+    "medianMs": 0.5,
+    "minMs": 0.3,
+    "p95Ms": 2.9,
+    "sampleCount": 10,
+    "status": "PASS"
+  }
+}

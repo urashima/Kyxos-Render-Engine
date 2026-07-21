@@ -40,19 +40,64 @@ const metrics = {
   javascript: { gzipBytes: 0, rawBytes: 0 },
   phase0InitialJavascript: { gzipBytes: 0, rawBytes: 0 },
   phase0InitialTotal: { gzipBytes: 0, rawBytes: 0 },
+  phase1RouteJavascript: { gzipBytes: 0, rawBytes: 0 },
+  phase1RouteTotal: { gzipBytes: 0, rawBytes: 0 },
+  phase2RouteJavascript: { gzipBytes: 0, rawBytes: 0 },
+  phase2RouteTotal: { gzipBytes: 0, rawBytes: 0 },
   total: { gzipBytes: 0, rawBytes: 0 },
 };
 
-const phase0InitialFiles = new Set(['index.html']);
-function addManifestClosure(key) {
+function manifestClosure(key, inheritedFiles = new Set(['index.html'])) {
+  const files = new Set(inheritedFiles);
+  const visited = new Set();
+  function addEntry(entryKey) {
+    if (visited.has(entryKey)) return;
+    visited.add(entryKey);
+    const entry = manifest[entryKey];
+    if (entry === undefined) throw new Error(`Vite manifest entry is missing: ${entryKey}`);
+    files.add(entry.file);
+    for (const file of entry.css ?? []) files.add(file);
+    for (const file of entry.assets ?? []) files.add(file);
+    for (const imported of entry.imports ?? []) addEntry(imported);
+  }
+  addEntry(key);
+  return files;
+}
+
+const phase0InitialFiles = manifestClosure('index.html');
+function routeClosure(key) {
+  return manifestClosure(key, phase0InitialFiles);
+}
+const phase1RouteFiles = routeClosure('src/acceptance/phase-01/index.ts');
+const phase2RouteFiles = routeClosure('src/acceptance/phase-02/index.ts');
+
+function addMeasurement(measurement, rawBytes, gzipBytes) {
+  measurement.rawBytes += rawBytes;
+  measurement.gzipBytes += gzipBytes;
+}
+
+function addRouteMeasurement(fileSet, javascriptMeasurement, totalMeasurement, values) {
+  if (!fileSet.has(values.relativePath)) return;
+  addMeasurement(totalMeasurement, values.rawBytes, values.gzipBytes);
+  if (values.category === 'javascript') {
+    addMeasurement(javascriptMeasurement, values.rawBytes, values.gzipBytes);
+  }
+}
+
+/*
+ * Dynamic imports are deliberately excluded from the entry closure. Each route
+ * adds exactly one selected dynamic entry and its static dependencies so a new
+ * acceptance phase cannot hide regressions in an already accepted route.
+ */
+function assertDynamicRoute(key) {
   const entry = manifest[key];
   if (entry === undefined) throw new Error(`Vite manifest entry is missing: ${key}`);
-  phase0InitialFiles.add(entry.file);
-  for (const file of entry.css ?? []) phase0InitialFiles.add(file);
-  for (const file of entry.assets ?? []) phase0InitialFiles.add(file);
-  for (const imported of entry.imports ?? []) addManifestClosure(imported);
+  if (entry.isDynamicEntry !== true) {
+    throw new Error(`Acceptance route must remain a lazy dynamic entry: ${key}`);
+  }
 }
-addManifestClosure('index.html');
+assertDynamicRoute('src/acceptance/phase-01/index.ts');
+assertDynamicRoute('src/acceptance/phase-02/index.ts');
 
 for (const filePath of files) {
   const category = categoryFor(filePath);
@@ -60,19 +105,28 @@ for (const filePath of files) {
   const content = await readFile(filePath);
   const rawBytes = (await stat(filePath)).size;
   const gzipBytes = gzipSync(content).byteLength;
-  metrics[category].rawBytes += rawBytes;
-  metrics[category].gzipBytes += gzipBytes;
-  metrics.total.rawBytes += rawBytes;
-  metrics.total.gzipBytes += gzipBytes;
+  addMeasurement(metrics[category], rawBytes, gzipBytes);
+  addMeasurement(metrics.total, rawBytes, gzipBytes);
   const relativePath = path.relative(distDirectory, filePath).split(path.sep).join('/');
   if (phase0InitialFiles.has(relativePath)) {
-    metrics.phase0InitialTotal.rawBytes += rawBytes;
-    metrics.phase0InitialTotal.gzipBytes += gzipBytes;
+    addMeasurement(metrics.phase0InitialTotal, rawBytes, gzipBytes);
     if (category === 'javascript') {
-      metrics.phase0InitialJavascript.rawBytes += rawBytes;
-      metrics.phase0InitialJavascript.gzipBytes += gzipBytes;
+      addMeasurement(metrics.phase0InitialJavascript, rawBytes, gzipBytes);
     }
   }
+  const values = { category, gzipBytes, rawBytes, relativePath };
+  addRouteMeasurement(
+    phase1RouteFiles,
+    metrics.phase1RouteJavascript,
+    metrics.phase1RouteTotal,
+    values,
+  );
+  addRouteMeasurement(
+    phase2RouteFiles,
+    metrics.phase2RouteJavascript,
+    metrics.phase2RouteTotal,
+    values,
+  );
 }
 
 const failures = [];

@@ -2,6 +2,8 @@
 export const SDK_PACKAGE_NAME = '@kyxos/render-sdk' as const;
 
 export type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -40,6 +42,52 @@ export type {
 } from '@kyxos/render-backend-api';
 export { BACKEND_RESOURCE_KINDS, createBackendCapabilityReport } from '@kyxos/render-backend-api';
 export type { DirtyFlag, FrameRequestDriver, RenderMode } from '@kyxos/render-frame-scheduler';
+export {
+  OrbitController,
+  PerspectiveCamera,
+  frameScene,
+  type CameraChangeEvent,
+  type CameraChangeKind,
+  type CameraDiagnostics,
+  type CameraEvents,
+  type CameraFitOptions,
+  type CameraFitResult,
+  type CameraPerspectiveOptions,
+  type CameraPoseOptions,
+  type FrameSceneOptions,
+  type OrbitControllerOptions,
+  type OrbitState,
+  type PerspectiveCameraOptions,
+} from '@kyxos/render-camera';
+export {
+  createCubeGeometry,
+  createMeshData,
+  createPlaneGeometry,
+  createUvSphereGeometry,
+  type CubeGeometryOptions,
+  type MeshData,
+  type MeshDataDescriptor,
+  type MeshIndexFormat,
+  type PlaneGeometryOptions,
+  type UvSphereGeometryOptions,
+} from '@kyxos/render-geometry';
+export {
+  composeTrsMat4,
+  createAabb,
+  createQuaternion,
+  createVec3,
+  identityMat4,
+  identityQuaternion,
+  multiplyMat4,
+  quaternionFromAxisAngle,
+  type Aabb,
+  type BoundingSphere,
+  type Frustum,
+  type Mat4,
+  type Plane,
+  type Quaternion,
+  type Vec3,
+} from '@kyxos/render-math';
 export type {
   AssetDecoder,
   BasicGeometryPrimitive,
@@ -49,8 +97,37 @@ export type {
   RendererDiagnostics,
   RendererEvents,
   RendererLifecycleState,
+  SceneRenderFeatureDiagnostics,
+  SceneRenderFeatureOptions,
 } from '@kyxos/render-renderer';
-export { KyxosRenderer } from '@kyxos/render-renderer';
+export { KyxosRenderer, SceneRenderFeature } from '@kyxos/render-renderer';
+export {
+  Scene,
+  type CreateEntityOptions,
+  type EntityHandle,
+  type LocalTransform,
+  type LocalTransformOptions,
+  type SceneBoundsOptions,
+  type SceneChangeEvent,
+  type SceneChangeKind,
+  type SceneDiagnostics,
+  type SceneEvents,
+} from '@kyxos/render-scene';
+export {
+  MeshRendererStore,
+  VisibilitySystem,
+  type AlphaMode,
+  type BuildRenderQueuesOptions,
+  type MeshRendererComponent,
+  type MeshRendererDescriptor,
+  type MeshRendererStoreChangeEvent,
+  type MeshRendererStoreChangeKind,
+  type MeshRendererStoreEvents,
+  type RenderItem,
+  type RenderQueues,
+  type RgbaColor,
+  type VisibilityDiagnostics,
+} from '@kyxos/render-visibility';
 export { createBrowserFrameDriver } from './browser-frame-driver.js';
 export type { KyxosCanvasRendererOptions } from './canvas-renderer.js';
 export { KyxosCanvasRenderer } from './canvas-renderer.js';
@@ -62,3 +139,10 @@ export type {
   KyxosBackendSelection,
 } from './create-renderer.js';
 export { createKyxosRenderer } from './create-renderer.js';
+export type { CreateKyxosSceneRendererOptions } from './create-scene-renderer.js';
+export { createKyxosSceneRenderer } from './create-scene-renderer.js';
+export type {
+  KyxosSceneCanvasRendererOptions,
+  KyxosSceneRendererDiagnostics,
+} from './scene-canvas-renderer.js';
+export { KyxosSceneCanvasRenderer } from './scene-canvas-renderer.js';

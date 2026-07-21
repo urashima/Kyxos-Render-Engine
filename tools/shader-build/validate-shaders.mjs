@@ -12,6 +12,13 @@ const generatedMirrors = new Map([
       path: 'packages/renderer/src/generated/phase-01-basic.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-02-scene.wgsl',
+    {
+      exportName: 'PHASE_02_SCENE_WGSL',
+      path: 'packages/renderer/src/generated/phase-02-scene.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {

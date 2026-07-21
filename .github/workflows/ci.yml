@@ -58,5 +58,6 @@ jobs:
             playwright-report/
             test-results/phase-00/runtime/
             test-results/phase-01/runtime/
+            test-results/phase-02/runtime/
           if-no-files-found: ignore
           retention-days: 7

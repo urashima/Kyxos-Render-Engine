@@ -4,6 +4,7 @@ import type {
   BackendClearColor,
   BackendColorTargetDescriptor,
   BackendCommandEncoderDescriptor,
+  BackendDepthStencilState,
   BackendFeature,
   BackendLimits,
   BackendLossInfo,
@@ -60,7 +61,12 @@ export interface WebGpuCommandBufferPort {
 }
 
 export interface WebGpuTexturePort {
+  createView(): WebGpuTextureViewPort;
   destroy(): void;
+}
+
+export interface WebGpuTextureViewPort {
+  readonly kind: 'texture-view';
 }
 
 export interface WebGpuSamplerPort {
@@ -73,6 +79,24 @@ export interface WebGpuShaderModulePort {
 
 export interface WebGpuPipelinePort {
   readonly kind: 'pipeline';
+}
+
+export interface WebGpuBindGroupPort {
+  readonly kind: 'bind-group';
+}
+
+export interface WebGpuBindGroupEntryRequest {
+  readonly binding: number;
+  readonly buffer: WebGpuBufferPort;
+  readonly offset: number;
+  readonly size: number;
+}
+
+export interface WebGpuBindGroupRequest {
+  readonly entries: readonly WebGpuBindGroupEntryRequest[];
+  readonly group: number;
+  readonly label: string | undefined;
+  readonly pipeline: WebGpuPipelinePort;
 }
 
 export interface WebGpuCommandEncoderPort {
@@ -95,7 +119,13 @@ export interface WebGpuIndexBufferBinding {
   readonly size: number | undefined;
 }
 
+export interface WebGpuBindGroupBinding {
+  readonly bindGroup: WebGpuBindGroupPort;
+  readonly group: number;
+}
+
 export interface WebGpuDrawRequest {
+  readonly bindGroups: readonly WebGpuBindGroupBinding[];
   readonly firstIndex: number;
   readonly firstInstance: number;
   readonly firstVertex: number;
@@ -107,8 +137,16 @@ export interface WebGpuDrawRequest {
   readonly vertexCount: number | undefined;
 }
 
+export interface WebGpuDepthAttachmentRequest {
+  readonly clearValue: number;
+  readonly loadOp: 'clear' | 'load';
+  readonly storeOp: 'discard' | 'store';
+  readonly view: WebGpuTextureViewPort;
+}
+
 export interface WebGpuRenderPassRequest {
   readonly clearColor: BackendClearColor;
+  readonly depthAttachment: WebGpuDepthAttachmentRequest | undefined;
   readonly draws: readonly WebGpuDrawRequest[];
   readonly label: string | undefined;
   readonly surface: WebGpuSurfacePort;
@@ -127,6 +165,7 @@ export interface WebGpuFragmentStageRequest {
 }
 
 export interface WebGpuRenderPipelineRequest {
+  readonly depthStencil: BackendDepthStencilState | undefined;
   readonly fragment: WebGpuFragmentStageRequest | undefined;
   readonly label: string | undefined;
   readonly primitive: BackendPrimitiveState | undefined;
@@ -137,6 +176,7 @@ export interface WebGpuDevicePort {
   readonly lost: Promise<BackendLossInfo>;
   readonly queue: WebGpuQueuePort;
   createBuffer(descriptor: BackendBufferDescriptor): WebGpuBufferPort;
+  createBindGroup(request: WebGpuBindGroupRequest): WebGpuBindGroupPort;
   createCommandEncoder(descriptor: BackendCommandEncoderDescriptor): WebGpuCommandEncoderPort;
   createRenderPipeline(request: WebGpuRenderPipelineRequest): Promise<WebGpuPipelinePort>;
   createSampler(descriptor: BackendSamplerDescriptor): WebGpuSamplerPort;

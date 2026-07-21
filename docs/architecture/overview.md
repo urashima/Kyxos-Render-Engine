@@ -19,11 +19,16 @@ flowchart TD
 
 Integration adapters and the WebGL2 backend are planned layers. They do not exist in Phase 0 and are not simulated by placeholders.
 
-## Phase 0 package graph
+## Accepted and active package graph
 
 | Package                         | Responsibility                                                         | Runtime dependencies                                         |
 | ------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                  | None                                                         |
+| `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                     | None                                                         |
+| `@kyxos/render-geometry`        | Immutable mesh data, validation, bounds, and primitive builders        | Math                                                         |
+| `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds  | Core, Math                                                   |
+| `@kyxos/render-camera`          | Perspective matrices, scene framing, and DOM-free orbit state          | Core, Math, Scene                                            |
+| `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting       | Camera, Core, Geometry, Math, Scene                          |
 | `@kyxos/render-backend-api`     | Backend capabilities, lifecycle, resource handles, diagnostics         | Core                                                         |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1 | Backend API, Core                                            |
 | `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                      | Core                                                         |

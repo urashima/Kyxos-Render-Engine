@@ -13,7 +13,18 @@ export type EngineErrorCode =
   | 'UNSUPPORTED_CAPABILITY';
 
 export type EngineModule =
-  'asset' | 'backend' | 'core' | 'material' | 'renderer' | 'scheduler' | 'sdk' | 'unknown';
+  | 'asset'
+  | 'backend'
+  | 'camera'
+  | 'core'
+  | 'geometry'
+  | 'material'
+  | 'renderer'
+  | 'scene'
+  | 'scheduler'
+  | 'sdk'
+  | 'unknown'
+  | 'visibility';
 
 export interface EngineErrorOptions {
   readonly cause?: unknown;

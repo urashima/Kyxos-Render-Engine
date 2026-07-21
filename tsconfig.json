@@ -3,6 +3,11 @@
   "files": ["types/workspace.d.ts"],
   "references": [
     { "path": "packages/core" },
+    { "path": "packages/math" },
+    { "path": "packages/geometry" },
+    { "path": "packages/scene" },
+    { "path": "packages/camera" },
+    { "path": "packages/visibility" },
     { "path": "packages/backend-api" },
     { "path": "packages/backend-webgpu" },
     { "path": "packages/frame-scheduler" },

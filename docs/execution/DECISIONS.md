@@ -219,3 +219,93 @@
 - **Reason:** CPU command construction is measurable without exposing native objects. Queue completion includes scheduling and driver latency and is not a trustworthy GPU execution timer. The acceptance record must distinguish measured values from unavailable capabilities.
 - **Impact:** Renderer diagnostics gain `lastCpuFrameTimeMs`; tests inject a deterministic clock, while production defaults to `performance.now()`. The canonical 16.7 ms CPU budget and 250 ms dirty-to-sleep budget are independent. Future timestamp-query support can add GPU timing without changing the current measurement's meaning.
 - **ADR required:** No; this is additive diagnostics and acceptance instrumentation, not a rendering or public dependency-boundary change.
+
+## ED-023 — Establish immutable dependency-free scene math
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Place finite-checked vectors, normalized quaternions, column-major matrices, zero-to-one projections, bounds, planes, and frusta in a dependency-free `@kyxos/render-math` package. Return readonly frozen values and keep DOM, Scene, Renderer, and backend types outside the package.
+- **Candidates:** Use mutable arrays inside Scene; adopt a general third-party math library; create the smallest convention-specific engine Math package.
+- **Reason:** Phase 2 Scene, Geometry, Camera, and Visibility must share the exact ADR-002 convention without introducing an upward dependency or backend-specific NDC branch. A focused owned implementation makes every transform and culling invariant directly testable and avoids exposing a third-party public type contract before 1.0.
+- **Impact:** Public constructors reject NaN, Infinity, zero-length normalization, reversed bounds, and invalid projections. Values allocate immutable tuples in this correctness-first layer; later profiling may add internal destination-buffer variants without changing the public value API. WebGPU consumes canonical zero-to-one depth directly, while WebGL2 remains responsible for its Phase 10 conversion.
+- **ADR required:** No; ADR-002 already freezes all affected conventions, and this decision implements it without changing the product boundary.
+
+## ED-024 — Keep CPU mesh data immutable and renderer-neutral
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Store Phase 2 Mesh positions, normalized normals, UV0, and triangle indices as copied frozen numeric arrays in `@kyxos/render-geometry`. Derive AABB and Bounding Sphere at construction, select 16/32-bit index format from the largest addressed vertex, and keep GPU Buffers and material/render state outside the package.
+- **Candidates:** Let callers retain mutable typed arrays; make Geometry own GPU Buffer uploads; copy validated CPU data into a backend-neutral immutable Mesh value.
+- **Reason:** Caller mutation after validation would invalidate bounds and culling, while GPU ownership in Geometry would create a concrete-backend dependency. Frozen CPU values provide deterministic Custom Mesh behavior and allow Scene/Visibility to operate without Renderer or GPU access.
+- **Impact:** Construction intentionally copies and validates data; primitive meshes are small and deterministic. Later dynamic geometry will require an explicit versioned update API rather than mutating this value. Both WebGPU and WebGL2 can upload the same data and choose native index representations behind their backend boundaries.
+- **ADR required:** No; this adds a downward Geometry-to-Math edge under existing architecture rules and does not alter the public SDK boundary.
+
+## ED-025 — Scope Entity identity and transform caches to one Scene
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Allocate non-reused opaque Entity Handles per Scene and resolve them by object identity. Store local TRS and cached local/world matrices in Scene records, propagate world dirtiness iteratively through descendants, and recompute parent-before-child on demand without recursive call stacks.
+- **Candidates:** Globally mutable Entity registry; recursive Node objects with public parent mutation; Scene-owned records with opaque identity and controlled hierarchy methods.
+- **Reason:** A global registry would couple engine instances and tests, while public mutable nodes could create cycles and bypass dirty propagation. Scene ownership rejects foreign/stale handles, centralizes cycle checks, and gives visibility, bounds, scheduling, and diagnostics one reliable revision source.
+- **Impact:** Reparenting preserves local TRS and intentionally changes world placement; a future preserve-world option requires an explicit matrix-decomposition contract. Transform reads are cached, unchanged trees cause no recomputation, and deep trees avoid stack overflow. The design is backend-neutral and adds no GPU ownership.
+- **ADR required:** No; this implements the lightweight Entity + Component Handle direction already accepted in the development plan without changing a public product boundary.
+
+## ED-026 — Frame conservatively and keep Orbit input-independent
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Use a finite-far Perspective Camera with cached ADR-002 view/projection matrices. Frame an AABB through its padded Bounding Sphere and the smaller vertical/horizontal half-angle, preserving the current viewing direction. Keep Orbit as clamped target/yaw/pitch/distance state with numeric orbit, dolly, and camera-plane pan methods; DOM event mapping remains outside the package.
+- **Candidates:** Fit only the projected AABB height; expose browser pointer events in Camera; conservatively fit a sphere and adapt inputs at SDK/Playground boundaries.
+- **Reason:** Height-only fitting clips wide objects in portrait viewports, while DOM types in Camera would block Worker, test, touch, and alternate-host integrations. A sphere fit is deliberately conservative but guarantees every AABB corner remains inside the frustum at any valid aspect.
+- **Impact:** Auto framing sets positive finite near/far planes around the fitted volume and emits normal Camera changes so scheduling can wake. Orbit behavior is deterministic in unit tests and reusable by products; later input adapters may change gesture scaling without changing Camera math. WebGPU receives canonical zero-to-one projection, and WebGL2 conversion remains backend-owned.
+- **ADR required:** No; ADR-002 already fixes camera and projection conventions, and this decision adds policy without changing the public dependency direction.
+
+## ED-027 — Emit immutable Render Items before backend submission
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Keep Mesh Renderer components in a Scene-bound store above Geometry. Attachments own Entity local bounds and refer to immutable Mesh data, material/pipeline keys, alpha mode, explicit order, and stable sequence. Visibility consumes Scene and Camera state, performs enabled/inherited-visibility/layer/Frustum gates, and emits immutable opaque and transparent queues without issuing graphics commands.
+- **Candidates:** Submit WebGPU commands directly while traversing Scene; store GPU state inside Entity records; build backend-neutral Render Items and sort before Renderer submission.
+- **Reason:** Traversal-time submission would entangle Scene, culling, sorting, and one backend. A separate Draw List makes offscreen exclusion objectively testable, preserves Scene/Backend isolation, and lets future Render Graph, WebGL2, instancing, and batching consume one prepared contract.
+- **Impact:** Opaque items sort by explicit order, pipeline, material, front-to-back distance, and stable sequence. Transparent items sort by explicit order then back-to-front distance with deterministic tie breakers. Results cache by Scene, Camera, Store, and option revisions; disabled features and unchanged frames perform no unnecessary rebuild. GPU resources remain Renderer/Backend-owned.
+- **ADR required:** No; this implements the visibility output boundary mandated by the development plan and keeps all accepted dependency directions intact.
+
+## ED-028 — Extend the backend contract with portable binding and depth state
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Represent Phase 2 object Uniforms as pipeline-derived backend Bind Groups, depth testing as an owned depth Texture attachment plus pipeline state, and transparency as portable color-target Blend components. Only opaque Handles and scalar descriptors cross the public backend boundary.
+- **Candidates:** CPU-bake every object's camera transform into vertex data; expose native WebGPU binding/layout objects; add minimal backend-neutral Bind Group, depth, and blend descriptors.
+- **Reason:** Per-frame CPU vertex rewriting would scale with geometry size and hard-code Camera behavior into resource uploads. Native objects would break WebGL2 portability and the no-leak public contract. Pipeline-derived Bind Groups preserve WebGPU automatic layouts now while keeping room for a WebGL2 Uniform implementation behind the same API.
+- **Impact:** Backends validate Buffer usage and ranges, group uniqueness and pipeline ownership, depth format and dimensions, and resource lifecycle. Phase 2 can submit one immutable Mesh upload with per-object transforms and colors; later material layouts can extend the descriptor without Scene or Camera importing a backend. WebGPU maps directly to native Bind Groups and depth attachments; WebGL2 Phase 10 will translate the same contract to program Uniform state and depth/blend state.
+- **ADR required:** No; this is an additive implementation contract inside the already accepted backend abstraction and does not change product scope or global rendering conventions.
+
+## ED-029 — Cache GPU Meshes by immutable value identity and object state by Entity
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Let the Scene Render Feature own one vertex/index allocation per immutable Mesh object and one Uniform Buffer plus pipeline-derived Bind Group per submitted Entity. Retain resources for attached but temporarily culled objects, and release them when the component or last Mesh reference disappears.
+- **Candidates:** Upload every Mesh on every frame; let Geometry own backend resources; allocate duplicate Mesh Buffers per Entity; cache immutable Mesh uploads in Renderer and keep only per-object Uniform state per Entity.
+- **Reason:** Immutable Geometry makes object identity a safe cache key. Sharing avoids duplicate static geometry memory, while Entity-local Uniform state preserves independent transforms and colors. Releasing on culling would churn resources during normal camera motion; releasing on attachment changes gives deterministic ownership without hidden global caches.
+- **Impact:** Resource counts are predictable, multiple Entities can share one Mesh allocation, and Dispose/Device Lost returns all backend counters to baseline. Dynamic geometry will need an explicit versioned resource path later. WebGPU uses Bind Groups now; WebGL2 can preserve the same cache ownership while translating object Uniforms internally.
+- **ADR required:** No; this refines the Renderer-owned resource policy already mandated by the development plan without changing product scope or dependency direction.
+
+## ED-030 — Budget each lazy acceptance route independently
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Preserve the frozen Phase 0 initial closure and Phase 1 route limits, measure Phase 2 as the initial entry plus only its selected dynamic entry and static imports, and retain a separate cap for all emitted Playground assets.
+- **Candidates:** Keep treating every historical lazy route as one user download; remove the whole-application cap; raise only the old aggregate threshold; enforce immutable per-route closures plus a bounded aggregate allowance for each added acceptance phase.
+- **Reason:** A visitor loads one acceptance route, not every dynamic phase chunk. Summing all historical routes misrepresents transfer cost and eventually makes a multi-phase acceptance application impossible, while raising only that sum could hide regressions in Phase 0 or Phase 1. Manifest closures give both an accurate user path and explicit regression isolation.
+- **Impact:** Phase 0 retains 24 KiB gzip JavaScript / 64 KiB gzip total limits; Phase 1 retains 32 KiB / 96 KiB; Phase 2 is capped at 40 KiB gzip JavaScript / 96 KiB gzip total. All emitted JavaScript remains capped at 48 KiB gzip and complete Playground output at 128 KiB gzip. Later phases must add their own route closure instead of consuming an unmeasured global increase.
+- **ADR required:** No; this changes acceptance delivery accounting only and does not affect engine runtime APIs, dependency direction, or rendering behavior.
+
+## ED-031 — Deploy isolated accepted Playgrounds before freezing a Phase
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Build every accepted acceptance route into its own GitHub Pages directory, rebuild `latest` from only the highest contiguous Owner-Acceptance PASS record, and deploy through the official Pages artifact pipeline. After deployment, run public Chromium/WebGPU interaction smoke tests against every historical URL and `latest`; only a successful public-deployment workflow may create the next immutable accepted tag.
+- **Candidates:** Publish one mutable root bundle for every URL; deploy screenshots or CI artifacts only; deploy isolated route builds but freeze before checking the public site; deploy isolated route builds and make the public check a fail-closed predecessor of tag creation.
+- **Reason:** A shared root bundle can silently change historical routes, while a local or downloadable artifact does not prove that a reviewer can open and operate the milestone from another device. The acceptance tag must represent code, CI, deployment, public reachability, and browser interaction together rather than code alone.
+- **Impact:** `/phase-0/` through the latest accepted `/phase-N/` remain explicit regression surfaces, `/latest/` never selects an in-development phase, and each directory owns its hashed assets under the repository Pages base path. The deployment workflow has only `contents: read`, `pages: write`, and `id-token: write`; the separate post-deployment freeze workflow alone receives `contents: write`. A repository must have GitHub Pages configured to use GitHub Actions before the deployment can pass.
+- **ADR required:** No; this governs acceptance delivery and release automation without changing engine runtime architecture or public APIs.

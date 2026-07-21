@@ -1,4 +1,6 @@
 import type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -82,6 +84,7 @@ function validateEstimatedBytes(estimatedBytes: number): void {
 
 export class MockBackend implements GraphicsBackend {
   readonly #allocators = createAllocators();
+  readonly #bindGroups = new Map<BackendBindGroupHandle, BackendBindGroupDescriptor>();
   readonly #buffers = new Map<BackendBufferHandle, BackendBufferDescriptor>();
   readonly #commandEncoders = new Set<BackendCommandEncoderHandle>();
   readonly #events = new TypedEventEmitter<BackendEvents>();
@@ -89,6 +92,7 @@ export class MockBackend implements GraphicsBackend {
   readonly #pipelines = new Map<BackendPipelineHandle, BackendRenderPipelineDescriptor>();
   readonly #shaderInfo = new Map<BackendShaderModuleHandle, BackendShaderCompilationInfo>();
   readonly #surfaces = new Map<BackendSurfaceHandle, MockSurfaceRecord>();
+  readonly #textures = new Map<BackendTextureHandle, BackendTextureDescriptor>();
   #createdTotal = 0;
   #destroyedTotal = 0;
   #state: BackendLifecycleState = 'new';
@@ -177,10 +181,69 @@ export class MockBackend implements GraphicsBackend {
     const layers = descriptor.size.depthOrArrayLayers ?? 1;
     const estimatedBytes =
       descriptor.size.width * descriptor.size.height * layers * (descriptor.sampleCount ?? 1) * 4;
-    return this.createResource('texture', {
+    const handle = this.createResource('texture', {
       estimatedBytes,
       ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
     });
+    this.#textures.set(
+      handle,
+      Object.freeze({
+        ...descriptor,
+        size: Object.freeze({ ...descriptor.size }),
+        usage: Object.freeze([...descriptor.usage]),
+      }),
+    );
+    return handle;
+  }
+
+  createBindGroup(descriptor: BackendBindGroupDescriptor): BackendBindGroupHandle {
+    this.#assertReady('create a Bind Group');
+    if (
+      !Number.isSafeInteger(descriptor.group) ||
+      descriptor.group < 0 ||
+      descriptor.group >= this.capabilities.limits.maxBindGroups ||
+      descriptor.entries.length === 0 ||
+      !this.#pipelines.has(descriptor.pipeline)
+    ) {
+      throw new KyxosEngineError('Mock Bind Group descriptor is invalid.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    const bindings = new Set<number>();
+    for (const entry of descriptor.entries) {
+      const buffer = this.#buffers.get(entry.resource.buffer);
+      const offset = entry.resource.offset ?? 0;
+      const size = entry.resource.size ?? (buffer?.size ?? 0) - offset;
+      if (
+        !Number.isSafeInteger(entry.binding) ||
+        entry.binding < 0 ||
+        bindings.has(entry.binding) ||
+        buffer === undefined ||
+        (!buffer.usage.includes('uniform') && !buffer.usage.includes('storage')) ||
+        !Number.isSafeInteger(offset) ||
+        offset < 0 ||
+        offset % 4 !== 0 ||
+        !Number.isSafeInteger(size) ||
+        size < 1 ||
+        size % 4 !== 0 ||
+        offset + size > buffer.size
+      ) {
+        throw new KyxosEngineError('Mock Bind Group entry is invalid.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      bindings.add(entry.binding);
+    }
+    const handle = this.createResource(
+      'bind-group',
+      descriptor.label === undefined ? {} : { label: descriptor.label },
+    );
+    this.#bindGroups.set(handle, descriptor);
+    return handle;
   }
 
   createSampler(descriptor: BackendSamplerDescriptor = {}): BackendSamplerHandle {
@@ -307,11 +370,17 @@ export class MockBackend implements GraphicsBackend {
     if (handle.kind === backendResourceHandleKind('buffer')) {
       this.#buffers.delete(handle as BackendBufferHandle);
     }
+    if (handle.kind === backendResourceHandleKind('bind-group')) {
+      this.#bindGroups.delete(handle as BackendBindGroupHandle);
+    }
     if (handle.kind === backendResourceHandleKind('pipeline')) {
       this.#pipelines.delete(handle as BackendPipelineHandle);
     }
     if (handle.kind === backendResourceHandleKind('command-encoder')) {
       this.#commandEncoders.delete(handle as BackendCommandEncoderHandle);
+    }
+    if (handle.kind === backendResourceHandleKind('texture')) {
+      this.#textures.delete(handle as BackendTextureHandle);
     }
     this.#destroyedTotal += 1;
     return true;
@@ -390,11 +459,30 @@ export class MockBackend implements GraphicsBackend {
     let triangles = 0;
     let vertices = 0;
     for (const renderPass of submission.renderPasses) {
-      if (this.getSurfaceInfo(renderPass.surface).size.suspended) {
+      const surface = this.getSurfaceInfo(renderPass.surface);
+      if (surface.size.suspended) {
         throw new KyxosEngineError('Mock Surface is suspended.', {
           code: 'INVALID_STATE',
           module: 'backend',
           recoverable: true,
+        });
+      }
+      const depthTexture =
+        renderPass.depthAttachment === undefined
+          ? undefined
+          : this.#textures.get(renderPass.depthAttachment.texture);
+      if (
+        renderPass.depthAttachment !== undefined &&
+        (depthTexture === undefined ||
+          !depthTexture.usage.includes('render-attachment') ||
+          (depthTexture.format !== 'depth24plus' && depthTexture.format !== 'depth32float') ||
+          depthTexture.size.width !== surface.size.physicalWidth ||
+          depthTexture.size.height !== surface.size.physicalHeight)
+      ) {
+        throw new KyxosEngineError('Mock depth attachment is invalid.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
         });
       }
       for (const draw of renderPass.draws ?? []) {
@@ -405,6 +493,35 @@ export class MockBackend implements GraphicsBackend {
             module: 'backend',
             recoverable: false,
           });
+        }
+        if (
+          (pipeline.depthStencil !== undefined && depthTexture === undefined) ||
+          (pipeline.depthStencil !== undefined &&
+            depthTexture !== undefined &&
+            pipeline.depthStencil.format !== depthTexture.format)
+        ) {
+          throw new KyxosEngineError('Mock Pipeline depth attachment is missing or incompatible.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+        const groups = new Set<number>();
+        for (const binding of draw.bindGroups ?? []) {
+          const bindGroup = this.#bindGroups.get(binding.bindGroup);
+          if (
+            bindGroup === undefined ||
+            groups.has(binding.group) ||
+            bindGroup.group !== binding.group ||
+            bindGroup.pipeline !== draw.pipeline
+          ) {
+            throw new KyxosEngineError('Mock Draw Bind Group is stale or incompatible.', {
+              code: 'INVALID_ARGUMENT',
+              module: 'backend',
+              recoverable: false,
+            });
+          }
+          groups.add(binding.group);
         }
         for (const binding of draw.vertexBuffers ?? []) {
           if (!this.#buffers.has(binding.buffer)) {
@@ -495,11 +612,13 @@ export class MockBackend implements GraphicsBackend {
   #releaseAllResources(): void {
     this.#destroyedTotal += this.#resources.size;
     this.#resources.clear();
+    this.#bindGroups.clear();
     this.#buffers.clear();
     this.#commandEncoders.clear();
     this.#pipelines.clear();
     this.#shaderInfo.clear();
     this.#surfaces.clear();
+    this.#textures.clear();
   }
 
   #setState(current: BackendLifecycleState): void {

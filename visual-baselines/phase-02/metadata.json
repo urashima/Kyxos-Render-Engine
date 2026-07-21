@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "route": "/acceptance/phase-02",
+  "capture": {
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
+    "fullPage": true,
+    "operatingSystem": "GitHub Actions Ubuntu 24.04.4 LTS",
+    "runnerImage": "ubuntu-24.04 20260714.240.1",
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    },
+    "webGpuAdapter": "SwiftShader"
+  },
+  "comparison": {
+    "actualDiffPixels": 0,
+    "maximumDiffPixels": 0,
+    "status": "PASS",
+    "threshold": 0.2
+  },
+  "files": {
+    "reference": {
+      "bytes": 274825,
+      "height": 1592,
+      "path": "reference.png",
+      "sha256": "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "width": 1440
+    },
+    "current": {
+      "bytes": 274825,
+      "height": 1592,
+      "path": "current.png",
+      "sha256": "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "width": 1440
+    },
+    "difference": {
+      "bytes": 359,
+      "height": 1592,
+      "path": "difference.png",
+      "sha256": "1dd628fff034aac6672d32d1958492077667ab3d47f23f1596a0d270684619e8",
+      "width": 1440
+    },
+    "scene": {
+      "bytes": 15757,
+      "height": 561,
+      "path": "scene.png",
+      "sha256": "75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e",
+      "width": 1014
+    }
+  },
+  "canonicalProvenance": {
+    "sourceRunId": 29852642508,
+    "sourceArtifactId": 8504096148,
+    "priorVerificationRunId": 29853253312,
+    "priorVerificationArtifactId": 8504322478,
+    "verificationRunId": 29854505862,
+    "verificationArtifactId": 8504813925,
+    "evidencePackRunId": 29855226827,
+    "evidencePackArtifactId": 8505082238,
+    "attemptHashes": [
+      "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142",
+      "54ab5abb306a6cfd1acbe5488f9fd724a45a1bc960bf08a5515f20070dc14142"
+    ],
+    "sceneAttemptHashes": [
+      "75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e",
+      "75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e",
+      "75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e",
+      "75a126186da2136835c2c6adb13f877a2a379b8ea0182a77ce7341fc971f1f1e"
+    ],
+    "attemptsByteIdentical": true
+  },
+  "subjectiveReview": {
+    "status": "PASS",
+    "inspectedFiles": ["current.png", "scene.png"],
+    "observations": [
+      "Plane, Cube, Sphere, Custom tetrahedron, and two transparent objects are distinguishable.",
+      "The Sphere is not stretched, the scene is completely framed, and no geometry is clipped.",
+      "Depth occlusion and far-to-near transparency are coherent; no black frame or obvious normal reversal remains."
+    ]
+  },
+  "dynamicRegions": [
+    {
+      "selector": ".event-log time",
+      "treatment": "Hidden only during deterministic capture; event identity and order remain visible."
+    },
+    {
+      "selector": ".dynamic-metric",
+      "treatment": "Only timing glyphs are hidden during capture; measured values remain asserted and archived as JSON."
+    }
+  ],
+  "limitations": [
+    "Phase 2 validates unlit normal-direction shading and alpha blending, not Phase 3 PBR material fidelity.",
+    "Canonical pixel acceptance requires the pinned official Playwright Chromium and SwiftShader environment.",
+    "GPU timestamp timing remains unavailable through the Phase 2 public diagnostics contract."
+  ]
+}

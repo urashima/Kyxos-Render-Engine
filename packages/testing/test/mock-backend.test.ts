@@ -135,6 +135,71 @@ describe('MockBackend', () => {
     expect(backend.state).toBe('ready');
   });
 
+  it('validates Bind Group ownership and depth-enabled frame submissions', async () => {
+    const backend = new MockBackend();
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      depthStencil: {
+        depthCompare: 'less',
+        depthWriteEnabled: true,
+        format: 'depth24plus',
+      },
+      vertex: { entryPoint: 'main', module: shader },
+    });
+    const uniform = backend.createBuffer({ size: 64, usage: ['uniform'] });
+    const bindGroup = backend.createBindGroup({
+      entries: [{ binding: 0, resource: { buffer: uniform } }],
+      group: 0,
+      pipeline,
+    });
+    const target = { getContext: () => ({}), height: 0, width: 0 };
+    const surface = backend.createSurface({
+      cssHeight: 100,
+      cssWidth: 160,
+      devicePixelRatio: 1,
+      target,
+    });
+    const depth = backend.createTexture({
+      format: 'depth24plus',
+      size: { height: 100, width: 160 },
+      usage: ['render-attachment'],
+    });
+
+    expect(
+      backend.executeFrame({
+        commandEncoder: backend.createCommandEncoder(),
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            depthAttachment: { texture: depth },
+            draws: [{ bindGroups: [{ bindGroup, group: 0 }], pipeline, vertexCount: 3 }],
+            surface,
+          },
+        ],
+      }),
+    ).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
+
+    const invalidEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: invalidEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            draws: [{ bindGroups: [{ bindGroup, group: 1 }], pipeline, vertexCount: 3 }],
+            surface,
+          },
+        ],
+      }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
+    expect(backend.destroyResource(invalidEncoder)).toBe(true);
+    backend.dispose();
+  });
+
   it('releases every resource on idempotent disposal', async () => {
     const backend = new MockBackend();
     await backend.initialize();

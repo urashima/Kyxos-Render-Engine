@@ -1,6 +1,8 @@
 import { createKyxosRenderer } from '@kyxos/render-sdk';
 import type { BackendClearColor, KyxosCanvasRenderer } from '@kyxos/render-sdk';
 
+import { acceptancePhaseHref, acceptanceRouteLabel } from '../../routing.js';
+
 const COMMIT_SHA = import.meta.env.VITE_COMMIT_SHA ?? 'local-working-tree';
 const RESOURCE_BASELINE = 6;
 
@@ -40,13 +42,13 @@ function acceptanceMarkup(): string {
   return `
     <main class="shell phase-01-shell" data-testid="phase-01-acceptance">
       <header class="topbar">
-        <a class="brand" href="/acceptance/phase-01" aria-label="Kyxos Phase 1 Playground">
+        <a class="brand" href="${acceptancePhaseHref(1)}" aria-label="Kyxos Phase 1 Playground">
           <span class="brand-mark" aria-hidden="true">K</span>
           <span><strong>Kyxos Render Engine</strong><small>Independent WebGPU Playground</small></span>
         </a>
         <nav class="phase-nav" aria-label="Acceptance phases">
-          <a href="/acceptance/phase-00">Phase 00</a>
-          <a href="/acceptance/phase-01" aria-current="page">Phase 01</a>
+          <a href="${acceptancePhaseHref(0)}">Phase 00</a>
+          <a href="${acceptancePhaseHref(1)}" aria-current="page">Phase 01</a>
         </nav>
       </header>
 
@@ -147,7 +149,7 @@ function acceptanceMarkup(): string {
 
       <footer>
         <span>No native GPU objects cross the SDK · No permanent RAF</span>
-        <span>Phase 01 acceptance route: <code>/acceptance/phase-01</code></span>
+        <span>Phase 01 acceptance route: <code>${acceptanceRouteLabel(1)}</code></span>
       </footer>
     </main>
   `;

@@ -9,21 +9,52 @@ const fixturePath = path.join(root, 'tools/quality/fixtures/forbidden-renderer-i
 
 const allowedDependencies = new Map([
   ['@kyxos/render-core', new Set()],
+  ['@kyxos/render-math', new Set()],
+  ['@kyxos/render-geometry', new Set(['@kyxos/render-math'])],
+  ['@kyxos/render-scene', new Set(['@kyxos/render-core', '@kyxos/render-math'])],
+  [
+    '@kyxos/render-camera',
+    new Set(['@kyxos/render-core', '@kyxos/render-math', '@kyxos/render-scene']),
+  ],
+  [
+    '@kyxos/render-visibility',
+    new Set([
+      '@kyxos/render-camera',
+      '@kyxos/render-core',
+      '@kyxos/render-geometry',
+      '@kyxos/render-math',
+      '@kyxos/render-scene',
+    ]),
+  ],
   ['@kyxos/render-backend-api', new Set(['@kyxos/render-core'])],
   ['@kyxos/render-backend-webgpu', new Set(['@kyxos/render-backend-api', '@kyxos/render-core'])],
   ['@kyxos/render-frame-scheduler', new Set(['@kyxos/render-core'])],
   [
     '@kyxos/render-renderer',
-    new Set(['@kyxos/render-backend-api', '@kyxos/render-core', '@kyxos/render-frame-scheduler']),
+    new Set([
+      '@kyxos/render-backend-api',
+      '@kyxos/render-camera',
+      '@kyxos/render-core',
+      '@kyxos/render-frame-scheduler',
+      '@kyxos/render-geometry',
+      '@kyxos/render-math',
+      '@kyxos/render-scene',
+      '@kyxos/render-visibility',
+    ]),
   ],
   [
     '@kyxos/render-sdk',
     new Set([
       '@kyxos/render-backend-api',
       '@kyxos/render-backend-webgpu',
+      '@kyxos/render-camera',
       '@kyxos/render-core',
       '@kyxos/render-frame-scheduler',
+      '@kyxos/render-geometry',
+      '@kyxos/render-math',
       '@kyxos/render-renderer',
+      '@kyxos/render-scene',
+      '@kyxos/render-visibility',
     ]),
   ],
   [

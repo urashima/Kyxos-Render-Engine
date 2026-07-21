@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "phase": "02",
+  "route": "/acceptance/phase-02",
+  "environment": {
+    "backend": "webgpu",
+    "devicePixelRatio": 1,
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    }
+  },
+  "geometry": {
+    "contract": "Plane · Cube · Sphere · Custom",
+    "customMesh": "custom-tetrahedron"
+  },
+  "scene": {
+    "entityCount": 10,
+    "hierarchy": "Root → Child"
+  },
+  "submission": {
+    "drawCalls": 6,
+    "opaqueCount": 4,
+    "submittedVertices": 2070,
+    "transparentCount": 2,
+    "transparentOrder": "Glass Far → Glass Near",
+    "triangles": 690,
+    "visibleCount": 6
+  },
+  "culling": {
+    "disabledCount": 1,
+    "frustumCulledCount": 1,
+    "hiddenCount": 1,
+    "layerCulledCount": 1
+  },
+  "resources": {
+    "activeCount": 25,
+    "activeEstimatedBufferBytes": 6948,
+    "gpuMeshCount": 4,
+    "objectBindingCount": 6,
+    "materialCount": 4,
+    "pipelineCount": 2,
+    "activeEstimatedTextureBytes": 2271360
+  },
+  "performance": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 2.9,
+      "medianMs": 0.5,
+      "minMs": 0.3,
+      "p95Ms": 2.9,
+      "sampleCount": 10
+    },
+    "dirtyToSleepMs": {
+      "budgetMs": 250,
+      "maxMs": 61.1,
+      "medianMs": 42,
+      "minMs": 9.2,
+      "p95Ms": 61.1,
+      "sampleCount": 10
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 2 public diagnostics contract.",
+      "status": "NOT_AVAILABLE"
+    }
+  },
+  "shaderCompilation": "pass"
+}

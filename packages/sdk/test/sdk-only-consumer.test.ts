@@ -6,6 +6,8 @@ import {
   createKyxosRendererFromBackend,
 } from '../src/index.js';
 import type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -60,6 +62,11 @@ class SdkOnlyBackend implements GraphicsBackend {
   createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle {
     void descriptor;
     throw new Error('The SDK-only foundation fixture does not allocate buffers.');
+  }
+
+  createBindGroup(descriptor: BackendBindGroupDescriptor): BackendBindGroupHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate Bind Groups.');
   }
 
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
