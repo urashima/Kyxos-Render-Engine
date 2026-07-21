@@ -1021,3 +1021,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Add the public Scene Canvas Renderer that owns Scene, Camera, Orbit Controller, Mesh Renderer Store, subscriptions, framing, Resize, screenshots-ready Surface access, and recovery.
 - Prove that SDK-only consumers can build and control the Scene renderer without native GPU types or private package imports.
+
+## 2026-07-21 09:29 PDT — P2-06 Public SDK composition complete
+
+### Completed
+
+- Added `createKyxosSceneRenderer()` and `KyxosSceneCanvasRenderer` as the public composition boundary for Scene, Perspective Camera, Orbit Controller, Mesh Renderer Store, Visibility, Renderer, and backend Surface ownership.
+- Added automatic Dirty Event mapping for Scene hierarchy/transform/visibility/layer/bounds changes, Camera changes, and Mesh Renderer attachment changes while suppressing invalidation during initialization, loss, and disposal.
+- Added public orbit, pan, dolly, automatic framing, Resize, clear color, layer/culling options, diagnostics, Device Lost simulation, recovery, and idempotent aggregate disposal.
+- Re-exported Phase 2 Camera, Geometry, Math, Scene, and Visibility contracts only through package roots; no native WebGPU object or private path enters SDK declarations.
+
+### Validation
+
+- Public Scene SDK suite proves hierarchy rendering, shared Geometry, opaque/transparent submission, automatic wake/sleep, framing/Orbit synchronization, Resize aspect/depth updates, Device Lost recovery, and zero-resource disposal.
+- Full unit suite: 31 files / 136 tests PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, two-Shader validation, package/app build, and bundle gates: PASS.
+- Playground bundle remains within all accepted budgets: 84,769 raw / 24,822 gzip JavaScript; 143,343 raw / 76,448 gzip total.
+- Submitted as commit `764a25588babccf5dd839ff3bd39c9baaa3ac7bc`; no active blockers.
+
+### Next
+
+- Build the lazy `/acceptance/phase-02` route with deterministic Plane/Cube/Sphere hierarchy, transparent ordering, orbit/framing and culling controls, live queue/resource diagnostics, and browser capability reporting.
+- Add browser automation for interactions, Resize/DPR, sleep/wake, and Device Lost before generating fixed visual evidence.

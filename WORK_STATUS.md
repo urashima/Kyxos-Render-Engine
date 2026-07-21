@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering             |
-| Current Branch      | `agent/phase-02-scene-camera`                                      |
-| Current Commit      | `f16ccaf994d9bfabe0545a2241de4d82366b5aa9` (P2-06 Scene rendering) |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                     |
-| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK         |
-| Last Completed Task | P2-06B — Renderer-owned Scene GPU resources and Draw submission    |
-| Next Action         | Compose Scene, Camera, Orbit, Mesh Renderer, and lifecycle in SDK  |
-| CI Status           | P2-05 Run 29846146006 PASS; P2-06B local gates PASS; CI running    |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                |
-| Known Blockers      | No active blockers                                                 |
-| Last Updated        | 2026-07-21 09:21 PDT                                               |
+| Field               | Value                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                |
+| Current Branch      | `agent/phase-02-scene-camera`                                         |
+| Current Commit      | `764a25588babccf5dd839ff3bd39c9baaa3ac7bc` (P2-06 public SDK)         |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                        |
+| Current Task        | P2-07 — Independent Phase 2 Playground acceptance route               |
+| Last Completed Task | P2-06 — Scene submission through Renderer and public SDK              |
+| Next Action         | Build deterministic Phase 2 scene, controls, diagnostics, and route   |
+| CI Status           | P2-05 Run 29846146006 PASS; P2-06 local gates PASS; latest CI running |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                   |
+| Known Blockers      | No active blockers                                                    |
+| Last Updated        | 2026-07-21 09:29 PDT                                                  |
 
 ## Phase Progress
 
