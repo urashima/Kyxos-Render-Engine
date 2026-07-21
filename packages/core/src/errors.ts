@@ -15,6 +15,7 @@ export type EngineErrorCode =
 export type EngineModule =
   | 'asset'
   | 'backend'
+  | 'camera'
   | 'core'
   | 'geometry'
   | 'material'

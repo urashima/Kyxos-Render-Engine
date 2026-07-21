@@ -249,3 +249,13 @@
 - **Reason:** A global registry would couple engine instances and tests, while public mutable nodes could create cycles and bypass dirty propagation. Scene ownership rejects foreign/stale handles, centralizes cycle checks, and gives visibility, bounds, scheduling, and diagnostics one reliable revision source.
 - **Impact:** Reparenting preserves local TRS and intentionally changes world placement; a future preserve-world option requires an explicit matrix-decomposition contract. Transform reads are cached, unchanged trees cause no recomputation, and deep trees avoid stack overflow. The design is backend-neutral and adds no GPU ownership.
 - **ADR required:** No; this implements the lightweight Entity + Component Handle direction already accepted in the development plan without changing a public product boundary.
+
+## ED-026 — Frame conservatively and keep Orbit input-independent
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Use a finite-far Perspective Camera with cached ADR-002 view/projection matrices. Frame an AABB through its padded Bounding Sphere and the smaller vertical/horizontal half-angle, preserving the current viewing direction. Keep Orbit as clamped target/yaw/pitch/distance state with numeric orbit, dolly, and camera-plane pan methods; DOM event mapping remains outside the package.
+- **Candidates:** Fit only the projected AABB height; expose browser pointer events in Camera; conservatively fit a sphere and adapt inputs at SDK/Playground boundaries.
+- **Reason:** Height-only fitting clips wide objects in portrait viewports, while DOM types in Camera would block Worker, test, touch, and alternate-host integrations. A sphere fit is deliberately conservative but guarantees every AABB corner remains inside the frustum at any valid aspect.
+- **Impact:** Auto framing sets positive finite near/far planes around the fitted volume and emits normal Camera changes so scheduling can wake. Orbit behavior is deterministic in unit tests and reusable by products; later input adapters may change gesture scaling without changing Camera math. WebGPU receives canonical zero-to-one projection, and WebGL2 conversion remains backend-owned.
+- **ADR required:** No; ADR-002 already fixes camera and projection conventions, and this decision adds policy without changing the public dependency direction.

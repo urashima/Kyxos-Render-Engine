@@ -27,6 +27,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                     | None                                                         |
 | `@kyxos/render-geometry`        | Immutable mesh data, validation, bounds, and primitive builders        | Math                                                         |
 | `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds  | Core, Math                                                   |
+| `@kyxos/render-camera`          | Perspective matrices, scene framing, and DOM-free orbit state          | Core, Math, Scene                                            |
 | `@kyxos/render-backend-api`     | Backend capabilities, lifecycle, resource handles, diagnostics         | Core                                                         |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1 | Backend API, Core                                            |
 | `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                      | Core                                                         |

@@ -67,6 +67,18 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/camera:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-math':
+        specifier: workspace:*
+        version: link:../math
+      '@kyxos/render-scene':
+        specifier: workspace:*
+        version: link:../scene
+
   packages/core: {}
 
   packages/frame-scheduler:
