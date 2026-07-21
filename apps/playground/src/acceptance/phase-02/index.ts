@@ -139,6 +139,9 @@ function acceptanceMarkup(): string {
           </div>
           <dl class="metric-list">
             <div><dt>Frame index</dt><dd data-testid="frame-index">0</dd></div>
+            <div><dt>FPS</dt><dd data-testid="fps">0 · sleeping</dd></div>
+            <div><dt>CPU frame</dt><dd class="dynamic-metric" data-testid="cpu-frame-time">0.00 ms</dd></div>
+            <div><dt>GPU frame</dt><dd data-testid="gpu-frame-time">unavailable</dd></div>
             <div><dt>Draw calls</dt><dd data-testid="draw-calls">0</dd></div>
             <div><dt>Triangles</dt><dd data-testid="triangles">0</dd></div>
             <div><dt>Submitted vertices</dt><dd data-testid="vertices">0</dd></div>
@@ -331,9 +334,20 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   const diagnostics = renderer.getDiagnostics();
   const resources = diagnostics.backend.resources;
   const statistics = diagnostics.lastFrameStatistics;
-  requireElement(root, '[data-testid="backend-type"]').textContent = diagnostics.backend.type;
+  const backendType = requireElement<HTMLElement>(root, '[data-testid="backend-type"]');
+  backendType.textContent = diagnostics.backend.type;
+  const timestampQueryAvailable = diagnostics.backend.capabilities.features['timestamp-query'];
+  backendType.dataset['timestampQuery'] = String(timestampQueryAvailable);
   requireElement(root, '[data-testid="renderer-state"]').textContent = diagnostics.state;
   requireElement(root, '[data-testid="render-mode"]').textContent = diagnostics.renderMode;
+  requireElement(root, '[data-testid="fps"]').textContent =
+    diagnostics.renderMode === 'sleeping' ? '0 · sleeping' : 'active';
+  const cpuFrameTime = requireElement<HTMLElement>(root, '[data-testid="cpu-frame-time"]');
+  cpuFrameTime.textContent = `${diagnostics.lastCpuFrameTimeMs.toFixed(2)} ms`;
+  cpuFrameTime.dataset['milliseconds'] = String(diagnostics.lastCpuFrameTimeMs);
+  requireElement(root, '[data-testid="gpu-frame-time"]').textContent = timestampQueryAvailable
+    ? 'unavailable · timestamp-query'
+    : 'unavailable';
   const frameIndex = requireElement<HTMLElement>(root, '[data-testid="frame-index"]');
   frameIndex.textContent = String(diagnostics.frameIndex);
   frameIndex.dataset['cpuFrameTimeMs'] = String(diagnostics.lastCpuFrameTimeMs);

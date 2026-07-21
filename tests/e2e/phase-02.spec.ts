@@ -27,6 +27,14 @@ test.describe('Phase 2 Scene Playground', () => {
     await expect(page.getByTestId('renderer-state')).toHaveText('ready');
     await expect(page.getByTestId('shader-status')).toHaveText('pass');
     await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+    await expect(page.getByTestId('fps')).toHaveText('0 · sleeping');
+    await expect(page.getByTestId('backend-type')).toHaveAttribute('data-timestamp-query', 'true');
+    await expect(page.getByTestId('gpu-frame-time')).toHaveText('unavailable · timestamp-query');
+    const visibleCpuFrameTime = Number(
+      await page.getByTestId('cpu-frame-time').getAttribute('data-milliseconds'),
+    );
+    expect(visibleCpuFrameTime).toBeGreaterThanOrEqual(0);
+    expect(visibleCpuFrameTime).toBeLessThan(16.7);
     await expect(page.getByTestId('draw-calls')).toHaveText('6');
     await expect(page.getByTestId('triangles')).toHaveText('690');
     await expect(page.getByTestId('vertices')).toHaveText('2070');
@@ -61,6 +69,10 @@ test.describe('Phase 2 Scene Playground', () => {
         }
 
         .event-log time {
+          visibility: hidden !important;
+        }
+
+        .dynamic-metric {
           visibility: hidden !important;
         }
       `,
@@ -186,7 +198,17 @@ test.describe('Phase 2 Scene Playground', () => {
           await page.getByTestId('texture-memory').getAttribute('data-bytes'),
         ),
       },
-      performance: performanceMetrics,
+      performance: {
+        ...performanceMetrics,
+        gpuFrameTimeMs: {
+          capabilityAvailable:
+            (await page.getByTestId('backend-type').getAttribute('data-timestamp-query')) ===
+            'true',
+          reason:
+            'GPU timestamp instrumentation is not exposed through the Phase 2 public diagnostics contract.',
+          status: 'NOT_AVAILABLE',
+        },
+      },
       shaderCompilation: await page.getByTestId('shader-status').textContent(),
     });
 
