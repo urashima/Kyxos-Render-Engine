@@ -2,6 +2,18 @@
 export const BACKEND_API_PACKAGE_NAME = '@kyxos/render-backend-api' as const;
 
 export type {
+  BackendBufferData,
+  BackendClearColor,
+  BackendDrawCommand,
+  BackendFrameSubmission,
+  BackendIndexBufferBinding,
+  BackendIndexFormat,
+  BackendRenderPassDescriptor,
+  BackendRenderPassStatistics,
+  BackendVertexBufferBinding,
+} from './commands.js';
+
+export type {
   BackendEvents,
   BackendLifecycleState,
   BackendLossInfo,
@@ -17,15 +29,62 @@ export type {
 } from './capabilities.js';
 export { BACKEND_FEATURES, createBackendCapabilityReport } from './capabilities.js';
 export type {
+  BackendAddressMode,
+  BackendBufferDescriptor,
+  BackendBufferHandle,
+  BackendBufferUsage,
+  BackendColorTargetDescriptor,
+  BackendCommandEncoderDescriptor,
+  BackendCommandEncoderHandle,
+  BackendCullMode,
+  BackendFilterMode,
+  BackendFragmentStageDescriptor,
+  BackendFrontFace,
+  BackendMipmapFilterMode,
+  BackendPipelineHandle,
+  BackendPrimitiveState,
+  BackendPrimitiveTopology,
+  BackendRenderPipelineDescriptor,
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceHandleKind,
   BackendResourceKind,
   BackendResourceKindStatistics,
   BackendResourceStatistics,
+  BackendSamplerDescriptor,
+  BackendSamplerHandle,
+  BackendShaderCompilationInfo,
+  BackendShaderCompilationMessage,
+  BackendShaderMessageType,
+  BackendShaderModuleDescriptor,
+  BackendShaderModuleHandle,
+  BackendTextureDescriptor,
+  BackendTextureFormat,
+  BackendTextureHandle,
+  BackendTextureSize,
+  BackendTextureUsage,
+  BackendVertexAttribute,
+  BackendVertexBufferLayout,
+  BackendVertexFormat,
+  BackendVertexStageDescriptor,
+  BackendVertexStepMode,
 } from './resources.js';
 export {
+  BACKEND_BUFFER_USAGES,
   BACKEND_RESOURCE_KINDS,
+  BACKEND_TEXTURE_USAGES,
   backendResourceHandleKind,
   isBackendResourceHandle,
 } from './resources.js';
+export type {
+  BackendSurfaceAlphaMode,
+  BackendSurfaceColorSpace,
+  BackendSurfaceDescriptor,
+  BackendSurfaceFormat,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
+  BackendSurfaceSize,
+  BackendSurfaceTarget,
+} from './surface.js';
+export { normalizeBackendSurfaceSize } from './surface.js';

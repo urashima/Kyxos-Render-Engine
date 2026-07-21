@@ -96,6 +96,9 @@ importers:
       '@kyxos/render-backend-api':
         specifier: workspace:*
         version: link:../backend-api
+      '@kyxos/render-backend-webgpu':
+        specifier: workspace:*
+        version: link:../backend-webgpu
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
@@ -105,6 +108,10 @@ importers:
       '@kyxos/render-renderer':
         specifier: workspace:*
         version: link:../renderer
+    devDependencies:
+      '@kyxos/render-testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/testing:
     dependencies:

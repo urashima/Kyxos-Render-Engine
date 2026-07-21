@@ -129,3 +129,93 @@
 - **Reason:** A real Git tag is a mandatory acceptance gate, while a similarly named branch would be false evidence. The repository's own post-merge workflow can use GitHub's short-lived token without exposing credentials or granting write access to the read-only PR verification job.
 - **Impact:** Only the phase-freeze job has `contents: write`, only on `main`, with no pull-request or user-controlled input. The fixed tag cannot be overwritten or moved. The tag target is verified after merge by reading repository content through that ref.
 - **ADR required:** No; this is release automation for one acceptance checkpoint.
+
+## ED-014 — Scope resource ownership to a backend instance by handle identity
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Each backend owns a private resource registry keyed by the opaque handle object's identity, not only its serializable `kind` and numeric `id`. Native destroy callbacks never cross the backend package. Device loss clears invalid native records without invoking their destroy methods; explicit backend disposal attempts native cleanup, destroys the device, and returns diagnostic counts to baseline. The backend-neutral `waitForIdle()` contract waits for queue completion without exposing the queue.
+- **Candidates:** Globally unique numeric handles; per-backend numeric lookup; object-identity ownership with per-backend monotonic IDs.
+- **Reason:** Separate Canvas/backend instances legitimately allocate equal-looking first handles. Numeric lookup alone lets one backend accidentally destroy another backend's resource. Object identity rejects foreign handles while preserving compact immutable public handles and deterministic stale-handle behavior.
+- **Impact:** Handles are transferable as opaque references within one renderer but are intentionally not reconstructible from JSON. WebGPU and Mock Backend now enforce the same ownership rule; WebGL2 must follow it. Resource statistics retain lifetime totals across device recovery.
+- **ADR required:** No; this strengthens the already accepted opaque-handle and resource-lifetime boundary without changing the public dependency direction.
+
+## ED-015 — Size Canvas surfaces from explicit logical inputs and suspend zero area
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Surface sizing consumes explicit CSS width, CSS height, DPR, and optional render scale. Physical dimensions are rounded once, uniformly scaled down when either device limit would be exceeded, and never inferred by a backend-owned layout observer. A zero width or height produces a suspended 0 × 0 surface and unconfigures the context; a later nonzero resize reconfigures it.
+- **Candidates:** Independently clamp width and height; query layout and poll inside Backend; use explicit inputs with aspect-preserving uniform clamp and zero-area suspension.
+- **Reason:** Independent clamping can deform geometry, while backend-owned DOM observation would couple graphics code to page layout and invite permanent work. Explicit inputs are deterministic for Canvas, OffscreenCanvas, tests, multiple viewports, and future Worker adapters.
+- **Impact:** SDK/platform adapters own ResizeObserver and DPR change detection. WebGPU and future WebGL2 implementations share identical physical-size math. Hidden Canvas instances allocate no swapchain size until restored.
+- **ADR required:** No; this refines the existing Canvas/backend responsibility without changing public product scope.
+
+## ED-016 — Translate portable resource descriptors only inside a concrete backend
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Backend API represents Buffer/Texture usages, formats, Sampler state, vertex layouts, WGSL modules, Pipeline state, and Command Encoders as immutable string/data descriptors plus opaque handles. Only `backend-webgpu` translates those values to native flags and objects. Shader compilation diagnostics are copied into immutable backend-neutral messages, and Render Pipeline creation is asynchronous.
+- **Candidates:** Expose WebGPU descriptors and native resources through SDK; use untyped `unknown` descriptors; define a portable typed subset and translate per backend.
+- **Reason:** Native WebGPU objects would bind Renderer and products to one backend, while untyped descriptors would defer errors and make WebGL2 mapping untestable. The Phase 1 subset covers actual draws and can expand deliberately as later material/render-graph phases require it.
+- **Impact:** Buffer and Texture byte estimates are tracked by kind; destructive resources call native `destroy()`, while immutable Shader/Pipeline/Sampler objects release by dropping registry ownership. WebGL2 can map the same descriptors to its distinct implementation in Phase 10 without emulating WebGPU objects.
+- **ADR required:** No; this implements the accepted Backend API boundary. A future public descriptor compatibility change may require an ADR before 1.0.
+
+## ED-017 — Submit complete backend-neutral frames through single-use Command Encoders
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Renderer-side code describes complete Render Passes with opaque Pipeline/Buffer/Surface Handles and portable Draw fields. The concrete backend validates the full submission before native encoding, consumes the Command Encoder after any encode attempt, submits one finished Command Buffer, and returns immutable aggregate statistics. Buffer uploads use a separate typed queue operation.
+- **Candidates:** Expose a stateful native-like Render Pass API; expose `GPUCommandEncoder`; submit immutable backend-neutral frame descriptions.
+- **Reason:** A stateful or native API would leak WebGPU ordering and object types into Renderer Core and complicate WebGL2 mapping. Complete descriptions can be validated deterministically before mutation, mocked without a GPU, and translated by each backend.
+- **Impact:** Phase 1 supports clear, non-indexed, and indexed geometry while preserving backend isolation. Command Encoders cannot be accidentally resubmitted; failed pre-encode validation leaves them explicitly disposable. Later Render Graph compilation can emit the same contract without changing product integrations.
+- **ADR required:** No; this extends the portable Backend API under ADR-004 without changing dependency direction.
+
+## ED-018 — Give Render Features explicit backend lifecycle hooks
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** A Render Feature may asynchronously initialize backend-neutral resources after the backend is ready, synchronously emit a frame submission, and discard invalid Handle state on Device Lost. Renderer initializes registered features, aggregates their immutable statistics, disposes features before the backend, and reinitializes them after backend recovery.
+- **Candidates:** Hard-code basic geometry in one Renderer method; let every product own resources and issue backend commands; use registered features with explicit lifecycle hooks.
+- **Reason:** A monolithic Renderer would make later SSDO, SSR, SSS, and indoor mapping invasive, while product-owned resources would break the SDK boundary. Lifecycle-aware features preserve registration-based extensibility and deterministic ownership without exposing native GPU objects.
+- **Impact:** Phase 1 basic geometry is a replaceable feature. Zero-area surfaces return zero statistics without submitting work; unexpected feature errors become typed Renderer events; Device Lost clears stale handles and recovery creates a fresh resource set. WebGL2 features can implement the same contract in Phase 10.
+- **ADR required:** No; this realizes the registration architecture already mandated by the development plan.
+
+## ED-019 — Keep concrete backend selection in the public SDK composition root
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** `@kyxos/render-sdk` may import concrete backend packages only to instantiate the caller-selected implementation. It passes the result to Renderer as `GraphicsBackend`; SDK return types, Renderer, features, and product callers receive no native GPU objects. Existing explicit backend injection remains supported for tests and custom hosts.
+- **Candidates:** Require every product to import a concrete backend; make Renderer import WebGPU; compose concrete backends only inside the public SDK factory.
+- **Reason:** Product-side composition would violate the single public entry policy, while Renderer-side selection would invert the backend contract. The SDK already owns public options and is the narrow place where `auto` policy and actionable fallback errors belong.
+- **Impact:** Phase 1 `auto` and explicit `webgpu` both choose WebGPU; unavailable devices return a stable recoverable error until the accepted WebGL2 backend is added in Phase 10. The dependency checker records the concrete edge and will reject native/private subpath imports.
+- **ADR required:** No; ADR-004 defines SDK as the product boundary and this implements its composition role without exposing a new lower-level API.
+
+## ED-020 — Lazy-load Phase 1 while freezing the accepted Phase 0 entry budget
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Route `/acceptance/phase-01` through a dynamic import and use the Vite manifest to measure the static Phase 0 entry closure separately from all emitted JavaScript and the complete Playground output.
+- **Candidates:** Bundle every acceptance phase into the initial entry; raise the Phase 0 budget; lazy-load Phase 1 and preserve both the accepted entry budget and a new whole-Playground budget.
+- **Reason:** The real WebGPU backend and diagnostic Playground are intentionally larger than the mock Phase 0 surface, but a new acceptance route must not silently regress the already accepted Phase 0 initial download.
+- **Impact:** Phase 0 remains below its original 24 KiB gzip JavaScript and 64 KiB gzip total budgets. Phase 1 receives explicit 32 KiB gzip JavaScript and 96 KiB gzip total Playground budgets. The check follows only static manifest imports, so lazy route chunks are not misreported as initial work while still counting toward the whole application.
+- **ADR required:** No; this is an acceptance-application delivery and performance policy, not a public engine API decision.
+
+## ED-021 — Correct basic geometry aspect in Renderer-owned vertex uploads
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Keep canonical generated geometry backend-neutral, create aspect-corrected vertex copies when a Surface is initialized or its aspect changes, and upload them through the existing opaque Buffer contract. Scale only the longer viewport axis in NDC so pixel-space X and Y radii match without clipping.
+- **Candidates:** Accept stretched clip-space geometry; expose viewport uniforms and Bind Groups before their planned phase; make Backend mutate vertex data; project Renderer-owned vertex uploads for the current Surface.
+- **Reason:** The first official WebGPU evidence image revealed a visibly horizontal sphere even though behavior tests passed. Backend mutation would violate responsibility boundaries, while adding an early public binding model would expand Phase 1 scope. Renderer already owns the generated vertices and Resize event.
+- **Impact:** Triangle and sphere remain proportionally correct across landscape, portrait, DPR, clamping, hidden/restore, and recovery. Resize with an unchanged aspect performs no upload; an aspect change rewrites two existing Buffers without allocating resources. WebGPU and future WebGL2 receive identical corrected data.
+- **ADR required:** No; this fixes Phase 1 viewport projection within the accepted Renderer/Backend boundary and does not change public product scope.
+
+## ED-022 — Measure CPU submission time and declare unavailable GPU timing
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Measure CPU frame time around Renderer feature execution and command submission with a monotonic injectable clock. Report ten CPU samples separately from dirty-to-sleep latency. Copy the adapter `timestamp-query` capability into evidence and mark GPU frame time unavailable until a query-based timing path exists.
+- **Candidates:** Omit frame timing; mislabel wall-clock dirty-to-sleep as CPU/GPU time; infer GPU time from queue completion; measure CPU submission precisely and declare the missing GPU metric with capability evidence.
+- **Reason:** CPU command construction is measurable without exposing native objects. Queue completion includes scheduling and driver latency and is not a trustworthy GPU execution timer. The acceptance record must distinguish measured values from unavailable capabilities.
+- **Impact:** Renderer diagnostics gain `lastCpuFrameTimeMs`; tests inject a deterministic clock, while production defaults to `performance.now()`. The canonical 16.7 ms CPU budget and 250 ms dirty-to-sleep budget are independent. Future timestamp-query support can add GPU timing without changing the current measurement's meaning.
+- **ADR required:** No; this is additive diagnostics and acceptance instrumentation, not a rendering or public dependency-boundary change.

@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "cycles": [],
+  "violations": [],
+  "deliberateFixtureRejected": true,
+  "edges": {
+    "@kyxos/render-backend-api": ["@kyxos/render-core"],
+    "@kyxos/render-backend-webgpu": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-core": [],
+    "@kyxos/render-frame-scheduler": ["@kyxos/render-core"],
+    "@kyxos/render-playground": ["@kyxos/render-sdk", "@kyxos/render-testing"],
+    "@kyxos/render-renderer": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-core",
+      "@kyxos/render-frame-scheduler"
+    ],
+    "@kyxos/render-sdk": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-backend-webgpu",
+      "@kyxos/render-core",
+      "@kyxos/render-frame-scheduler",
+      "@kyxos/render-renderer"
+    ],
+    "@kyxos/render-testing": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-core",
+      "@kyxos/render-frame-scheduler"
+    ]
+  }
+}

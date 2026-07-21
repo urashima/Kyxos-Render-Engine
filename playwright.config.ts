@@ -3,6 +3,23 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 4173;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const chromiumExecutablePath = process.env['PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'];
+const webGpuLaunchArguments = [
+  '--disable-vulkan-surface',
+  '--enable-features=Vulkan',
+  '--enable-unsafe-swiftshader',
+  '--enable-unsafe-webgpu',
+  '--use-angle=swiftshader',
+  '--use-gpu-in-tests',
+  '--use-vulkan=swiftshader',
+  '--use-webgpu-adapter=swiftshader',
+];
+const chromiumUse = {
+  ...devices['Desktop Chrome'],
+  launchOptions: {
+    args: webGpuLaunchArguments,
+    ...(chromiumExecutablePath === undefined ? {} : { executablePath: chromiumExecutablePath }),
+  },
+};
 
 export default defineConfig({
   expect: {
@@ -13,17 +30,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        ...(chromiumExecutablePath === undefined
-          ? {}
-          : { launchOptions: { executablePath: chromiumExecutablePath } }),
-      },
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-00/{arg}{ext}',
+      testMatch: /phase-00\.spec\.ts/,
+      use: chromiumUse,
+    },
+    {
+      name: 'chromium-webgpu',
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-01/{arg}{ext}',
+      testMatch: /phase-01\.spec\.ts/,
+      use: chromiumUse,
     },
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env['CI'] === undefined ? 0 : 1,
-  snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-00/{arg}{ext}',
   testDir: './tests/e2e',
   timeout: 30_000,
   use: {

@@ -20,6 +20,7 @@ const allowedDependencies = new Map([
     '@kyxos/render-sdk',
     new Set([
       '@kyxos/render-backend-api',
+      '@kyxos/render-backend-webgpu',
       '@kyxos/render-core',
       '@kyxos/render-frame-scheduler',
       '@kyxos/render-renderer',

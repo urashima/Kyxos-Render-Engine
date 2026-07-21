@@ -1,0 +1,59 @@
+# Phase 01 Tasks — WebGPU Core and Basic Geometry
+
+Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff35ebef39c2efd7627a3f23a7b1da2c`.
+
+| ID    | Task                                                                                          | Depends on  | Verification                                                                                 | Status         |
+| ----- | --------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------- | -------------- |
+| P1-01 | Define WebGPU initialization contracts, injectable native seam, feature/limit negotiation     | Phase 0     | Strict types; unavailable/adapter/device/loss unit coverage; no native objects cross Backend | Completed      |
+| P1-02 | Implement adapter, device, queue, loss lifecycle, recovery policy, and stable errors          | P1-01       | Lifecycle/state/event tests; repeated initialize; deterministic disposal                     | Completed      |
+| P1-03 | Implement Canvas surface ownership, configure/unconfigure, Resize, DPR, and zero-size suspend | P1-02       | Resize/DPR/hidden/restore/multiple-surface tests                                             | Completed      |
+| P1-04 | Implement Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder ownership           | P1-02       | Create/destroy/native-destroy/resource-count tests; loss returns resource baseline           | Completed      |
+| P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | Completed      |
+| P1-06 | Connect Renderer and public SDK Canvas options without exposing `GPUDevice`                   | P1-03,P1-05 | SDK-only consumer; create/dispose/recreate; clear fallback errors                            | Completed      |
+| P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | Completed      |
+| P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Completed      |
+| P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | In Development |
+
+### P1-05 checkpoints
+
+- [x] Backend-neutral Buffer upload, Render Pass, Draw, indexed Draw, Command Encoder consumption, queue submission, and immutable statistics.
+- [x] Browser-native command translation and deterministic fake-native command-order coverage.
+- [x] Vertex/Index usage, ownership, alignment, range, count, duplicate-slot, and safe-integer validation.
+- [x] Canonical WGSL source, exact runtime mirror, entry-point/static validation, and runtime compilation-info enforcement.
+- [x] Generated triangle and indexed sphere geometry wired through a Renderer feature.
+- [x] Real WebGPU smoke covering clear, triangle, and sphere submissions.
+
+### P1-07 checkpoints
+
+- [x] Independent lazy-loaded `/acceptance/phase-01` route consuming only the public SDK.
+- [x] Live clear, triangle, sphere, one-shot wake, Resize, DPR, hidden/restore, Canvas switch, Device Lost, recovery, disposal, and recreation controls.
+- [x] Backend, Shader, Surface, frame, Draw, triangle, vertex, Pipeline, resource, memory, Canvas, and viewport diagnostics.
+- [x] Strict browser tests for compiler/render output and full lifecycle recovery without skips.
+- [x] Official Playwright Chromium CI proves the real WebGPU adapter/compiler/render path.
+
+### P1-08 checkpoints
+
+- [x] Full-page, triangle, and sphere canonical snapshots enforce 0 differing pixels.
+- [x] Initial aspect-deformed sphere rejected, fixed, and retained with a 208,525-pixel Difference.
+- [x] Three official Chromium attempts produce the identical canonical full-page hash.
+- [x] CPU frame and static-to-sleep budgets pass with ten samples each.
+- [x] Draw, triangle, vertex, Pipeline, Buffer-memory, Device Lost, recovery, and disposal metrics are versioned.
+- [x] Phase 0 accepted-tag performance and initial-entry bundle comparison is recorded.
+- [x] Technical QA and autonomous owner evidence review pass with no blockers.
+
+## Required architecture boundaries
+
+- Browser `navigator.gpu`, `GPUAdapter`, `GPUDevice`, queue, context, and native resources remain private to `@kyxos/render-backend-webgpu`.
+- Renderer and SDK communicate through backend-neutral descriptors, commands, opaque handles, diagnostics, and lifecycle events.
+- WebGPU unavailable and failed initialization paths return stable public errors and an explicit fallback recommendation; Phase 1 does not pretend WebGL2 exists before Phase 10.
+- Every native resource has one owner, an idempotent destroy path, loss cleanup, and debug accounting.
+- Surface resizing clamps physical dimensions to device limits, handles a zero-sized Canvas without drawing, and does not create a permanent RAF loop.
+
+## Minimum implementation order
+
+1. Injectable native contracts and deterministic test doubles.
+2. Adapter/device/queue ownership and capability report.
+3. Surface lifecycle and physical-size calculation.
+4. Resource registry and native destruction.
+5. WGSL modules, pipelines, and encoded draws.
+6. SDK integration, acceptance surface, and evidence.

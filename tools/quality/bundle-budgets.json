@@ -12,11 +12,19 @@
     "rawBytes": 65536
   },
   "javascript": {
+    "gzipBytes": 32768,
+    "rawBytes": 98304
+  },
+  "phase0InitialJavascript": {
     "gzipBytes": 24576,
     "rawBytes": 65536
   },
-  "total": {
+  "phase0InitialTotal": {
     "gzipBytes": 65536,
     "rawBytes": 131072
+  },
+  "total": {
+    "gzipBytes": 98304,
+    "rawBytes": 196608
   }
 }

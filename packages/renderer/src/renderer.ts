@@ -1,6 +1,7 @@
 import type {
   BackendCapabilityReport,
   BackendLossInfo,
+  BackendRenderPassStatistics,
   BackendResourceStatistics,
   BackendType,
   GraphicsBackend,
@@ -32,6 +33,7 @@ export type RendererLifecycleState = 'disposed' | 'initializing' | 'lost' | 'new
 
 export interface RendererFrameEvent extends ScheduledFrame {
   readonly frameIndex: number;
+  readonly statistics: BackendRenderPassStatistics;
 }
 
 export interface RendererEvents {
@@ -57,6 +59,8 @@ export interface RendererDiagnostics {
     readonly type: BackendType;
   };
   readonly frameIndex: number;
+  readonly lastCpuFrameTimeMs: number;
+  readonly lastFrameStatistics: BackendRenderPassStatistics;
   readonly registrations: RendererRegistrationCounts;
   readonly renderMode: RenderMode;
   readonly state: RendererLifecycleState;
@@ -65,6 +69,34 @@ export interface RendererDiagnostics {
 export interface KyxosRendererOptions {
   readonly backend: GraphicsBackend;
   readonly frameDriver: FrameRequestDriver;
+  readonly now?: () => number;
+}
+
+const EMPTY_FRAME_STATISTICS: BackendRenderPassStatistics = Object.freeze({
+  drawCalls: 0,
+  instances: 0,
+  triangles: 0,
+  vertices: 0,
+});
+
+function addFrameStatistics(
+  target: BackendRenderPassStatistics,
+  addition: BackendRenderPassStatistics,
+): BackendRenderPassStatistics {
+  const result = {
+    drawCalls: target.drawCalls + addition.drawCalls,
+    instances: target.instances + addition.instances,
+    triangles: target.triangles + addition.triangles,
+    vertices: target.vertices + addition.vertices,
+  };
+  if (Object.values(result).some((value) => !Number.isSafeInteger(value) || value < 0)) {
+    throw new KyxosEngineError('Renderer frame statistics exceed the safe integer range.', {
+      code: 'INTERNAL_ERROR',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  return Object.freeze(result);
 }
 
 export class KyxosRenderer implements Disposable {
@@ -73,14 +105,18 @@ export class KyxosRenderer implements Disposable {
   readonly #events = new TypedEventEmitter<RendererEvents>();
   readonly #frameScheduler: FrameScheduler;
   readonly #materialExtensions = new ExtensionRegistry<MaterialExtension>('material-extension');
+  readonly #now: () => number;
   readonly #owned = new DisposeBag();
   readonly #previewPresets = new ExtensionRegistry<PreviewPreset>('preview-preset');
   readonly #renderFeatures = new ExtensionRegistry<RenderFeature>('render-feature');
   #frameIndex = 0;
+  #lastCpuFrameTimeMs = 0;
+  #lastFrameStatistics = EMPTY_FRAME_STATISTICS;
   #state: RendererLifecycleState = 'new';
 
   constructor(options: KyxosRendererOptions) {
     this.#backend = options.backend;
+    this.#now = options.now ?? (() => performance.now());
     this.#frameScheduler = new FrameScheduler({
       driver: options.frameDriver,
       onFrame: (frame) => this.#onFrame(frame),
@@ -115,6 +151,9 @@ export class KyxosRenderer implements Disposable {
     this.#state = 'initializing';
     try {
       await this.#backend.initialize();
+      for (const feature of this.#renderFeatures.values()) {
+        await feature.initialize?.({ backend: this.#backend });
+      }
       this.#state = 'ready';
       this.#events.emit('ready', undefined);
     } catch (error) {
@@ -177,6 +216,8 @@ export class KyxosRenderer implements Disposable {
         type: this.#backend.type,
       }),
       frameIndex: this.#frameIndex,
+      lastCpuFrameTimeMs: this.#lastCpuFrameTimeMs,
+      lastFrameStatistics: this.#lastFrameStatistics,
       registrations: Object.freeze({
         assetDecoders: this.#assetDecoders.size,
         materialExtensions: this.#materialExtensions.size,
@@ -230,6 +271,21 @@ export class KyxosRenderer implements Disposable {
 
     this.#state = 'lost';
     this.#frameScheduler.suspend();
+    for (const feature of this.#renderFeatures.values()) {
+      try {
+        feature.onBackendLost?.(loss);
+      } catch (error) {
+        this.#events.emit(
+          'error',
+          toKyxosEngineError(error, {
+            code: 'RESOURCE_DISPOSE_FAILED',
+            message: `Render feature "${feature.id}" failed to release lost-device state.`,
+            module: 'renderer',
+            recoverable: true,
+          }),
+        );
+      }
+    }
     this.#events.emit('device-lost', loss);
   }
 
@@ -238,12 +294,43 @@ export class KyxosRenderer implements Disposable {
       return;
     }
 
-    this.#frameIndex += 1;
+    const frameIndex = this.#frameIndex + 1;
+    const cpuStartedAt = this.#now();
+    let statistics = EMPTY_FRAME_STATISTICS;
+    for (const feature of this.#renderFeatures.values()) {
+      try {
+        const result = feature.render?.({
+          backend: this.#backend,
+          dirtyFlags: frame.dirtyFlags,
+          frameIndex,
+          timestamp: frame.timestamp,
+        });
+        if (result !== undefined) {
+          statistics = addFrameStatistics(statistics, result);
+        }
+      } catch (error) {
+        this.#events.emit(
+          'error',
+          toKyxosEngineError(error, {
+            code: 'INTERNAL_ERROR',
+            message: `Render feature "${feature.id}" failed while rendering a frame.`,
+            module: 'renderer',
+            recoverable: true,
+          }),
+        );
+      }
+    }
+    const cpuFrameTimeMs = this.#now() - cpuStartedAt;
+    this.#lastCpuFrameTimeMs =
+      Number.isFinite(cpuFrameTimeMs) && cpuFrameTimeMs >= 0 ? cpuFrameTimeMs : 0;
+    this.#frameIndex = frameIndex;
+    this.#lastFrameStatistics = statistics;
     this.#events.emit(
       'frame',
       Object.freeze({
         dirtyFlags: frame.dirtyFlags,
-        frameIndex: this.#frameIndex,
+        frameIndex,
+        statistics,
         timestamp: frame.timestamp,
       }),
     );

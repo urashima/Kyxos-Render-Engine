@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "phase": "01",
+  "route": "/acceptance/phase-01",
+  "capture": {
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
+    "fullPage": true,
+    "operatingSystem": "GitHub Actions Ubuntu 24.04",
+    "runnerImage": "ubuntu-24.04 20260714.240.1",
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    },
+    "webGpuAdapter": "SwiftShader"
+  },
+  "comparison": {
+    "actualDiffPixels": 0,
+    "maximumDiffPixels": 0,
+    "status": "PASS",
+    "threshold": 0.2
+  },
+  "files": {
+    "reference": {
+      "bytes": 288376,
+      "height": 1490,
+      "path": "reference.png",
+      "sha256": "779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440",
+      "width": 1440
+    },
+    "current": {
+      "bytes": 288376,
+      "height": 1490,
+      "path": "current.png",
+      "sha256": "779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440",
+      "width": 1440
+    },
+    "difference": {
+      "bytes": 418,
+      "height": 1490,
+      "path": "difference.png",
+      "sha256": "2c9bc804ae671100f78454ba94d0ca382c7882755b09e3231742bba995e5cf22",
+      "width": 1440
+    },
+    "triangle": {
+      "bytes": 27115,
+      "height": 501,
+      "path": "triangle.png",
+      "sha256": "c5d069aa0692aac473a3f3b9ba54cf49726f84abcb63797d13a203eca8722aa1",
+      "width": 1044
+    },
+    "sphere": {
+      "bytes": 56650,
+      "height": 501,
+      "path": "sphere.png",
+      "sha256": "4ce5cf4084a789809bc2132a90349a805c821f6486fb7e72f100d4d1bca7c34d",
+      "width": 1044
+    }
+  },
+  "canonicalProvenance": {
+    "sourceRunId": 29839550943,
+    "sourceArtifactId": 8498829603,
+    "verificationRunIds": [29840128868, 29840589848],
+    "finalArtifactId": 8499252492,
+    "attemptHashes": [
+      "779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440",
+      "779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440",
+      "779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440"
+    ],
+    "attemptsByteIdentical": true
+  },
+  "rejectedEvidence": {
+    "reason": "The first captured sphere used equal NDC X/Y coordinates on a wide Surface and was visibly stretched. It was rejected before becoming a Reference.",
+    "sourceRunId": 29838945291,
+    "sourceArtifactId": 8498579214,
+    "absoluteDifferentPixelsAfterFix": 208525,
+    "image": {
+      "bytes": 315434,
+      "height": 1490,
+      "path": "rejected-aspect-stretched.png",
+      "sha256": "16898bdd8d81570cb18a5d4d727566fb4901aed591341514296620b3ca6bef5a",
+      "width": 1440
+    },
+    "difference": {
+      "bytes": 196596,
+      "height": 1490,
+      "path": "aspect-fix-difference.png",
+      "sha256": "2cc88e4076a8e710b7009ffbf657725b4b7b34034fc38a4d3389242777b92b73",
+      "width": 1440
+    },
+    "resolution": "Renderer-owned vertices are projected for the Surface aspect on initialization and aspect-changing Resize; same-aspect and suspended Resize avoid redundant uploads."
+  },
+  "dynamicRegions": [
+    {
+      "selector": ".event-log time",
+      "treatment": "Hidden only during deterministic screenshot capture; event identity, order, frame statistics, and runtime state remain visible."
+    }
+  ],
+  "limitations": [
+    "This is a Phase 1 basic-geometry baseline, not a PBR material-quality reference.",
+    "Canonical pixel acceptance requires the pinned official Playwright Chromium and SwiftShader configuration on GitHub Actions Ubuntu.",
+    "GPU timestamp timing is not part of the Phase 1 public diagnostics contract even when the adapter reports timestamp-query support."
+  ]
+}

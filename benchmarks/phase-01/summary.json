@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "phase": "01",
+  "status": "PASS_WITH_DECLARED_UNAVAILABLE_GPU_TIMING",
+  "previousAcceptedTagComparison": {
+    "tag": "phase-00-accepted",
+    "sourceCiRunId": 29831061041,
+    "staticToSleepP95": {
+      "previousMs": 66.2,
+      "currentMs": 59.9,
+      "deltaMs": -6.3,
+      "deltaPercent": -9.517,
+      "status": "PASS"
+    },
+    "phase0InitialJavaScript": {
+      "previousRawBytes": 26954,
+      "currentRawBytes": 29059,
+      "rawDeltaPercent": 7.81,
+      "previousGzipBytes": 8171,
+      "currentGzipBytes": 9669,
+      "gzipDeltaPercent": 18.333,
+      "status": "PASS_WITHIN_FROZEN_BUDGET"
+    },
+    "phase0InitialTotal": {
+      "previousRawBytes": 83730,
+      "currentRawBytes": 87633,
+      "rawDeltaPercent": 4.661,
+      "previousGzipBytes": 59309,
+      "currentGzipBytes": 61294,
+      "gzipDeltaPercent": 3.347,
+      "status": "PASS_WITHIN_FROZEN_BUDGET"
+    }
+  },
+  "environment": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "backend": "webgpu-swiftshader",
+    "viewport": "1440x1000",
+    "devicePixelRatio": 1
+  },
+  "metrics": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 2.3,
+      "medianMs": 0.3,
+      "minMs": 0.1,
+      "p95Ms": 2.3,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "status": "NOT_AVAILABLE",
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 1 public diagnostics contract."
+    },
+    "drawCalls": {
+      "status": "PASS",
+      "value": 1
+    },
+    "triangles": {
+      "status": "PASS",
+      "trianglePrimitive": 1,
+      "spherePrimitive": 1024
+    },
+    "submittedVertices": {
+      "status": "PASS",
+      "trianglePrimitive": 3,
+      "spherePrimitive": 3072
+    },
+    "pipelineCount": {
+      "status": "PASS",
+      "value": 1
+    },
+    "activeResourcesReady": {
+      "status": "PASS",
+      "value": 6
+    },
+    "activeEstimatedBufferBytesReady": {
+      "status": "PASS",
+      "value": 26448
+    },
+    "activeResourceCountAfterDeviceLoss": {
+      "status": "PASS",
+      "value": 0
+    },
+    "activeResourceCountAfterDispose": {
+      "status": "PASS",
+      "value": 0
+    },
+    "bundleRawBytes": {
+      "budget": 196608,
+      "status": "PASS",
+      "value": 136457
+    },
+    "bundleGzipBytes": {
+      "budget": 98304,
+      "status": "PASS",
+      "value": 74945
+    },
+    "assetLoadTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The asset system begins in Phase 6. Phase 1 generates geometry synchronously and loads no external model asset."
+    },
+    "staticToSleep": {
+      "budgetMs": 250,
+      "maxMs": 59.9,
+      "medianMs": 24.9,
+      "minMs": 2,
+      "p95Ms": 59.9,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "disposeResourceDelta": {
+      "activeEstimatedBytes": 0,
+      "activeResources": 0,
+      "status": "PASS"
+    }
+  }
+}

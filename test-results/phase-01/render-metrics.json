@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "phase": "01",
+  "route": "/acceptance/phase-01",
+  "environment": {
+    "backend": "webgpu",
+    "devicePixelRatio": 1,
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    }
+  },
+  "shaderCompilation": "pass",
+  "geometry": {
+    "sphere": {
+      "drawCalls": 1,
+      "submittedVertices": 3072,
+      "triangles": 1024
+    },
+    "triangle": {
+      "drawCalls": 1,
+      "submittedVertices": 3,
+      "triangles": 1
+    }
+  },
+  "resources": {
+    "activeCount": 6,
+    "activeEstimatedBufferBytes": 26448,
+    "pipelineCount": 1
+  },
+  "performance": {
+    "cpuDirtyToSleepMs": {
+      "budgetMs": 250,
+      "maxMs": 59.9,
+      "medianMs": 24.9,
+      "minMs": 2,
+      "p95Ms": 59.9,
+      "sampleCount": 10
+    },
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 2.3,
+      "medianMs": 0.3,
+      "minMs": 0.1,
+      "p95Ms": 2.3,
+      "sampleCount": 10
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "status": "NOT_AVAILABLE",
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 1 public diagnostics contract."
+    }
+  }
+}

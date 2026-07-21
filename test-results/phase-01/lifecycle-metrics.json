@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "phase": "01",
+  "devicePixelRatio": 2,
+  "initialSurface": "1768×1000",
+  "resourceBaseline": 6,
+  "resourcesAfterDeviceLoss": 0,
+  "resourcesAfterDispose": 0,
+  "resourcesAfterFinalDispose": 0,
+  "resourcesAfterRecreate": 6,
+  "status": "PASS"
+}

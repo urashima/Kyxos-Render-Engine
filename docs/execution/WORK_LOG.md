@@ -528,3 +528,321 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and push the immutable tag workflow and updated evidence.
 - Require that exact new head to pass the same full CI before merging and verifying `phase-00-accepted`.
+
+## 2026-07-21 05:44 PDT — Phase 0 accepted; Phase 1 started
+
+### Phase 0 freeze
+
+- Final freeze-head commit `c0748ffe8a3d36feab69d488ac1910489868ed11` passed GitHub Actions run `29831061041`, job `88635669628`, with every step successful.
+- PR #1 merged with the small-commit history preserved as merge commit `6522a6d7ff35ebef39c2efd7627a3f23a7b1da2c`.
+- The main-push freeze workflow created the real `phase-00-accepted` tag.
+- Reading acceptance content through the tag succeeded, and a commit comparison proved the tag and merge commit are identical with zero commits ahead or behind.
+- Phase 0 state is now `Phase Accepted`; no active blocker exists.
+
+### Phase 1 kickoff
+
+- Created `agent/phase-01-webgpu-core` from the accepted Phase 0 merge.
+- Read the Phase 1 development and acceptance requirements for WebGPU device/queue/surface, resources, command encoding, clear/triangle/sphere, Resize/DPR, lifecycle, loss, and debug counts.
+- Split Phase 1 into dependency-ordered, independently verifiable tasks in `PHASE_01_TASKS.md`.
+- Started P1-01 with an explicit injectable native seam so lifecycle and failure paths can be unit tested without leaking browser GPU objects above the backend package.
+
+### Next
+
+- Commit the Phase 1 recovery baseline.
+- Implement adapter/device lifecycle and capability negotiation with unavailable, initialization-failure, repeated-initialize, loss, and dispose tests.
+
+## 2026-07-21 05:51 PDT — P1-01 WebGPU initialization contracts
+
+### Completed
+
+- Added an internal `WebGpuPlatformPort` seam with backend-neutral adapter, device, loss, feature, and limit data; the package root does not expose the seam or any native `GPUDevice` object.
+- Added the browser implementation over `navigator.gpu`, `GPUAdapter`, and `GPUDevice`, contained entirely inside `@kyxos/render-backend-webgpu`.
+- Added public `createWebGpuBackend` options for power preference, fallback-adapter request, device label, and required features.
+- Implemented state transitions, coalesced concurrent initialization, adapter/device failure conversion, immutable negotiated capabilities, unsupported-feature rejection, loss events, reinitialization, initialization cancellation, and idempotent device destruction.
+- Kept WebGPU resource creation explicitly unavailable at this intermediate checkpoint rather than returning fake native resources; P1-02/P1-04 replace this with owned queue and resource implementations.
+
+### Validation
+
+- WebGPU backend unit tests: 8 / 8 PASS.
+- Full unit suite: 10 files / 36 tests PASS.
+- Format, zero-warning lint, strict source/test/application typecheck: PASS.
+- All seven packages build independently.
+- Runtime dependency graph and deliberate Renderer-to-SDK negative fixture: PASS.
+- WebGPU absence, missing adapter, unsupported feature, native request rejection, concurrent initialization, unexpected loss/recovery, in-flight disposal, and expected destroy-loss suppression are covered.
+
+### Next
+
+- Commit and remotely verify the P1-01 checkpoint.
+- Add queue submission ownership and a native resource registry whose destroy/loss/dispose paths return debug counts to baseline.
+
+## 2026-07-21 05:58 PDT — P1-02 queue and native resource ownership
+
+### Completed
+
+- Added a private device queue port and a backend-neutral `waitForIdle()` method; callers can wait for submitted GPU work without receiving a native queue.
+- Added `WebGpuResourceRegistry` with per-kind monotonic handles, exact active/created/destroyed counts, byte estimates, kind validation, native destroy callbacks, and aggregate cleanup errors.
+- Changed registry lookup to opaque handle object identity so equal-looking handles from two backend instances cannot cross ownership boundaries.
+- Applied the same foreign-handle protection to `MockBackend`, keeping deterministic tests aligned with real backend behavior.
+- Device loss now clears all device-invalidated records without calling native destroy methods. Explicit disposal attempts resource cleanup, destroys the device, clears any failed records against the destroyed device, and leaves debug counts at baseline.
+
+### Validation
+
+- Added 6 resource-registry tests plus a Mock Backend cross-owner regression; full suite is 11 files / 43 tests PASS.
+- Verified exact per-kind memory/count accounting, idempotent native destruction, stale/wrong-kind rejection, failed-destroy retention, loss cleanup, and cross-backend isolation.
+- WebGPU queue idle delegation is exercised through the device lifecycle test.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-02 checkpoint.
+- Implement Canvas context ownership, physical-size calculation, DPR changes, hidden/zero-size suspension, reconfiguration, and multiple independent surfaces.
+
+## 2026-07-21 06:07 PDT — P1-03 Canvas surface lifecycle
+
+### Completed
+
+- Added backend-neutral Surface target, descriptor, opaque handle, size, info, Resize, alpha-mode, color-space, and preferred-format contracts without exposing `GPUCanvasContext`.
+- Added deterministic CSS size × DPR × render-scale conversion with finite-input validation and device-limit enforcement.
+- Corrected device-limit handling to scale both dimensions uniformly, preserving aspect ratio instead of deforming output through independent clamping.
+- Added WebGPU Surface creation, configure, reconfigure, zero-area unconfigure, explicit destruction, and resource accounting.
+- Added real browser wrapper coverage over fake native `navigator.gpu`, adapter, device, queue, and Canvas context objects, proving those objects remain contained inside the backend package.
+- Mock Backend implements the same Surface lifecycle; public SDK types accept both `HTMLCanvasElement` and `OffscreenCanvas` structurally.
+
+### Validation
+
+- Added 4 surface-sizing cases, 2 WebGPU backend Surface lifecycle cases, and 2 browser-native wrapper cases.
+- Full unit suite: 13 files / 54 tests PASS.
+- Resize/DPR calculation, aspect-safe device clamp, zero-size suspension, restore-ready reconfiguration, multiple Surface isolation, loss invalidation, context absence, and idempotent unconfigure are covered.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-03 checkpoint.
+- Add typed Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder descriptors plus native lifecycle accounting.
+
+## 2026-07-21 06:16 PDT — P1-04 typed native resources
+
+### Completed
+
+- Added backend-neutral Buffer and Texture usage sets, formats, sizes, Sampler state, WGSL Shader descriptors, immutable compilation messages, vertex layouts, Pipeline stages/state, and Command Encoder descriptors.
+- Added typed `GraphicsBackend` creation methods while retaining opaque Handle ownership and generic debug statistics.
+- Implemented real WebGPU Buffer/Texture/Sampler/Shader/Pipeline/Command Encoder creation inside the browser port, including portable-to-native usage-flag translation and asynchronous Pipeline creation.
+- Added Shader compilation-info mapping without exposing `GPUShaderModule` or `GPUCompilationInfo`.
+- Added descriptor validation for sizes, usages, device limits, mip counts, anisotropy, source presence, Shader Handle ownership, entry points, attributes, and color/depth target misuse.
+- Added exact Buffer bytes and mip-aware Texture bytes; Device Lost clears all active records without calling native Buffer/Texture destruction, while explicit disposal calls native destruction once.
+- Extended Mock Backend and the SDK-only boundary fixture to the same typed contract.
+
+### Validation
+
+- Full unit suite: 13 files / 56 tests PASS.
+- Browser port test proves native descriptor mapping, usage flags, Shader/Pipeline unwrapping, compilation messages, Command Encoder creation, and Buffer/Texture destruction.
+- Backend tests cover all typed resource kinds, foreign Shader Handle rejection, invalid descriptors, mip-aware byte estimates, explicit disposal, and Device Lost resource baselines.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-04 checkpoint.
+- Add backend-neutral upload/render-pass/indexed-draw commands, queue submission, validated Phase 1 WGSL, and generated triangle/sphere geometry.
+
+## 2026-07-21 06:30 PDT — P1-05a command recording and submission
+
+### Completed
+
+- Added backend-neutral Buffer upload, clear color, vertex/index bindings, Draw, Render Pass, frame submission, and immutable submission-statistics contracts.
+- Implemented WebGPU queue upload/submission plus Command Encoder Render Pass recording without exposing native command objects outside the concrete backend.
+- Added native browser translation for pipelines, vertex/index buffers, non-indexed/indexed Draw calls, Render Pass completion, Command Buffer finish, and queue submission.
+- Made a Command Encoder single-use after an encode attempt and retained it after pre-encode validation failure so callers can explicitly dispose it.
+- Added ownership, usage, four-byte upload/vertex alignment, index-format alignment, binding-range, indexed-read-range, duplicate-slot, positive-count, and safe-integer validation.
+- Extended Mock Backend and the SDK-only consumer fixture to the command contract.
+
+### Validation
+
+- Full unit suite: 13 files / 57 tests PASS.
+- Indexed Draw coverage proves instance/triangle/vertex statistics, exact encoded native bindings, and rejection before submission when `firstIndex + indexCount` exceeds the bound region.
+- Browser wrapper coverage proves native `writeBuffer`, `beginRenderPass`, pipeline/buffer bindings, Draw calls, pass end, encoder finish, and queue submit order.
+- Format, zero-warning lint, strict source/test/application typecheck, and all package builds: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-05a checkpoint.
+- Add canonical WGSL, generated triangle/sphere geometry, a Renderer-owned basic-geometry feature, and compiler-backed Shader validation.
+
+## 2026-07-21 06:43 PDT — P1-05b WGSL and basic geometry feature
+
+### Completed
+
+- Added canonical `phase-01-basic.wgsl` vertex/fragment source and an exact generated TypeScript runtime mirror; the Shader gate now fails stale mirrors, missing entry points, unsupported Shader kinds, and unbalanced syntax.
+- Added deterministic interleaved position/normal/color triangle geometry and configurable Uint16 UV-sphere generation with segment, radius, safe-count, and index-limit validation.
+- Extended Render Features with explicit initialize, frame render, and device-loss hooks while keeping only the backend-neutral `GraphicsBackend` contract in Renderer Core.
+- Added Renderer feature execution and immutable aggregate per-frame Draw Call, instance, triangle, and submitted-vertex statistics.
+- Implemented `BasicGeometryFeature` ownership of Surface, Shader, Pipeline, triangle/sphere Vertex Buffers, sphere Index Buffer, uploads, clear pass, non-indexed/indexed Draw selection, Resize suspension, disposal, and full resource recreation after Device Lost.
+- Strengthened Mock Backend indexed-buffer ownership checks so unit acceptance exercises the same opaque-handle boundary.
+
+### Validation
+
+- Full unit suite: 14 files / 59 tests PASS.
+- Geometry tests prove deterministic counts, normalized normals, Uint16 limits, aligned Index uploads, triangle metrics, sphere metrics, zero-area no-submit behavior, loss cleanup, six-resource recreation, and disposal baseline.
+- Static Shader validation: 1 canonical WGSL source PASS with exact runtime mirror. Runtime `getCompilationInfo()` is mandatory during feature initialization; real-browser compiler evidence remains the P1-06/P1-07 integration gate.
+- Full sandbox verification PASS: format, lint, strict typecheck, unit, dependency boundaries, architecture docs, Phase 0 freeze, Shader gate, builds, bundle budgets, and 5 / 5 Playwright acceptance tests.
+- Playground JavaScript is 26,863 raw / 8,142 gzip bytes; total output is 83,639 raw / 59,278 gzip bytes, within the existing Phase 0 budgets.
+
+### Next
+
+- Commit and remotely verify the P1-05b checkpoint.
+- Add public SDK WebGPU Canvas selection and controller lifecycle, then exercise the canonical Shader through a real browser adapter/device/compiler/render smoke.
+
+## 2026-07-21 06:50 PDT — P1-06 public SDK Canvas composition
+
+### Completed
+
+- Added overloads to `createKyxosRenderer`: existing injected `GraphicsBackend` consumers remain source-compatible, while Canvas consumers can select `auto`, `webgpu`, or an injected test backend.
+- Made the public SDK the explicit browser composition root for `backend-webgpu`; Renderer and features still depend only on the backend-neutral contract, and generated SDK/Renderer/Backend API sources contain no native `GPUDevice`, `GPUQueue`, or context types.
+- Added `KyxosCanvasRenderer` with initial dirty-frame request, Surface diagnostics, explicit Resize/DPR/render-scale inputs, clear-color changes, triangle/sphere switching, recovery, and inherited deterministic disposal.
+- Added Canvas measurement defaults for HTML-like and Offscreen-like targets without giving the backend ownership of DOM layout observation.
+- Added stable automatic-selection failure behavior: Phase 1 returns recoverable `BACKEND_UNAVAILABLE` with an explicit WebGL2 Phase 10 recommendation instead of claiming a nonexistent fallback.
+- Split the injected-backend composition into `createKyxosRendererFromBackend`, allowing consumers that do not request WebGPU to tree-shake the concrete implementation instead of paying its download cost.
+- Updated runtime dependency policy, manifest, TypeScript references, and lockfile for the intentional SDK-to-WebGPU composition edge.
+
+### Validation
+
+- Full unit suite: 15 files / 61 tests PASS, including SDK-only injected use, Canvas creation, initial triangle, sphere switch, zero-area suspension, device loss/recovery, disposal baseline, and WebGPU-unavailable error.
+- Dependency graph and deliberate Renderer-to-SDK negative fixture: PASS; SDK now has the one documented concrete-backend composition edge.
+- Zero-warning lint and strict source/test/application typecheck: PASS.
+- Phase 0 Playground remains within its frozen budget after tree-shaking: JavaScript 26,954 raw / 8,171 gzip bytes; total 83,730 raw / 59,309 gzip bytes.
+- Supply-chain policy verified all 169 lockfile entries; no external dependency was added.
+
+### Next
+
+- Commit and remotely verify the P1-06 checkpoint.
+- Build the independent `/acceptance/phase-01` Playground route and use it for real browser adapter/device/WGSL compiler/clear/triangle/sphere evidence.
+
+## 2026-07-21 07:10 PDT — P1-07 independent WebGPU Playground checkpoint
+
+### Completed
+
+- Added a lazy-loaded `/acceptance/phase-01` route that consumes only the public SDK and keeps the Phase 0 entry graph isolated.
+- Added two switchable WebGPU Canvas surfaces and controls for clear color, triangle, generated sphere, one-shot wake, hidden/restore, Device Lost, recovery, disposal, and recreation.
+- Added live backend, Renderer, Shader, Surface, DPR, scheduler, Draw, triangle, vertex, Pipeline, resource, estimated memory, Canvas, and viewport diagnostics plus a bounded event trace.
+- Added SDK-only diagnostic Device Lost injection without exposing a native device and implemented it consistently in WebGPU and Mock backends.
+- Added strict Playwright coverage for real WGSL compilation, visually distinct triangle/sphere frames, Resize/DPR, zero-area suspension, Canvas switching, Device Lost, resource return to zero, recovery, disposal, and recreation.
+- Added a Vite manifest and route-aware bundle gate so Phase 0 retains its accepted initial-entry limits while the complete multi-route Playground has explicit Phase 1 budgets.
+
+### Validation
+
+- Format, zero-warning lint, strict typecheck, canonical WGSL validation, all package builds, and 15 unit files / 62 tests: PASS.
+- Phase 0 browser regression on the sandbox Chromium profile: 5 / 5 PASS, including the exact visual baseline.
+- Bundle gate: Phase 0 initial JavaScript 28,918 raw / 9,599 gzip bytes; Phase 0 initial total 87,492 raw / 61,225 gzip bytes; all JavaScript 76,765 raw / 22,915 gzip bytes; complete output 135,339 raw / 74,541 gzip bytes. All budgets PASS.
+- The network-restricted local Chromium binary exposes `navigator.gpu` but has no bundled SwiftShader/Vulkan libraries or hardware `/dev/dri`, so it cannot return a real adapter. The strict Phase 1 test remains enabled and will run in CI after Playwright installs its complete official Chromium bundle; this is an environment capability gap, not an active repository blocker.
+
+### Next
+
+- Commit and remotely verify the P1-07 checkpoint.
+- Inspect the triggered GitHub Actions run, fix any real WebGPU compiler/runtime failures, and retain the run artifacts as Phase 1 acceptance evidence.
+
+## 2026-07-21 07:19 PDT — P1-07 real WebGPU CI accepted
+
+### Completed
+
+- Pushed three fast-forward commits for diagnostic Device Lost control, the independent Phase 1 route, and its execution record; the remote comparison reported exactly 3 commits and 19 expected files with no branch divergence.
+- Opened Draft PR [#2](https://github.com/urashima/Kyxos-Render-Engine/pull/2) as the Phase 1 CI/evidence surface while retaining `In Development` status.
+- GitHub Actions Run `29838231647`, job `88660036420`, completed successfully in the pinned official Playwright Chromium environment.
+- Closed the remaining P1-05 real-compiler/render smoke and all P1-07 browser lifecycle checkpoints.
+
+### Validation
+
+- Complete remote pipeline PASS: format, zero-warning lint, strict typecheck, 15 unit files / 62 tests, dependency boundaries plus deliberate negative fixture, architecture docs, Phase 0 freeze, Shader gate, all builds, and all bundle budgets.
+- Browser acceptance: 7 / 7 PASS. The two real WebGPU tests compiled canonical WGSL, rendered distinct triangle and 1,024-triangle sphere frames, then passed DPR 2, Resize, hidden/restore, Canvas switch, Device Lost, six-to-zero resource cleanup, recovery, disposal, and recreation.
+- Real WebGPU render test duration: 18.2 seconds including adapter/device startup; lifecycle test duration: 6.8 seconds. No browser console or page errors were accepted.
+
+### Next
+
+- Add deterministic Phase 1 screenshot capture, canonical Reference/Current/Difference handling, and route-specific CI artifacts.
+- Record resource, Draw, triangle, vertex, Pipeline, bundle, static-to-sleep, and unavailable-capability metrics against `phase-00-accepted`.
+
+## 2026-07-21 07:31 PDT — Phase 1 visual evidence found and fixed aspect deformation
+
+### Finding
+
+- Evidence Run `29838945291` passed every automated gate and produced Artifact `8498579214` with Current, triangle, sphere, lifecycle, resource, and timing outputs.
+- Direct image review showed the sphere was horizontally stretched on the 1044 × 500 WebGPU Surface. This violated the Phase 1 no-deformation requirement, so the image was rejected as a canonical Reference despite green behavior tests.
+- Root cause: Phase 1 vertices were written directly in NDC, where equal X/Y values map to unequal pixel distances on a non-square Surface.
+
+### Fix
+
+- Added pure aspect projection that scales the longer NDC axis to equalize pixel-space radii without clipping or mutating canonical geometry.
+- Basic Geometry now uploads corrected triangle and sphere vertices at initialization and only when the Surface aspect changes; same-aspect Resize and zero-area suspension perform no redundant upload.
+- Device Lost and disposal clear cached projection state so recovery always uploads data for the restored Surface.
+- Added landscape, portrait, invalid-viewport, upload-count, zero-area, same-aspect, and aspect-change regression assertions.
+
+### Validation
+
+- Zero-warning lint, strict typecheck, 15 unit files / 62 tests, canonical Shader validation, all builds, and bundle budgets: PASS.
+- Complete Playground output remains within budget at 136,166 raw / 74,806 gzip bytes; Phase 0 initial entry remains 87,492 raw / 61,223 gzip bytes.
+
+### Next
+
+- Run the complete official Chromium CI on the aspect fix and inspect the regenerated sphere before establishing the Phase 1 canonical visual baseline.
+
+## 2026-07-21 07:43 PDT — P1-08 canonical visuals and CPU timing
+
+### Completed
+
+- Aspect-correction Run `29839550943` passed the complete remote pipeline and produced a visually correct circular sphere plus proportionate triangle.
+- Established the first Phase 1 canonical full-page, triangle, and sphere references from Artifact `8498829603`; retained the rejected stretched image and its 208,525-pixel absolute Difference as fix provenance.
+- Added separate Phase 0 and Phase 1 Playwright projects so each phase resolves only its own fixed snapshot directory.
+- Canonical reproducibility Run `29840128868` passed all three Phase 1 snapshots at 0 differing pixels alongside every existing gate.
+- Added Renderer CPU command-submission timing with an injectable monotonic clock, ten browser samples, a 16.7 ms budget, and explicit adapter `timestamp-query` capability evidence.
+
+### Validation
+
+- Reference and reviewed Current share SHA-256 `779ddfa68939fbacfe8120825abdd69661e18c0d046579e33ac9ce4669d87440`; the zero-Difference image is 1440 × 1490.
+- Reviewed sphere and triangle hashes are `4ce5cf4084a789809bc2132a90349a805c821f6486fb7e72f100d4d1bca7c34d` and `c5d069aa0692aac473a3f3b9ba54cf49726f84abcb63797d13a203eca8722aa1`.
+- Pre-CPU-timing evidence measured static-to-sleep p95 67.0 ms against 250 ms, 1 Draw Call, 1,024 sphere triangles, 3,072 submitted vertices, 1 Pipeline, 6 active resources, 26,448 estimated Buffer bytes, and 0 resources after loss/disposal.
+- Local CPU-timing implementation gates PASS: zero-warning lint, strict typecheck, 15 unit files / 62 tests, Shader validation, builds, and bundle budgets.
+
+### Next
+
+- Run CPU/timestamp evidence in official Chromium, replace the preliminary metric JSON with canonical values, and complete the Phase 1 acceptance/QA documents.
+
+## 2026-07-21 07:56 PDT — P1-08 evidence and owner review complete
+
+### Completed
+
+- CPU/timestamp Run `29840589848`, job `88668170176`, passed the complete pipeline with 62 unit tests and 7 browser tests.
+- Replaced preliminary runtime records with canonical CPU p95 2.3 ms / 16.7 ms and static-to-sleep p95 59.9 ms / 250 ms measurements.
+- Recorded that the adapter exposes `timestamp-query` while Phase 1 does not expose query instrumentation; GPU frame time remains explicitly unavailable.
+- Added Phase 1 bundle, dependency graph, automated summary, lifecycle, render, benchmark, technical QA, owner acceptance, visual metadata, and three acceptance documents.
+- Added a fail-closed acceptance checker covering 20 required evidence files, source CI, package boundaries, exact geometry/resource metrics, both timing budgets, image hashes/dimensions, three byte-identical attempts, and the rejected aspect regression.
+- Marked P1-08 complete and P1-09 in development after Technical QA and Owner Acceptance Passed — Autonomous Evidence Review.
+
+### Validation
+
+- `pnpm check:acceptance:phase-01`: 20 evidence files PASS.
+- All local non-GPU gates PASS: format, zero-warning lint, strict typecheck, 15 unit files / 62 tests, dependency boundaries, architecture, both phase acceptance schemas, Shader validation, all builds, and bundle budgets.
+- Phase 0 sandbox browser regression remains 5 / 5 PASS with its exact profile baseline.
+- No active blockers; the only remaining Phase 1 gates are evidence-head CI, immutable freeze automation, merge, and tag verification.
+
+### Next
+
+- Push and inspect the complete evidence-pack CI.
+- Add the narrowly scoped immutable `phase-01-accepted` main-push workflow, pass final CI, merge PR #2, and verify the tag target.
+
+## 2026-07-21 08:03 PDT — P1-09 evidence head passed; freeze prepared
+
+### Completed
+
+- Complete evidence-pack Run `29841668634`, job `88671836231`, passed with all 21 acceptance files, 62 unit tests, 7 browser tests, and three exact Phase 1 snapshots.
+- Recorded the passing evidence-pack source `5193ca3c4800f48f53d387789edc1295c001e52d`, Artifact `8499683438`, and digest in automated, technical QA, and owner evidence.
+- Added a Phase 1-only main-push workflow with `contents: write` that creates annotated tag `phase-01-accepted` and refuses to move an existing tag.
+- Extended the fail-closed Phase 1 checker to inspect the freeze workflow and reject `pull_request_target`, missing main scoping, missing immutable-tag behavior, or absent final owner-evidence CI.
+
+### Validation
+
+- Updated Phase 1 acceptance schema: 21 evidence files PASS.
+- Freeze workflow, checker, evidence JSON, lint, and strict typecheck: PASS locally.
+- No active blockers.
+
+### Next
+
+- Push the freeze checkpoint and require its final GitHub Actions run to pass.
+- Mark Draft PR #2 ready, verify no unresolved review state, merge the exact tested head, and verify `phase-01-accepted` equals the merge commit.

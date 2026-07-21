@@ -20,6 +20,7 @@ describe('MockBackend', () => {
 
     await backend.initialize();
     await backend.initialize();
+    await backend.waitForIdle();
 
     expect(backend.state).toBe('ready');
     expect(backend.capabilities.features.compute).toBe(true);
@@ -64,6 +65,19 @@ describe('MockBackend', () => {
 
     expect(second.id).toBeGreaterThan(first.id);
     expect(second.kind).toBe('backend:texture');
+  });
+
+  it('rejects equal-looking resource handles owned by another backend', async () => {
+    const first = new MockBackend();
+    const second = new MockBackend();
+    await Promise.all([first.initialize(), second.initialize()]);
+    const firstHandle = first.createResource('buffer');
+    const secondHandle = second.createResource('buffer');
+
+    expect(firstHandle).toEqual(secondHandle);
+    expect(firstHandle).not.toBe(secondHandle);
+    expect(first.destroyResource(secondHandle)).toBe(false);
+    expect(first.getResourceStatistics().activeCount).toBe(1);
   });
 
   it('rejects invalid creation states and resource byte estimates', async () => {

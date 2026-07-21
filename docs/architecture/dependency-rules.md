@@ -16,20 +16,22 @@ Product application
 
 Lower layers never import higher layers. Interfaces, opaque handles, immutable descriptors, typed events, and command APIs are the allowed communication mechanisms.
 
-## Phase 0 allowed edges
+## Current allowed edges
 
-| From                     | May import at runtime                                                            |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| `render-core`            | No engine package                                                                |
-| `render-backend-api`     | `render-core`                                                                    |
-| `render-backend-webgpu`  | `render-backend-api`, `render-core`                                              |
-| `render-frame-scheduler` | `render-core`                                                                    |
-| `render-renderer`        | `render-backend-api`, `render-core`, `render-frame-scheduler`                    |
-| `render-sdk`             | `render-backend-api`, `render-core`, `render-frame-scheduler`, `render-renderer` |
-| `render-testing`         | `render-backend-api`, `render-core`, `render-frame-scheduler`                    |
-| `render-playground`      | `render-sdk`, `render-testing`                                                   |
+| From                     | May import at runtime                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `render-core`            | No engine package                                                                                         |
+| `render-backend-api`     | `render-core`                                                                                             |
+| `render-backend-webgpu`  | `render-backend-api`, `render-core`                                                                       |
+| `render-frame-scheduler` | `render-core`                                                                                             |
+| `render-renderer`        | `render-backend-api`, `render-core`, `render-frame-scheduler`                                             |
+| `render-sdk`             | `render-backend-api`, `render-backend-webgpu`, `render-core`, `render-frame-scheduler`, `render-renderer` |
+| `render-testing`         | `render-backend-api`, `render-core`, `render-frame-scheduler`                                             |
+| `render-playground`      | `render-sdk`, `render-testing`                                                                            |
 
 `render-testing` is development support. A production engine package may use it only from tests or development-only dependencies; it must not enter a production source graph.
+
+The SDK is the browser composition root: it may instantiate a selected concrete backend, but all Renderer and feature communication still uses `GraphicsBackend`. Adding another concrete backend to this edge requires its own phase acceptance and must not leak native objects through SDK declarations.
 
 ## Forbidden dependencies
 

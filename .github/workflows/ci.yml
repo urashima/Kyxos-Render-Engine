@@ -53,9 +53,10 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: phase-00-browser-diagnostics-${{ github.run_attempt }}
+          name: phase-browser-diagnostics-${{ github.run_attempt }}
           path: |
             playwright-report/
             test-results/phase-00/runtime/
+            test-results/phase-01/runtime/
           if-no-files-found: ignore
           retention-days: 7
