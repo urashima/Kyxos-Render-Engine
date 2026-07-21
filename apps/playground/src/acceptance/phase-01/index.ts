@@ -207,9 +207,9 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   );
   requireElement(root, '[data-testid="resource-delta"]').textContent =
     diagnostics.state === 'ready' ? String(resources.activeCount - RESOURCE_BASELINE) : '—';
-  requireElement(root, '[data-testid="buffer-memory"]').textContent = formatBytes(
-    resources.byKind.buffer.activeEstimatedBytes,
-  );
+  const bufferMemory = requireElement<HTMLElement>(root, '[data-testid="buffer-memory"]');
+  bufferMemory.textContent = formatBytes(resources.byKind.buffer.activeEstimatedBytes);
+  bufferMemory.dataset['bytes'] = String(resources.byKind.buffer.activeEstimatedBytes);
   requireElement(root, '[data-testid="primitive"]').textContent = renderer.primitive.toUpperCase();
   requireElement(root, '[data-testid="active-canvas"]').textContent =
     runtime.activeCanvas.toUpperCase();
