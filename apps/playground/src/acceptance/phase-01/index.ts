@@ -192,10 +192,16 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   const diagnostics = renderer.getDiagnostics();
   const resources = diagnostics.backend.resources;
   const statistics = diagnostics.lastFrameStatistics;
-  requireElement(root, '[data-testid="backend-type"]').textContent = diagnostics.backend.type;
+  const backendType = requireElement<HTMLElement>(root, '[data-testid="backend-type"]');
+  backendType.textContent = diagnostics.backend.type;
+  backendType.dataset['timestampQuery'] = String(
+    diagnostics.backend.capabilities.features['timestamp-query'],
+  );
   requireElement(root, '[data-testid="renderer-state"]').textContent = diagnostics.state;
   requireElement(root, '[data-testid="render-mode"]').textContent = diagnostics.renderMode;
-  requireElement(root, '[data-testid="frame-index"]').textContent = String(diagnostics.frameIndex);
+  const frameIndex = requireElement<HTMLElement>(root, '[data-testid="frame-index"]');
+  frameIndex.textContent = String(diagnostics.frameIndex);
+  frameIndex.dataset['cpuFrameTimeMs'] = String(diagnostics.lastCpuFrameTimeMs);
   requireElement(root, '[data-testid="draw-calls"]').textContent = String(statistics.drawCalls);
   requireElement(root, '[data-testid="triangles"]').textContent = String(statistics.triangles);
   requireElement(root, '[data-testid="vertices"]').textContent = String(statistics.vertices);

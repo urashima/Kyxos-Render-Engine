@@ -87,6 +87,7 @@ test.describe('Phase 1 WebGPU Playground', () => {
       }
 
       const samples = [];
+      const cpuFrameSamples = [];
       for (let sample = 0; sample < 10; sample += 1) {
         const previousFrame = frameIndex.textContent;
         const startedAt = performance.now();
@@ -108,26 +109,42 @@ test.describe('Phase 1 WebGPU Playground', () => {
         wakeButton.click();
         await frameCompleted;
         samples.push(performance.now() - startedAt);
+        cpuFrameSamples.push(Number(frameIndex.dataset['cpuFrameTimeMs'] ?? Number.NaN));
         if (renderMode.textContent !== 'sleeping') {
           throw new Error('WebGPU Renderer did not return to sleeping after a dirty-only frame.');
         }
       }
 
-      const sorted = [...samples].sort((left, right) => left - right);
       const round = (value: number) => Math.round(value * 1_000) / 1_000;
+      const summarize = (values: number[]) => {
+        if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+          throw new Error('Renderer reported an invalid CPU frame time.');
+        }
+        const sorted = [...values].sort((left, right) => left - right);
+        return {
+          maxMs: round(sorted.at(-1) ?? 0),
+          medianMs: round(sorted[Math.floor(sorted.length / 2)] ?? 0),
+          minMs: round(sorted[0] ?? 0),
+          p95Ms: round(sorted[Math.ceil(sorted.length * 0.95) - 1] ?? 0),
+          sampleCount: sorted.length,
+        };
+      };
       return {
         budgetMs: 250,
-        maxMs: round(sorted.at(-1) ?? 0),
-        medianMs: round(sorted[Math.floor(sorted.length / 2)] ?? 0),
-        minMs: round(sorted[0] ?? 0),
-        p95Ms: round(sorted[Math.ceil(sorted.length * 0.95) - 1] ?? 0),
-        sampleCount: sorted.length,
+        ...summarize(samples),
+        cpuFrameTimeMs: {
+          budgetMs: 16.7,
+          ...summarize(cpuFrameSamples),
+        },
       };
     });
     expect(staticToSleep.maxMs).toBeLessThan(staticToSleep.budgetMs);
+    expect(staticToSleep.cpuFrameTimeMs.maxMs).toBeLessThan(staticToSleep.cpuFrameTimeMs.budgetMs);
 
     const bufferMemory = page.getByTestId('buffer-memory');
     await expect(bufferMemory).toHaveAttribute('data-bytes', '26448');
+    const timestampQueryAvailable =
+      (await page.getByTestId('backend-type').getAttribute('data-timestamp-query')) === 'true';
     const renderMetrics = {
       schemaVersion: 1,
       phase: '01',
@@ -148,11 +165,20 @@ test.describe('Phase 1 WebGPU Playground', () => {
         pipelineCount: Number(await page.getByTestId('pipeline-count').textContent()),
       },
       performance: {
-        cpuDirtyToSleepMs: staticToSleep,
+        cpuDirtyToSleepMs: {
+          budgetMs: staticToSleep.budgetMs,
+          maxMs: staticToSleep.maxMs,
+          medianMs: staticToSleep.medianMs,
+          minMs: staticToSleep.minMs,
+          p95Ms: staticToSleep.p95Ms,
+          sampleCount: staticToSleep.sampleCount,
+        },
+        cpuFrameTimeMs: staticToSleep.cpuFrameTimeMs,
         gpuFrameTimeMs: {
+          capabilityAvailable: timestampQueryAvailable,
           status: 'NOT_AVAILABLE',
           reason:
-            'The canonical SwiftShader adapter does not expose timestamp-query timing through the Phase 1 public diagnostics contract.',
+            'GPU timestamp instrumentation is not exposed through the Phase 1 public diagnostics contract.',
         },
       },
     };

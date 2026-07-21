@@ -59,6 +59,7 @@ export interface RendererDiagnostics {
     readonly type: BackendType;
   };
   readonly frameIndex: number;
+  readonly lastCpuFrameTimeMs: number;
   readonly lastFrameStatistics: BackendRenderPassStatistics;
   readonly registrations: RendererRegistrationCounts;
   readonly renderMode: RenderMode;
@@ -68,6 +69,7 @@ export interface RendererDiagnostics {
 export interface KyxosRendererOptions {
   readonly backend: GraphicsBackend;
   readonly frameDriver: FrameRequestDriver;
+  readonly now?: () => number;
 }
 
 const EMPTY_FRAME_STATISTICS: BackendRenderPassStatistics = Object.freeze({
@@ -103,15 +105,18 @@ export class KyxosRenderer implements Disposable {
   readonly #events = new TypedEventEmitter<RendererEvents>();
   readonly #frameScheduler: FrameScheduler;
   readonly #materialExtensions = new ExtensionRegistry<MaterialExtension>('material-extension');
+  readonly #now: () => number;
   readonly #owned = new DisposeBag();
   readonly #previewPresets = new ExtensionRegistry<PreviewPreset>('preview-preset');
   readonly #renderFeatures = new ExtensionRegistry<RenderFeature>('render-feature');
   #frameIndex = 0;
+  #lastCpuFrameTimeMs = 0;
   #lastFrameStatistics = EMPTY_FRAME_STATISTICS;
   #state: RendererLifecycleState = 'new';
 
   constructor(options: KyxosRendererOptions) {
     this.#backend = options.backend;
+    this.#now = options.now ?? (() => performance.now());
     this.#frameScheduler = new FrameScheduler({
       driver: options.frameDriver,
       onFrame: (frame) => this.#onFrame(frame),
@@ -211,6 +216,7 @@ export class KyxosRenderer implements Disposable {
         type: this.#backend.type,
       }),
       frameIndex: this.#frameIndex,
+      lastCpuFrameTimeMs: this.#lastCpuFrameTimeMs,
       lastFrameStatistics: this.#lastFrameStatistics,
       registrations: Object.freeze({
         assetDecoders: this.#assetDecoders.size,
@@ -289,6 +295,7 @@ export class KyxosRenderer implements Disposable {
     }
 
     const frameIndex = this.#frameIndex + 1;
+    const cpuStartedAt = this.#now();
     let statistics = EMPTY_FRAME_STATISTICS;
     for (const feature of this.#renderFeatures.values()) {
       try {
@@ -313,6 +320,9 @@ export class KyxosRenderer implements Disposable {
         );
       }
     }
+    const cpuFrameTimeMs = this.#now() - cpuStartedAt;
+    this.#lastCpuFrameTimeMs =
+      Number.isFinite(cpuFrameTimeMs) && cpuFrameTimeMs >= 0 ? cpuFrameTimeMs : 0;
     this.#frameIndex = frameIndex;
     this.#lastFrameStatistics = statistics;
     this.#events.emit(

@@ -7,7 +7,12 @@ describe('KyxosRenderer foundation shell', () => {
   it('creates, coalesces invalidation, emits one frame, sleeps, and disposes resources', async () => {
     const backend = new MockBackend();
     const frameDriver = new ManualFrameDriver();
-    const renderer = new KyxosRenderer({ backend, frameDriver });
+    const cpuClock = [10, 12.5];
+    const renderer = new KyxosRenderer({
+      backend,
+      frameDriver,
+      now: () => cpuClock.shift() ?? 12.5,
+    });
     const onFrame = vi.fn();
     const onWake = vi.fn();
     const onSleep = vi.fn();
@@ -37,6 +42,7 @@ describe('KyxosRenderer foundation shell', () => {
         type: 'mock',
       },
       frameIndex: 1,
+      lastCpuFrameTimeMs: 2.5,
       renderMode: 'sleeping',
       state: 'ready',
     });
