@@ -7,6 +7,8 @@ import type {
   BackendRenderPassStatistics,
 } from './commands.js';
 import type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferDescriptor,
   BackendBufferHandle,
   BackendCommandEncoderDescriptor,
@@ -57,6 +59,7 @@ export interface GraphicsBackend extends Disposable {
   readonly type: BackendType;
 
   createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle;
+  createBindGroup(descriptor: BackendBindGroupDescriptor): BackendBindGroupHandle;
   createCommandEncoder(descriptor?: BackendCommandEncoderDescriptor): BackendCommandEncoderHandle;
   createRenderPipeline(descriptor: BackendRenderPipelineDescriptor): Promise<BackendPipelineHandle>;
   createResource<Kind extends BackendResourceKind>(

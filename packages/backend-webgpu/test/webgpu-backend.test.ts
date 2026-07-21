@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createWebGpuBackendForPlatform } from '../src/backend.js';
 import type {
   WebGpuAdapterPort,
+  WebGpuBindGroupPort,
   WebGpuBufferPort,
   WebGpuCommandBufferPort,
   WebGpuCommandEncoderPort,
@@ -24,6 +25,7 @@ import type {
   WebGpuSurfacePort,
   WebGpuSurfaceRequest,
   WebGpuTexturePort,
+  WebGpuTextureViewPort,
 } from '../src/platform.js';
 
 const TEST_LIMITS: BackendLimits = Object.freeze({
@@ -61,7 +63,12 @@ class FakeBuffer implements WebGpuBufferPort {
 }
 
 class FakeTexture implements WebGpuTexturePort {
+  readonly createView = vi.fn<() => WebGpuTextureViewPort>(() => ({ kind: 'texture-view' }));
   readonly destroy = vi.fn();
+}
+
+class FakeBindGroup implements WebGpuBindGroupPort {
+  readonly kind = 'bind-group' as const;
 }
 
 class FakeShaderModule implements WebGpuShaderModulePort {
@@ -107,6 +114,7 @@ class FakeDevice implements WebGpuDevicePort {
     this.buffers.push(buffer);
     return buffer;
   });
+  readonly createBindGroup = vi.fn<WebGpuDevicePort['createBindGroup']>(() => new FakeBindGroup());
   readonly createTexture = vi.fn<
     (descriptor: Parameters<WebGpuDevicePort['createTexture']>[0]) => WebGpuTexturePort
   >(() => {
@@ -582,6 +590,142 @@ describe('WebGpuBackend device lifecycle', () => {
     ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
     expect(device.queue.submit).toHaveBeenCalledTimes(1);
     expect(backend.destroyResource(invalidEncoder)).toBe(true);
+    backend.dispose();
+  });
+
+  it('submits Bind Groups, depth attachments, and blend state without exposing native objects', async () => {
+    const surfacePort = new FakeSurface();
+    const device = new FakeDevice([surfacePort]);
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      depthStencil: {
+        depthCompare: 'less',
+        depthWriteEnabled: false,
+        format: 'depth24plus',
+      },
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [
+          {
+            blend: {
+              alpha: { dstFactor: 'one-minus-src-alpha', srcFactor: 'one' },
+              color: { dstFactor: 'one-minus-src-alpha', srcFactor: 'src-alpha' },
+            },
+            format: 'bgra8unorm',
+          },
+        ],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const uniform = backend.createBuffer({
+      size: 144,
+      usage: ['copy-dst', 'uniform'],
+    });
+    const bindGroup = backend.createBindGroup({
+      entries: [{ binding: 0, resource: { buffer: uniform, size: 144 } }],
+      group: 0,
+      pipeline,
+    });
+    const surface = backend.createSurface({
+      cssHeight: 180,
+      cssWidth: 320,
+      devicePixelRatio: 1,
+      target: { getContext: () => ({}), height: 0, width: 0 },
+    });
+    const depth = backend.createTexture({
+      format: 'depth24plus',
+      size: { height: 180, width: 320 },
+      usage: ['render-attachment'],
+    });
+
+    const statistics = backend.executeFrame({
+      commandEncoder: backend.createCommandEncoder(),
+      renderPasses: [
+        {
+          clearColor: { a: 1, b: 0, g: 0, r: 0 },
+          depthAttachment: { texture: depth },
+          draws: [
+            {
+              bindGroups: [{ bindGroup, group: 0 }],
+              pipeline,
+              vertexCount: 3,
+            },
+          ],
+          surface,
+        },
+      ],
+    });
+
+    expect(statistics).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
+    expect(device.createRenderPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({
+        depthStencil: {
+          depthCompare: 'less',
+          depthWriteEnabled: false,
+          format: 'depth24plus',
+        },
+        fragment: expect.objectContaining({
+          targets: [expect.objectContaining({ blend: expect.any(Object) })],
+        }),
+      }),
+    );
+    expect(device.createBindGroup).toHaveBeenCalledWith({
+      entries: [{ binding: 0, buffer: device.buffers[0], offset: 0, size: 144 }],
+      group: 0,
+      label: undefined,
+      pipeline: expect.any(Object),
+    });
+    expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledWith(
+      expect.objectContaining({
+        depthAttachment: expect.objectContaining({ clearValue: 1 }),
+        draws: [
+          expect.objectContaining({
+            bindGroups: [{ bindGroup: expect.any(FakeBindGroup), group: 0 }],
+          }),
+        ],
+      }),
+    );
+    expect(device.textures[0]?.createView).toHaveBeenCalledTimes(1);
+
+    const missingDepthEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: missingDepthEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            draws: [{ bindGroups: [{ bindGroup, group: 0 }], pipeline, vertexCount: 3 }],
+            surface,
+          },
+        ],
+      }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
+    expect(backend.destroyResource(missingDepthEncoder)).toBe(true);
+
+    expect(() =>
+      backend.createBindGroup({
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: backend.createBuffer({ size: 16, usage: ['vertex'] }),
+            },
+          },
+        ],
+        group: 0,
+        pipeline,
+      }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
     backend.dispose();
   });
 

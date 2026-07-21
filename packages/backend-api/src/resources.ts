@@ -143,7 +143,33 @@ export interface BackendVertexStageDescriptor {
 }
 
 export interface BackendColorTargetDescriptor {
+  readonly blend?: BackendBlendState;
   readonly format: BackendTextureFormat;
+}
+
+export type BackendBlendFactor =
+  | 'dst'
+  | 'dst-alpha'
+  | 'one'
+  | 'one-minus-dst'
+  | 'one-minus-dst-alpha'
+  | 'one-minus-src'
+  | 'one-minus-src-alpha'
+  | 'src'
+  | 'src-alpha'
+  | 'zero';
+
+export type BackendBlendOperation = 'add' | 'max' | 'min' | 'reverse-subtract' | 'subtract';
+
+export interface BackendBlendComponent {
+  readonly dstFactor: BackendBlendFactor;
+  readonly operation?: BackendBlendOperation;
+  readonly srcFactor: BackendBlendFactor;
+}
+
+export interface BackendBlendState {
+  readonly alpha: BackendBlendComponent;
+  readonly color: BackendBlendComponent;
 }
 
 export interface BackendFragmentStageDescriptor {
@@ -163,7 +189,17 @@ export interface BackendPrimitiveState {
   readonly topology?: BackendPrimitiveTopology;
 }
 
+export type BackendCompareFunction =
+  'always' | 'equal' | 'greater' | 'greater-equal' | 'less' | 'less-equal' | 'never' | 'not-equal';
+
+export interface BackendDepthStencilState {
+  readonly depthCompare: BackendCompareFunction;
+  readonly depthWriteEnabled: boolean;
+  readonly format: Extract<BackendTextureFormat, 'depth24plus' | 'depth32float'>;
+}
+
 export interface BackendRenderPipelineDescriptor {
+  readonly depthStencil?: BackendDepthStencilState;
   readonly fragment?: BackendFragmentStageDescriptor;
   readonly label?: string;
   readonly primitive?: BackendPrimitiveState;
@@ -171,6 +207,26 @@ export interface BackendRenderPipelineDescriptor {
 }
 
 export type BackendPipelineHandle = BackendResourceHandle<'pipeline'>;
+
+export interface BackendBindGroupBufferBinding {
+  readonly buffer: BackendBufferHandle;
+  readonly offset?: number;
+  readonly size?: number;
+}
+
+export interface BackendBindGroupEntry {
+  readonly binding: number;
+  readonly resource: BackendBindGroupBufferBinding;
+}
+
+export interface BackendBindGroupDescriptor {
+  readonly entries: readonly BackendBindGroupEntry[];
+  readonly group: number;
+  readonly label?: string;
+  readonly pipeline: BackendPipelineHandle;
+}
+
+export type BackendBindGroupHandle = BackendResourceHandle<'bind-group'>;
 
 export interface BackendCommandEncoderDescriptor {
   readonly label?: string;

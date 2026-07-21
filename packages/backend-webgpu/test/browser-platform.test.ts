@@ -19,6 +19,7 @@ afterEach(() => {
 describe('browser WebGPU platform port', () => {
   it('contains native adapter, device, queue, and Canvas context objects', async () => {
     const nativeTextureView = {};
+    const nativeDepthTextureView = {};
     const context = {
       configure: vi.fn(),
       getCurrentTexture: vi.fn(() => ({ createView: vi.fn(() => nativeTextureView) })),
@@ -30,15 +31,23 @@ describe('browser WebGPU platform port', () => {
       writeBuffer: vi.fn(),
     };
     const nativeBuffer = { destroy: vi.fn() };
-    const nativeTexture = { destroy: vi.fn() };
+    const nativeTexture = {
+      createView: vi.fn(() => nativeDepthTextureView as GPUTextureView),
+      destroy: vi.fn(),
+    };
     const nativeShader = {
       getCompilationInfo: vi.fn(() => Promise.resolve({ messages: [] })),
     };
-    const nativePipeline = {};
+    const nativeBindGroupLayout = {};
+    const nativePipeline = {
+      getBindGroupLayout: vi.fn(() => nativeBindGroupLayout as GPUBindGroupLayout),
+    };
+    const nativeBindGroup = {};
     const nativeRenderPass = {
       draw: vi.fn(),
       drawIndexed: vi.fn(),
       end: vi.fn(),
+      setBindGroup: vi.fn(),
       setIndexBuffer: vi.fn(),
       setPipeline: vi.fn(),
       setVertexBuffer: vi.fn(),
@@ -49,6 +58,7 @@ describe('browser WebGPU platform port', () => {
       finish: vi.fn(() => nativeCommandBuffer),
     };
     const nativeDevice = {
+      createBindGroup: vi.fn(() => nativeBindGroup as GPUBindGroup),
       createBuffer: vi.fn(() => nativeBuffer as unknown as GPUBuffer),
       createCommandEncoder: vi.fn(() => nativeCommandEncoder as unknown as GPUCommandEncoder),
       createRenderPipelineAsync: vi.fn(() =>
@@ -92,11 +102,11 @@ describe('browser WebGPU platform port', () => {
     await device.queue.onSubmittedWorkDone();
     expect(queue.onSubmittedWorkDone).toHaveBeenCalledTimes(1);
 
-    const buffer = device.createBuffer({ size: 64, usage: ['copy-dst', 'vertex'] });
+    const buffer = device.createBuffer({ size: 64, usage: ['copy-dst', 'uniform', 'vertex'] });
     expect(nativeDevice.createBuffer).toHaveBeenCalledExactlyOnceWith({
       mappedAtCreation: false,
       size: 64,
-      usage: 0x28,
+      usage: 0x68,
     });
     device.queue.writeBuffer(buffer, 0, new Float32Array(16));
     expect(queue.writeBuffer).toHaveBeenCalledWith(nativeBuffer, 0, expect.any(Float32Array));
@@ -118,10 +128,23 @@ describe('browser WebGPU platform port', () => {
     const shader = device.createShaderModule({ code: '@vertex fn main() {}', language: 'wgsl' });
     expect(await shader.getCompilationInfo()).toEqual({ messages: [], valid: true });
     const pipeline = await device.createRenderPipeline({
+      depthStencil: {
+        depthCompare: 'less',
+        depthWriteEnabled: true,
+        format: 'depth24plus',
+      },
       fragment: {
         entryPoint: 'fragmentMain',
         module: shader,
-        targets: [{ format: 'bgra8unorm' }],
+        targets: [
+          {
+            blend: {
+              alpha: { dstFactor: 'one-minus-src-alpha', srcFactor: 'one' },
+              color: { dstFactor: 'one-minus-src-alpha', srcFactor: 'src-alpha' },
+            },
+            format: 'bgra8unorm',
+          },
+        ],
       },
       label: 'pipeline',
       primitive: { topology: 'triangle-list' },
@@ -129,11 +152,27 @@ describe('browser WebGPU platform port', () => {
     });
     expect(nativeDevice.createRenderPipelineAsync).toHaveBeenCalledWith(
       expect.objectContaining({
+        depthStencil: {
+          depthCompare: 'less',
+          depthWriteEnabled: true,
+          format: 'depth24plus',
+        },
         fragment: expect.objectContaining({ module: nativeShader }),
         label: 'pipeline',
         vertex: expect.objectContaining({ module: nativeShader }),
       }),
     );
+    const bindGroup = device.createBindGroup({
+      entries: [{ binding: 0, buffer, offset: 0, size: 64 }],
+      group: 0,
+      label: 'object-bindings',
+      pipeline,
+    });
+    expect(nativeDevice.createBindGroup).toHaveBeenCalledExactlyOnceWith({
+      entries: [{ binding: 0, resource: { buffer: nativeBuffer, offset: 0, size: 64 } }],
+      label: 'object-bindings',
+      layout: nativeBindGroupLayout,
+    });
     const commandEncoder = device.createCommandEncoder({ label: 'frame' });
     expect(nativeDevice.createCommandEncoder).toHaveBeenCalledExactlyOnceWith({ label: 'frame' });
     buffer.destroy();
@@ -160,8 +199,15 @@ describe('browser WebGPU platform port', () => {
 
     commandEncoder.encodeRenderPass({
       clearColor: { a: 1, b: 0.3, g: 0.2, r: 0.1 },
+      depthAttachment: {
+        clearValue: 1,
+        loadOp: 'clear',
+        storeOp: 'store',
+        view: texture.createView(),
+      },
       draws: [
         {
+          bindGroups: [{ bindGroup, group: 0 }],
           firstIndex: 0,
           firstInstance: 0,
           firstVertex: 0,
@@ -185,9 +231,16 @@ describe('browser WebGPU platform port', () => {
           view: nativeTextureView,
         },
       ],
+      depthStencilAttachment: {
+        depthClearValue: 1,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+        view: nativeDepthTextureView,
+      },
       label: 'basic-pass',
     });
     expect(nativeRenderPass.setPipeline).toHaveBeenCalledWith(nativePipeline);
+    expect(nativeRenderPass.setBindGroup).toHaveBeenCalledWith(0, nativeBindGroup);
     expect(nativeRenderPass.setVertexBuffer).toHaveBeenCalledWith(0, nativeBuffer, 0);
     expect(nativeRenderPass.draw).toHaveBeenCalledWith(3, 1, 0, 0);
     expect(nativeRenderPass.end).toHaveBeenCalledTimes(1);

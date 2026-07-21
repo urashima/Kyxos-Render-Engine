@@ -1,7 +1,9 @@
 import type {
+  BackendBindGroupHandle,
   BackendBufferHandle,
   BackendCommandEncoderHandle,
   BackendPipelineHandle,
+  BackendTextureHandle,
 } from './resources.js';
 import type { BackendSurfaceHandle } from './surface.js';
 
@@ -30,7 +32,20 @@ export interface BackendIndexBufferBinding {
   readonly size?: number;
 }
 
+export interface BackendBindGroupBinding {
+  readonly bindGroup: BackendBindGroupHandle;
+  readonly group: number;
+}
+
+export interface BackendDepthAttachment {
+  readonly clearValue?: number;
+  readonly loadOp?: 'clear' | 'load';
+  readonly storeOp?: 'discard' | 'store';
+  readonly texture: BackendTextureHandle;
+}
+
 export interface BackendDrawCommand {
+  readonly bindGroups?: readonly BackendBindGroupBinding[];
   readonly firstIndex?: number;
   readonly firstInstance?: number;
   readonly firstVertex?: number;
@@ -45,6 +60,7 @@ export interface BackendDrawCommand {
 export interface BackendRenderPassDescriptor {
   readonly clearColor: BackendClearColor;
   readonly draws?: readonly BackendDrawCommand[];
+  readonly depthAttachment?: BackendDepthAttachment;
   readonly label?: string;
   readonly surface: BackendSurfaceHandle;
 }

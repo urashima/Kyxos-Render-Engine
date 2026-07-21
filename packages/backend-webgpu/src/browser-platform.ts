@@ -15,6 +15,8 @@ import {
 import type {
   WebGpuAdapterPort,
   WebGpuAdapterRequest,
+  WebGpuBindGroupPort,
+  WebGpuBindGroupRequest,
   WebGpuBufferPort,
   WebGpuCommandBufferPort,
   WebGpuCommandEncoderPort,
@@ -30,6 +32,7 @@ import type {
   WebGpuSurfacePort,
   WebGpuSurfaceRequest,
   WebGpuTexturePort,
+  WebGpuTextureViewPort,
 } from './platform.js';
 
 type OptionalWebGpuFeature = Exclude<BackendFeature, 'compute'>;
@@ -162,8 +165,21 @@ class BrowserWebGpuTexture implements WebGpuTexturePort {
     this.#texture = texture;
   }
 
+  createView(): WebGpuTextureViewPort {
+    return new BrowserWebGpuTextureView(this.#texture.createView());
+  }
+
   destroy(): void {
     this.#texture.destroy();
+  }
+}
+
+class BrowserWebGpuTextureView implements WebGpuTextureViewPort {
+  readonly kind = 'texture-view' as const;
+  readonly native: GPUTextureView;
+
+  constructor(view: GPUTextureView) {
+    this.native = view;
   }
 }
 
@@ -211,6 +227,15 @@ class BrowserWebGpuPipeline implements WebGpuPipelinePort {
   }
 }
 
+class BrowserWebGpuBindGroup implements WebGpuBindGroupPort {
+  readonly kind = 'bind-group' as const;
+  readonly native: GPUBindGroup;
+
+  constructor(bindGroup: GPUBindGroup) {
+    this.native = bindGroup;
+  }
+}
+
 class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
   readonly kind = 'command-encoder' as const;
   readonly native: GPUCommandEncoder;
@@ -223,6 +248,18 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
     if (!(request.surface instanceof BrowserWebGpuSurface)) {
       throw new Error('Render Pass Surface belongs to another WebGPU device port.');
     }
+    let depthStencilAttachment: GPURenderPassDepthStencilAttachment | undefined;
+    if (request.depthAttachment !== undefined) {
+      if (!(request.depthAttachment.view instanceof BrowserWebGpuTextureView)) {
+        throw new Error('Render Pass depth Texture belongs to another WebGPU device port.');
+      }
+      depthStencilAttachment = {
+        depthClearValue: request.depthAttachment.clearValue,
+        depthLoadOp: request.depthAttachment.loadOp,
+        depthStoreOp: request.depthAttachment.storeOp,
+        view: request.depthAttachment.view.native,
+      };
+    }
     const pass = this.native.beginRenderPass({
       colorAttachments: [
         {
@@ -232,6 +269,7 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
           view: request.surface.createCurrentTextureView(),
         },
       ],
+      ...(depthStencilAttachment === undefined ? {} : { depthStencilAttachment }),
       ...(request.label === undefined ? {} : { label: request.label }),
     });
     try {
@@ -240,6 +278,12 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
           throw new Error('Draw Pipeline belongs to another WebGPU device port.');
         }
         pass.setPipeline(draw.pipeline.native);
+        for (const binding of draw.bindGroups) {
+          if (!(binding.bindGroup instanceof BrowserWebGpuBindGroup)) {
+            throw new Error('Draw Bind Group belongs to another WebGPU device port.');
+          }
+          pass.setBindGroup(binding.group, binding.bindGroup.native);
+        }
         for (const vertexBuffer of draw.vertexBuffers) {
           if (!(vertexBuffer.buffer instanceof BrowserWebGpuBuffer)) {
             throw new Error('Vertex Buffer belongs to another WebGPU device port.');
@@ -389,6 +433,31 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
     );
   }
 
+  createBindGroup(request: WebGpuBindGroupRequest): WebGpuBindGroupPort {
+    if (!(request.pipeline instanceof BrowserWebGpuPipeline)) {
+      throw new Error('Bind Group Pipeline belongs to another WebGPU device port.');
+    }
+    return new BrowserWebGpuBindGroup(
+      this.#device.createBindGroup({
+        entries: request.entries.map((entry) => {
+          if (!(entry.buffer instanceof BrowserWebGpuBuffer)) {
+            throw new Error('Bind Group Buffer belongs to another WebGPU device port.');
+          }
+          return {
+            binding: entry.binding,
+            resource: {
+              buffer: entry.buffer.native,
+              offset: entry.offset,
+              size: entry.size,
+            },
+          };
+        }),
+        layout: request.pipeline.native.getBindGroupLayout(request.group),
+        ...(request.label === undefined ? {} : { label: request.label }),
+      }),
+    );
+  }
+
   createTexture(descriptor: BackendTextureDescriptor): WebGpuTexturePort {
     return new BrowserWebGpuTexture(
       this.#device.createTexture({
@@ -446,6 +515,7 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
         : { topology: request.primitive.topology }),
     };
     const descriptor: GPURenderPipelineDescriptor = {
+      ...(request.depthStencil === undefined ? {} : { depthStencil: request.depthStencil }),
       layout: 'auto',
       primitive,
       vertex: {
@@ -463,7 +533,10 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
             fragment: {
               entryPoint: request.fragment.entryPoint,
               module: requireBrowserShaderModule(request.fragment.module),
-              targets: request.fragment.targets.map((target) => ({ format: target.format })),
+              targets: request.fragment.targets.map((target) => ({
+                format: target.format,
+                ...(target.blend === undefined ? {} : { blend: target.blend }),
+              })),
             },
           }),
       ...(request.label === undefined ? {} : { label: request.label }),

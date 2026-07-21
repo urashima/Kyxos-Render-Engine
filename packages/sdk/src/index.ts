@@ -2,6 +2,8 @@
 export const SDK_PACKAGE_NAME = '@kyxos/render-sdk' as const;
 
 export type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,

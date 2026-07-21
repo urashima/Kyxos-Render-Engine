@@ -1,4 +1,6 @@
 import type {
+  BackendBindGroupDescriptor,
+  BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -41,6 +43,7 @@ import type { EventListener, Unsubscribe } from '@kyxos/render-core';
 
 import { createBrowserWebGpuPlatform } from './browser-platform.js';
 import type {
+  WebGpuBindGroupPort,
   WebGpuBufferPort,
   WebGpuCommandEncoderPort,
   WebGpuDevicePort,
@@ -50,6 +53,7 @@ import type {
   WebGpuPowerPreference,
   WebGpuShaderModulePort,
   WebGpuSurfacePort,
+  WebGpuTexturePort,
 } from './platform.js';
 import { WebGpuResourceRegistry } from './resource-registry.js';
 
@@ -63,9 +67,22 @@ interface WebGpuBufferRecord {
   readonly descriptor: BackendBufferDescriptor;
 }
 
+interface WebGpuTextureRecord {
+  readonly descriptor: BackendTextureDescriptor;
+  readonly texture: WebGpuTexturePort;
+}
+
 interface WebGpuPipelineRecord {
+  readonly depthFormat:
+    Extract<BackendTextureDescriptor['format'], 'depth24plus' | 'depth32float'> | undefined;
   readonly pipeline: WebGpuPipelinePort;
   readonly topology: BackendPrimitiveTopology;
+}
+
+interface WebGpuBindGroupRecord {
+  readonly bindGroup: WebGpuBindGroupPort;
+  readonly group: number;
+  readonly pipeline: BackendPipelineHandle;
 }
 
 interface WebGpuCommandEncoderRecord {
@@ -73,6 +90,7 @@ interface WebGpuCommandEncoderRecord {
 }
 
 interface PreparedDraw {
+  readonly depthFormat: WebGpuPipelineRecord['depthFormat'];
   readonly instances: number;
   readonly request: WebGpuDrawRequest;
   readonly triangles: number;
@@ -370,10 +388,18 @@ export class WebGpuBackend implements GraphicsBackend {
     const device = this.#requireDevice('create a Texture');
     try {
       const texture = device.createTexture(descriptor);
+      const record: WebGpuTextureRecord = {
+        descriptor: Object.freeze({
+          ...descriptor,
+          size: Object.freeze({ ...descriptor.size }),
+          usage: Object.freeze([...descriptor.usage]),
+        }),
+        texture,
+      };
       return this.#resources.register(
         'texture',
         resourceAccounting(descriptor.label, estimateTextureBytes(descriptor)),
-        texture,
+        record,
         () => texture.destroy(),
       );
     } catch (error) {
@@ -493,6 +519,7 @@ export class WebGpuBackend implements GraphicsBackend {
 
     try {
       const pipeline = await device.createRenderPipeline({
+        depthStencil: descriptor.depthStencil,
         fragment:
           descriptor.fragment === undefined || fragmentModule === undefined
             ? undefined
@@ -510,11 +537,92 @@ export class WebGpuBackend implements GraphicsBackend {
         },
       });
       return this.#resources.register('pipeline', resourceAccounting(descriptor.label, 0), {
+        depthFormat: descriptor.depthStencil?.format,
         pipeline,
         topology: descriptor.primitive?.topology ?? 'triangle-list',
       } satisfies WebGpuPipelineRecord);
     } catch (error) {
       throw this.#resourceCreationError('Render Pipeline', error);
+    }
+  }
+
+  createBindGroup(descriptor: BackendBindGroupDescriptor): BackendBindGroupHandle {
+    const device = this.#requireDevice('create a Bind Group');
+    requireNonNegativeSafeInteger('Bind Group index', descriptor.group);
+    if (descriptor.group >= this.#capabilities.limits.maxBindGroups) {
+      throw new KyxosEngineError(
+        `Bind Group index exceeds maxBindGroups (${this.#capabilities.limits.maxBindGroups}).`,
+        {
+          code: 'UNSUPPORTED_CAPABILITY',
+          module: 'backend',
+          recoverable: false,
+        },
+      );
+    }
+    requireNonEmpty('Bind Group entries', descriptor.entries);
+    const pipeline = this.#resources.resolve<'pipeline', WebGpuPipelineRecord>(
+      descriptor.pipeline,
+      'pipeline',
+    );
+    const bindings = new Set<number>();
+    const entries = descriptor.entries.map((entry) => {
+      requireNonNegativeSafeInteger('Bind Group binding', entry.binding);
+      if (bindings.has(entry.binding)) {
+        throw new KyxosEngineError(
+          `Bind Group binding ${entry.binding} is provided more than once.`,
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          },
+        );
+      }
+      bindings.add(entry.binding);
+      const buffer = this.#resources.resolve<'buffer', WebGpuBufferRecord>(
+        entry.resource.buffer,
+        'buffer',
+      );
+      if (
+        !buffer.descriptor.usage.includes('uniform') &&
+        !buffer.descriptor.usage.includes('storage')
+      ) {
+        throw new KyxosEngineError('Bind Group Buffer requires uniform or storage usage.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      const offset = entry.resource.offset ?? 0;
+      const size = entry.resource.size ?? buffer.descriptor.size - offset;
+      requireNonNegativeSafeInteger('Bind Group Buffer offset', offset);
+      requirePositiveSafeInteger('Bind Group Buffer size', size);
+      if (offset % 4 !== 0 || size % 4 !== 0 || offset + size > buffer.descriptor.size) {
+        throw new KyxosEngineError(
+          'Bind Group Buffer range must be 4-byte aligned and remain within its Buffer.',
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          },
+        );
+      }
+      return { binding: entry.binding, buffer: buffer.buffer, offset, size };
+    });
+
+    try {
+      const bindGroup = device.createBindGroup({
+        entries,
+        group: descriptor.group,
+        label: descriptor.label,
+        pipeline: pipeline.pipeline,
+      });
+      return this.#resources.register('bind-group', resourceAccounting(descriptor.label, 0), {
+        bindGroup,
+        group: descriptor.group,
+        pipeline: descriptor.pipeline,
+      } satisfies WebGpuBindGroupRecord);
+    } catch (error) {
+      throw this.#resourceCreationError('Bind Group', error);
     }
   }
 
@@ -669,6 +777,69 @@ export class WebGpuBackend implements GraphicsBackend {
         });
       }
       const draws = (renderPass.draws ?? []).map((draw) => this.#prepareDraw(draw));
+      let depthAttachment;
+      if (renderPass.depthAttachment !== undefined) {
+        const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(
+          renderPass.depthAttachment.texture,
+          'texture',
+        );
+        if (
+          !record.descriptor.usage.includes('render-attachment') ||
+          (record.descriptor.format !== 'depth24plus' &&
+            record.descriptor.format !== 'depth32float')
+        ) {
+          throw new KyxosEngineError(
+            'Depth attachment requires a depth Texture with render-attachment usage.',
+            {
+              code: 'INVALID_ARGUMENT',
+              module: 'backend',
+              recoverable: false,
+            },
+          );
+        }
+        if (
+          record.descriptor.size.width !== surface.info.size.physicalWidth ||
+          record.descriptor.size.height !== surface.info.size.physicalHeight
+        ) {
+          throw new KyxosEngineError('Depth attachment dimensions must match the render surface.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+        const clearValue = renderPass.depthAttachment.clearValue ?? 1;
+        if (!Number.isFinite(clearValue) || clearValue < 0 || clearValue > 1) {
+          throw new KyxosEngineError('Depth clear value must be finite and between 0 and 1.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+        depthAttachment = {
+          clearValue,
+          loadOp: renderPass.depthAttachment.loadOp ?? 'clear',
+          storeOp: renderPass.depthAttachment.storeOp ?? 'store',
+          view: record.texture.createView(),
+        } as const;
+        if (
+          draws.some(
+            (draw) =>
+              draw.depthFormat !== undefined && draw.depthFormat !== record.descriptor.format,
+          )
+        ) {
+          throw new KyxosEngineError('Render Pipeline and depth attachment formats must match.', {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          });
+        }
+      } else if (draws.some((draw) => draw.depthFormat !== undefined)) {
+        throw new KyxosEngineError('A depth-enabled Render Pipeline requires a depth attachment.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
       for (const draw of draws) {
         drawCalls += 1;
         instances += draw.instances;
@@ -689,6 +860,7 @@ export class WebGpuBackend implements GraphicsBackend {
       }
       return {
         clearColor: renderPass.clearColor,
+        depthAttachment,
         draws: draws.map((draw) => draw.request),
         label: renderPass.label,
         surface: surface.surface,
@@ -895,6 +1067,34 @@ export class WebGpuBackend implements GraphicsBackend {
     requireNonNegativeSafeInteger('Draw firstIndex', firstIndex);
     requireNonNegativeSafeInteger('Draw firstVertex', firstVertex);
 
+    const groups = new Set<number>();
+    const bindGroups = (draw.bindGroups ?? []).map((binding) => {
+      requireNonNegativeSafeInteger('Draw Bind Group index', binding.group);
+      if (groups.has(binding.group)) {
+        throw new KyxosEngineError(`Bind Group ${binding.group} is bound more than once.`, {
+          code: 'INVALID_ARGUMENT',
+          module: 'backend',
+          recoverable: false,
+        });
+      }
+      groups.add(binding.group);
+      const record = this.#resources.resolve<'bind-group', WebGpuBindGroupRecord>(
+        binding.bindGroup,
+        'bind-group',
+      );
+      if (record.group !== binding.group || record.pipeline !== draw.pipeline) {
+        throw new KyxosEngineError(
+          'Draw Bind Group must use its declared group and originating Render Pipeline.',
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'backend',
+            recoverable: false,
+          },
+        );
+      }
+      return { bindGroup: record.bindGroup, group: binding.group };
+    });
+
     const slots = new Set<number>();
     const vertexBuffers = (draw.vertexBuffers ?? []).map((binding) => {
       requireNonNegativeSafeInteger('Vertex Buffer slot', binding.slot);
@@ -1030,8 +1230,10 @@ export class WebGpuBackend implements GraphicsBackend {
       });
     }
     return {
+      depthFormat: pipeline.depthFormat,
       instances: instanceCount,
       request: {
+        bindGroups,
         firstIndex,
         firstInstance,
         firstVertex,
