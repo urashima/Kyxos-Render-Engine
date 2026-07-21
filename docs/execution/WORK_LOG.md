@@ -933,3 +933,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement a finite perspective Camera using the canonical negative-Z/zero-to-one conventions, plus a DOM-independent Orbit Controller.
 - Fit the camera to Scene bounds across aspect ratios and empty/degenerate inputs, then prove every fitted AABB corner lies inside the resulting frustum.
+
+## 2026-07-21 08:46 PDT — P2-04 Camera and framing complete
+
+### Completed
+
+- Added `@kyxos/render-camera` with finite Perspective Camera state, cached view/projection/view-projection matrices, Frustum extraction, revisioned change events, diagnostics, and disposal.
+- Added conservative AABB framing through a padded Bounding Sphere and the limiting horizontal/vertical field-of-view angle while preserving the current viewing direction.
+- Added `frameScene()` for visible/layer-filtered automatic framing and explicit null behavior for empty scenes.
+- Added a DOM-independent Orbit Controller with clamped yaw/pitch/distance, camera-plane pan, dolly, Camera apply/sync, and post-framing synchronization. Recorded the policy in ED-026.
+
+### Validation
+
+- Camera suite: 3 files / 14 tests PASS.
+- Full unit suite: 26 files / 117 tests PASS.
+- Every corner of a non-symmetric AABB remains inside the fitted Frustum at aspect ratios 0.5, 1, and 2; degenerate point bounds produce a finite positive clip range.
+- Scene checkpoint official PR CI Run `29845122846`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Add backend-neutral Mesh Render Items associated with Scene Entities and immutable Geometry.
+- Cull by inherited visibility, camera layer mask, and Frustum before building stable opaque and predictable back-to-front transparent queues.

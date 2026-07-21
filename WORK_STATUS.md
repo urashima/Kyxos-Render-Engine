@@ -4,15 +4,15 @@
 | ------------------- | ------------------------------------------------------------------ |
 | Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering             |
 | Current Branch      | `agent/phase-02-scene-camera`                                      |
-| Current Commit      | `362c35c5d06cbd3018a5f6266875681b831c592d` (P2-03 scene graph)     |
+| Current Commit      | `a184ccba1597ff70721b04b49254eaea6149c45c` (P2-04 camera)          |
 | Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                     |
-| Current Task        | P2-04 — Perspective Camera, Orbit Controller, and auto framing     |
-| Last Completed Task | P2-03 — Entity hierarchy and Transform dirty propagation           |
-| Next Action         | Implement DOM-free camera/orbit/framing behavior with strict tests |
-| CI Status           | P2-02 Run 29844282487 PASS; P2-03 local quality gates PASS         |
+| Current Task        | P2-05 — Frustum/layer visibility and deterministic Render Queues   |
+| Last Completed Task | P2-04 — Perspective Camera, Orbit Controller, and auto framing     |
+| Next Action         | Implement backend-neutral Render Items, culling, and queue sorting |
+| CI Status           | P2-03 Run 29845122846 PASS; P2-04 local quality gates PASS         |
 | Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                |
 | Known Blockers      | No active blockers                                                 |
-| Last Updated        | 2026-07-21 08:39 PDT                                               |
+| Last Updated        | 2026-07-21 08:46 PDT                                               |
 
 ## Phase Progress
 
