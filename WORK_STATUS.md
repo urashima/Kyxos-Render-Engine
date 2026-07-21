@@ -4,15 +4,15 @@
 | ------------------- | -------------------------------------------------------------------------------- |
 | Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                         |
 | Current Branch      | `agent/phase-01-webgpu-core`                                                     |
-| Current Commit      | `6522a6d7ff35ebef39c2efd7627a3f23a7b1da2c` (Phase 1 branch base)                 |
+| Current Commit      | `c91f7760a9b963ce76ba4a4aa24e9dd42dfcc2df` (last verified remote checkpoint)     |
 | Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                   |
-| Current Task        | P1-01 — WebGPU contracts, injectable native seam, and lifecycle tests            |
-| Last Completed Task | Phase 0 accepted, merged, and frozen as `phase-00-accepted`                      |
-| Next Action         | Implement adapter/device lifecycle and capability negotiation behind Backend API |
+| Current Task        | P1-02 — Queue ownership, device lifecycle completion, and recovery tests         |
+| Last Completed Task | P1-01 — WebGPU contracts, platform seam, capability negotiation, lifecycle tests |
+| Next Action         | Add private queue submission and native resource registry with loss cleanup      |
 | CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                     |
 | Acceptance Status   | In Development                                                                   |
 | Known Blockers      | No active blockers                                                               |
-| Last Updated        | 2026-07-21 05:44 PDT                                                             |
+| Last Updated        | 2026-07-21 05:51 PDT                                                             |
 
 ## Phase Progress
 

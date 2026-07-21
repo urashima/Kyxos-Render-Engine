@@ -4,8 +4,8 @@ Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff
 
 | ID    | Task                                                                                          | Depends on  | Verification                                                                                 | Status         |
 | ----- | --------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------- | -------------- |
-| P1-01 | Define WebGPU initialization contracts, injectable native seam, feature/limit negotiation     | Phase 0     | Strict types; unavailable/adapter/device/loss unit coverage; no native objects cross Backend | In Development |
-| P1-02 | Implement adapter, device, queue, loss lifecycle, recovery policy, and stable errors          | P1-01       | Lifecycle/state/event tests; repeated initialize; deterministic disposal                     | Planned        |
+| P1-01 | Define WebGPU initialization contracts, injectable native seam, feature/limit negotiation     | Phase 0     | Strict types; unavailable/adapter/device/loss unit coverage; no native objects cross Backend | Completed      |
+| P1-02 | Implement adapter, device, queue, loss lifecycle, recovery policy, and stable errors          | P1-01       | Lifecycle/state/event tests; repeated initialize; deterministic disposal                     | In Development |
 | P1-03 | Implement Canvas surface ownership, configure/unconfigure, Resize, DPR, and zero-size suspend | P1-02       | Resize/DPR/hidden/restore/multiple-surface tests                                             | Planned        |
 | P1-04 | Implement Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder ownership           | P1-02       | Create/destroy/native-destroy/resource-count tests; loss returns resource baseline           | Planned        |
 | P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | Planned        |

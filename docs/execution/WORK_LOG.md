@@ -550,3 +550,27 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit the Phase 1 recovery baseline.
 - Implement adapter/device lifecycle and capability negotiation with unavailable, initialization-failure, repeated-initialize, loss, and dispose tests.
+
+## 2026-07-21 05:51 PDT — P1-01 WebGPU initialization contracts
+
+### Completed
+
+- Added an internal `WebGpuPlatformPort` seam with backend-neutral adapter, device, loss, feature, and limit data; the package root does not expose the seam or any native `GPUDevice` object.
+- Added the browser implementation over `navigator.gpu`, `GPUAdapter`, and `GPUDevice`, contained entirely inside `@kyxos/render-backend-webgpu`.
+- Added public `createWebGpuBackend` options for power preference, fallback-adapter request, device label, and required features.
+- Implemented state transitions, coalesced concurrent initialization, adapter/device failure conversion, immutable negotiated capabilities, unsupported-feature rejection, loss events, reinitialization, initialization cancellation, and idempotent device destruction.
+- Kept WebGPU resource creation explicitly unavailable at this intermediate checkpoint rather than returning fake native resources; P1-02/P1-04 replace this with owned queue and resource implementations.
+
+### Validation
+
+- WebGPU backend unit tests: 8 / 8 PASS.
+- Full unit suite: 10 files / 36 tests PASS.
+- Format, zero-warning lint, strict source/test/application typecheck: PASS.
+- All seven packages build independently.
+- Runtime dependency graph and deliberate Renderer-to-SDK negative fixture: PASS.
+- WebGPU absence, missing adapter, unsupported feature, native request rejection, concurrent initialization, unexpected loss/recovery, in-flight disposal, and expected destroy-loss suppression are covered.
+
+### Next
+
+- Commit and remotely verify the P1-01 checkpoint.
+- Add queue submission ownership and a native resource registry whose destroy/loss/dispose paths return debug counts to baseline.
