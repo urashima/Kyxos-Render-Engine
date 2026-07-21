@@ -31,15 +31,24 @@
   "performance": {
     "cpuDirtyToSleepMs": {
       "budgetMs": 250,
-      "maxMs": 67,
-      "medianMs": 27.8,
-      "minMs": 3.7,
-      "p95Ms": 67,
+      "maxMs": 59.9,
+      "medianMs": 24.9,
+      "minMs": 2,
+      "p95Ms": 59.9,
+      "sampleCount": 10
+    },
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 2.3,
+      "medianMs": 0.3,
+      "minMs": 0.1,
+      "p95Ms": 2.3,
       "sampleCount": 10
     },
     "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
       "status": "NOT_AVAILABLE",
-      "reason": "The canonical SwiftShader adapter does not expose timestamp-query timing through the Phase 1 public diagnostics contract."
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 1 public diagnostics contract."
     }
   }
 }

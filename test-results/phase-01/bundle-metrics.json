@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "budgets": {
+    "css": { "gzipBytes": 12288, "rawBytes": 32768 },
+    "font": { "gzipBytes": 65536, "rawBytes": 65536 },
+    "html": { "gzipBytes": 4096, "rawBytes": 8192 },
+    "javascript": { "gzipBytes": 32768, "rawBytes": 98304 },
+    "phase0InitialJavascript": { "gzipBytes": 24576, "rawBytes": 65536 },
+    "phase0InitialTotal": { "gzipBytes": 65536, "rawBytes": 131072 },
+    "total": { "gzipBytes": 98304, "rawBytes": 196608 }
+  },
+  "metrics": {
+    "css": { "gzipBytes": 2987, "rawBytes": 9662 },
+    "font": { "gzipBytes": 48254, "rawBytes": 48256 },
+    "html": { "gzipBytes": 384, "rawBytes": 656 },
+    "javascript": { "gzipBytes": 23320, "rawBytes": 77883 },
+    "phase0InitialJavascript": { "gzipBytes": 9669, "rawBytes": 29059 },
+    "phase0InitialTotal": { "gzipBytes": 61294, "rawBytes": 87633 },
+    "total": { "gzipBytes": 74945, "rawBytes": 136457 }
+  }
+}
