@@ -11,6 +11,14 @@
     "artifactId": 8504813925,
     "artifactDigest": "sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33"
   },
+  "finalOwnerEvidenceCi": {
+    "runId": 29855226827,
+    "jobId": 88717770835,
+    "sourceCommit": "552474486100cb1fb683d86fbafa4b900b48dcb8",
+    "conclusion": "success",
+    "artifactId": 8505082238,
+    "browserTests": 10
+  },
   "reviewMethod": "Mechanical Phase 2 checklist plus direct canonical full-page and Scene image inspection",
   "subjectiveReview": {
     "status": "PASS",
@@ -45,7 +53,7 @@
   },
   "blockingDefects": [],
   "remainingGates": [
-    "Evidence-pack head CI",
+    "Final provenance head CI",
     "Merge to main",
     "GitHub Pages deployment",
     "Public online interaction verification",

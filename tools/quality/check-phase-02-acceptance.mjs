@@ -10,6 +10,12 @@ const sourceCiJob = 88715390559;
 const sourceArtifact = 8504813925;
 const sourceArtifactDigest =
   'sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33';
+const evidencePackCommit = '552474486100cb1fb683d86fbafa4b900b48dcb8';
+const evidencePackCiRun = 29855226827;
+const evidencePackCiJob = 88717770835;
+const evidencePackArtifact = 8505082238;
+const evidencePackArtifactDigest =
+  'sha256:5ee0d0b833ad4a757d5402b46d387a7cd4aff5e7f58f66f1909ae58dbc8f93b7';
 const requiredTextFiles = [
   '.github/workflows/deploy-pages.yml',
   '.github/workflows/freeze-deployed-phase.yml',
@@ -93,6 +99,12 @@ if (
   automated?.remoteCi?.conclusion !== 'success' ||
   automated?.remoteCi?.artifactId !== sourceArtifact ||
   automated?.remoteCi?.artifactDigest !== sourceArtifactDigest ||
+  automated?.evidencePackCi?.runId !== evidencePackCiRun ||
+  automated?.evidencePackCi?.jobId !== evidencePackCiJob ||
+  automated?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  automated?.evidencePackCi?.conclusion !== 'success' ||
+  automated?.evidencePackCi?.artifactId !== evidencePackArtifact ||
+  automated?.evidencePackCi?.artifactDigest !== evidencePackArtifactDigest ||
   automated?.visualSource?.runId !== 29852642508 ||
   automated?.visualSource?.artifactId !== 8504096148 ||
   automated?.deploymentGate?.status !== 'PENDING' ||
@@ -228,8 +240,13 @@ if (
   technicalQa?.sourceCommit !== sourceCommit ||
   technicalQa?.ci?.runId !== sourceCiRun ||
   technicalQa?.ci?.conclusion !== 'success' ||
+  technicalQa?.evidencePackCi?.runId !== evidencePackCiRun ||
+  technicalQa?.evidencePackCi?.jobId !== evidencePackCiJob ||
+  technicalQa?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  technicalQa?.evidencePackCi?.conclusion !== 'success' ||
   technicalQa?.ci?.artifactId !== sourceArtifact ||
   technicalQa?.ci?.artifactDigest !== sourceArtifactDigest ||
+  technicalQa?.evidencePackCi?.artifactId !== evidencePackArtifact ||
   Object.values(technicalQa?.checks ?? {}).some((status) => status !== 'PASS') ||
   technicalQa?.deploymentGate?.status !== 'PENDING' ||
   technicalQa?.blockingDefects?.length !== 0 ||
@@ -245,8 +262,14 @@ if (
   owner?.reviewedCheckpoint !== sourceCommit ||
   owner?.ci?.runId !== sourceCiRun ||
   owner?.ci?.conclusion !== 'success' ||
+  owner?.finalOwnerEvidenceCi?.runId !== evidencePackCiRun ||
+  owner?.finalOwnerEvidenceCi?.jobId !== evidencePackCiJob ||
+  owner?.finalOwnerEvidenceCi?.sourceCommit !== evidencePackCommit ||
+  owner?.finalOwnerEvidenceCi?.conclusion !== 'success' ||
   owner?.ci?.artifactId !== sourceArtifact ||
   owner?.ci?.artifactDigest !== sourceArtifactDigest ||
+  owner?.finalOwnerEvidenceCi?.artifactId !== evidencePackArtifact ||
+  owner?.finalOwnerEvidenceCi?.browserTests !== 10 ||
   owner?.subjectiveReview?.status !== 'PASS' ||
   Object.values(owner?.phaseOperations ?? {}).some((status) => status !== 'PASS') ||
   Object.values(owner?.generalChecklist ?? {}).some((status) => status !== 'PASS') ||
@@ -277,10 +300,12 @@ if (
   visual?.canonicalProvenance?.priorVerificationArtifactId !== 8504322478 ||
   visual?.canonicalProvenance?.verificationRunId !== sourceCiRun ||
   visual?.canonicalProvenance?.verificationArtifactId !== sourceArtifact ||
+  visual?.canonicalProvenance?.evidencePackRunId !== evidencePackCiRun ||
+  visual?.canonicalProvenance?.evidencePackArtifactId !== evidencePackArtifact ||
   visual?.canonicalProvenance?.attemptsByteIdentical !== true ||
-  visual?.canonicalProvenance?.attemptHashes?.length !== 3 ||
+  visual?.canonicalProvenance?.attemptHashes?.length !== 4 ||
   visual.canonicalProvenance.attemptHashes.some((hash) => hash !== reference?.sha256) ||
-  visual?.canonicalProvenance?.sceneAttemptHashes?.length !== 3 ||
+  visual?.canonicalProvenance?.sceneAttemptHashes?.length !== 4 ||
   visual.canonicalProvenance.sceneAttemptHashes.some((hash) => hash !== scene?.sha256) ||
   visual?.subjectiveReview?.status !== 'PASS'
 ) {
@@ -309,6 +334,9 @@ try {
   }
   if (!acceptance.includes(`GitHub Actions Run \`${sourceCiRun}\``)) {
     failures.push('acceptance document: inspected successful CI is not declared');
+  }
+  if (!acceptance.includes(`Evidence-pack Run \`${evidencePackCiRun}\``)) {
+    failures.push('acceptance document: successful evidence-pack CI is not declared');
   }
   if (!acceptance.includes('Phase 2 is not Accepted while this status remains pending.')) {
     failures.push('acceptance document: public deployment must explicitly block Phase acceptance');

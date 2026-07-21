@@ -5,11 +5,12 @@
 - **Pull request:** [#3](https://github.com/urashima/Kyxos-Render-Engine/pull/3)
 - **CI run:** [29854505862](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29854505862)
 - **CI job:** `88715390559`
+- **Evidence-pack CI:** [29855226827](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29855226827), job `88717770835` — PASS
 - **Verified:** 2026-07-21 10:55 PDT
 
 ## Conclusion
 
-Phase 2 passes technical QA. Official Chromium creates a real WebGPU adapter/device, compiles both canonical WGSL modules, renders the Scene through depth-tested opaque and alpha-blended paths, and completes all local lifecycle, behavior, performance, and zero-pixel visual gates without console or page errors.
+Phase 2 passes technical QA. Official Chromium creates a real WebGPU adapter/device, compiles both canonical WGSL modules, renders the Scene through depth-tested opaque and alpha-blended paths, and completes all local lifecycle, behavior, performance, and zero-pixel visual gates without console or page errors. Evidence-pack Run `29855226827` passed with the fail-closed acceptance schema enabled.
 
 This result does not mark the Phase Accepted. The evidence-pack head and final merge head must pass, then GitHub Pages deployment and public Chromium/WebGPU interactions must succeed before the immutable tag is created.
 
@@ -66,4 +67,4 @@ No blocking rendering, interaction, lifecycle, performance, or architecture defe
 
 ## Remaining acceptance gates
 
-Evidence-pack CI, final main CI, GitHub Pages deployment, public online interaction verification, and immutable accepted-tag verification remain mandatory.
+Final provenance-head CI, final main CI, GitHub Pages deployment, public online interaction verification, and immutable accepted-tag verification remain mandatory.

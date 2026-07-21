@@ -1174,3 +1174,22 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Push the Phase 2 evidence pack and require its fail-closed schema to pass in official CI.
 - Record that evidence-pack Run in a final provenance commit, pass the immutable PR head, then merge and execute the public Pages gate.
+
+## 2026-07-21 11:02 PDT — P2-09 evidence-pack head passed
+
+### Completed
+
+- Submitted the 19-file Phase 2 evidence pack as commit `552474486100cb1fb683d86fbafa4b900b48dcb8` without changing the frozen PNGs or visual thresholds.
+- Enabled the Phase 2 fail-closed checker inside `pnpm verify`; it validates the exact source CI, three-attempt image hashes, performance, lifecycle bytes, dependency graph, owner checklist, and deployment-pending state.
+- Required the evidence pack itself to pass official GitHub Actions before recording final provenance.
+
+### Validation
+
+- GitHub Actions Run `29855226827`, job `88717770835`: PASS; the Phase 2 acceptance schema and all 10 browser tests passed.
+- Artifact `8505082238`, digest `sha256:5ee0d0b833ad4a757d5402b46d387a7cd4aff5e7f58f66f1909ae58dbc8f93b7`, was uploaded successfully.
+- Phase 2 remains `Owner Acceptance Passed — Deployment Pending`; no document or machine record marks it Accepted.
+
+### Next
+
+- Commit only the final evidence-pack provenance and require that immutable PR head to pass the complete pipeline.
+- Mark PR #3 Ready, verify review state, merge the exact head, then require GitHub Pages deployment, public route interactions, and the immutable Phase 2 tag.

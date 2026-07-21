@@ -13,6 +13,14 @@
     "artifactId": 8504813925,
     "artifactDigest": "sha256:0a14fcd7ed9699318f76db264c03fceb3f16def0dbee0792c104071c8be51f33"
   },
+  "evidencePackCi": {
+    "runId": 29855226827,
+    "jobId": 88717770835,
+    "sourceCommit": "552474486100cb1fb683d86fbafa4b900b48dcb8",
+    "conclusion": "success",
+    "artifactId": 8505082238,
+    "artifactDigest": "sha256:5ee0d0b833ad4a757d5402b46d387a7cd4aff5e7f58f66f1909ae58dbc8f93b7"
+  },
   "visualSource": {
     "runId": 29852642508,
     "jobId": 88709155622,
@@ -106,6 +114,7 @@
   "requiredFailures": [],
   "notes": [
     "Run 29854505862 passed the authoritative pipeline with pointer/wheel Camera input, exact lifecycle memory, two zero-pixel Phase 2 snapshots, and all 10 browser tests.",
+    "Run 29855226827 passed the complete evidence-pack head with the fail-closed Phase 2 acceptance schema enabled.",
     "Run 29852642508 supplied the directly inspected first capture; Runs 29853253312 and 29854505862 produced byte-identical full-page and Scene images.",
     "The canonical adapter reports timestamp-query support, but Phase 2 declares GPU duration unavailable rather than fabricating a value.",
     "GitHub Pages deployment and public online verification remain a mandatory post-merge gate."

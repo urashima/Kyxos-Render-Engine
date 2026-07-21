@@ -6,9 +6,10 @@
 - **Pull request:** [#3](https://github.com/urashima/Kyxos-Render-Engine/pull/3)
 - **Reviewed checkpoint:** `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c`
 - **CI run:** [29854505862](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29854505862) — PASS
+- **Evidence-pack CI:** [29855226827](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29855226827) — PASS
 - **Evidence generated:** 2026-07-21 10:55 PDT
 
-This document proves the Phase 2 implementation scope defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It deliberately does **not** claim `Phase Accepted`: the evidence-pack head must pass, PR #3 must merge, GitHub Pages must deploy, the public routes must pass Chromium/WebGPU interaction checks, and `phase-02-accepted` must resolve to that deployed main commit.
+This document proves the Phase 2 implementation scope defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It deliberately does **not** claim `Phase Accepted`: the final provenance head must pass, PR #3 must merge, GitHub Pages must deploy, the public routes must pass Chromium/WebGPU interaction checks, and `phase-02-accepted` must resolve to that deployed main commit.
 
 ## Acceptance surface
 
@@ -46,7 +47,7 @@ The authoritative command is:
 pnpm verify
 ```
 
-GitHub Actions Run `29854505862`, job `88715390559`, passed the complete pipeline at the reviewed checkpoint. The machine-readable record is [`test-results/phase-02/automated-summary.json`](../../../test-results/phase-02/automated-summary.json).
+GitHub Actions Run `29854505862`, job `88715390559`, passed the complete pipeline at the reviewed checkpoint. Evidence-pack Run `29855226827`, job `88717770835`, then passed the same pipeline with the fail-closed Phase 2 schema enabled. The machine-readable record is [`test-results/phase-02/automated-summary.json`](../../../test-results/phase-02/automated-summary.json).
 
 | Gate                  | Result | Evidence                                                                |
 | --------------------- | ------ | ----------------------------------------------------------------------- |
@@ -132,4 +133,4 @@ Current deployment status: **PENDING**. Phase 2 is not Accepted while this statu
 
 ## Acceptance conclusion
 
-Phase 2 passes automated verification, technical QA, canonical visual review, performance/resource budgets, and autonomous owner evidence review at checkpoint `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c`. Require the evidence-pack head and final freeze head to pass, merge PR #3, deploy GitHub Pages, pass all public interactions, and verify `phase-02-accepted` at the deployed main commit before changing the Phase status to Accepted.
+Phase 2 passes automated verification, technical QA, canonical visual review, performance/resource budgets, and autonomous owner evidence review at checkpoint `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c`; evidence-pack Head `552474486100cb1fb683d86fbafa4b900b48dcb8` also passed. Require the final provenance head to pass, merge PR #3, deploy GitHub Pages, pass all public interactions, and verify `phase-02-accepted` at the deployed main commit before changing the Phase status to Accepted.
