@@ -69,3 +69,13 @@
 - **Reason:** A small independent consumer is the strongest executable proof that Renderer Core has no product or UI-framework dependency.
 - **Impact:** The Phase 0 bundle remains small and the Playground can later add optional framework adapters without making them engine dependencies.
 - **ADR required:** No; ADR-004 and the dependency architecture document will freeze the public/package boundary.
+
+## ED-008 — Make Phase 0 quality claims executable and capability-aware
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Use Vitest for deterministic package tests, Playwright Chromium for acceptance interactions and responsive layout, a repository-owned dependency graph gate with a deliberately forbidden fixture, explicit bundle budgets, and a Shader validator that reports `NOT_APPLICABLE` only while no Shader capability exists.
+- **Candidates:** Documentation-only boundaries; a generic dependency tool without the Kyxos layer policy; executable project-specific gates integrated into one `pnpm verify` command.
+- **Reason:** Phase acceptance must prove both positive behavior and rejection of prohibited architecture. An honest capability state prevents Phase 0 from claiming Shader validation before Shader sources and a compiler exist.
+- **Impact:** Local and CI checks use the same command. Any future Shader source makes the placeholder fail until a real compiler-backed validator is configured. The checks are backend-neutral and do not add runtime code.
+- **ADR required:** No; ADR-004 and the dependency rules document will record the stable boundary policy.

@@ -215,3 +215,43 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-07 development checkpoint.
 - Add Playwright, dependency/bundle/shader gates, then complete the outstanding browser smoke test.
+
+## 2026-07-21 04:28 PDT — P0-08 automated quality gate checkpoint
+
+### Completed
+
+- Added repository-owned Playwright acceptance tests for the Phase 0 Playground lifecycle flow and compact viewport behavior.
+- Added a package dependency and source-import boundary checker with cycle detection, private-subpath rejection, product/framework isolation, and an intentionally forbidden Renderer-to-SDK fixture that must be rejected.
+- Added byte-accurate raw and gzip Playground bundle budgets by asset category and total output.
+- Added an honest Shader validation entry point: it reports `NOT_APPLICABLE` while Phase 0 contains no Shader capability and fails if Shader sources appear before a compiler-backed validator is configured.
+- Unified format, lint, strict typecheck, unit tests, architecture gates, Shader status, production build, bundle budgets, and browser acceptance under `pnpm verify`.
+- Added an optional Chromium executable override so constrained local environments can run the same Playwright suite without changing CI behavior.
+
+### Validation
+
+- Full `pnpm verify`: PASS.
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS for packages, tests, configuration, and the Playground.
+- `pnpm test:unit`: PASS — 9 files and 28 tests.
+- Dependency graph: PASS; no cycles or prohibited production edges.
+- Deliberate Renderer-to-SDK fixture: PASS by being rejected with the expected layer violation.
+- Shader gate: `NOT_APPLICABLE` with zero Shader files, as required for the current capability set.
+- Production build: PASS for seven packages and the Playground.
+- Bundle budget: PASS — 28,705 raw bytes and 9,371 gzip bytes total.
+- Playwright Chromium 149: PASS — 2 tests covering SDK startup, sleeping/wake, resource allocation and release, device loss and recovery, disposal baseline, console errors, and 390 × 844 layout overflow.
+
+### Issues and resolution
+
+- The environment could not write Playwright's default `/root/.cache` path; the temporary browser cache was moved to a writable location.
+- The Playwright CDN response was blocked at zero bytes. An exact-version Chromium 149 binary was obtained temporarily through the permitted npm registry, and the actual suite passed against it. This environmental download restriction is not recorded as a project blocker; standard CI installation will be verified by GitHub Actions.
+
+### Performance
+
+- Phase 0 production JavaScript remains 20,299 raw bytes and 6,530 gzip bytes.
+- Total Playground output uses 21.9% of the 131,072-byte raw budget and 19.1% of the 49,152-byte gzip budget.
+
+### Next
+
+- Commit and remotely verify the P0-08 checkpoint.
+- Add GitHub Actions and freeze ADR-001 through ADR-005 plus the architecture and dependency rules.

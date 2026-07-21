@@ -1,0 +1,18 @@
+{
+  "css": {
+    "gzipBytes": 12288,
+    "rawBytes": 32768
+  },
+  "html": {
+    "gzipBytes": 4096,
+    "rawBytes": 8192
+  },
+  "javascript": {
+    "gzipBytes": 24576,
+    "rawBytes": 65536
+  },
+  "total": {
+    "gzipBytes": 49152,
+    "rawBytes": 131072
+  }
+}
