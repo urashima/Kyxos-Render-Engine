@@ -955,3 +955,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Add backend-neutral Mesh Render Items associated with Scene Entities and immutable Geometry.
 - Cull by inherited visibility, camera layer mask, and Frustum before building stable opaque and predictable back-to-front transparent queues.
+
+## 2026-07-21 08:53 PDT — P2-05 Visibility and Render Queues complete
+
+### Completed
+
+- Added `@kyxos/render-visibility` with a Scene-bound Mesh Renderer component store over immutable Mesh data and Entity-owned local bounds.
+- Added enabled, inherited visibility, unsigned camera-layer, and Frustum gates before any Render Item enters a Draw List.
+- Added immutable Render Items with world matrix/bounds, material/pipeline state keys, explicit render order, camera distance, and stable registration sequence.
+- Added cached queue results and deterministic opaque state/front-to-back sorting plus transparent back-to-front sorting. Recorded the backend-neutral submission boundary in ED-027.
+
+### Validation
+
+- Visibility suite: 3 files / 12 tests PASS.
+- Full unit suite: 29 files / 129 tests PASS.
+- The fixed culling fixture reports exactly 6 total, 1 disabled, 1 hidden, 1 layer-culled, 2 Frustum-culled, and 1 submitted object.
+- Camera checkpoint official PR CI Run `29845630396`: PASS.
+- Full local format, lint, strict typecheck, architecture/boundary, prior-phase acceptance, Shader, build, and bundle gates: PASS; no active blockers.
+
+### Next
+
+- Add Renderer-owned GPU mesh buffers and a Scene Render Feature that consumes only immutable Render Queues and backend-neutral command descriptors.
+- Expose Scene, Camera, Orbit, primitives, Mesh Renderer attachment, and diagnostics through the public SDK without leaking `GPUDevice` or internal package paths.

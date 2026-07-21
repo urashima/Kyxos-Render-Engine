@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering             |
-| Current Branch      | `agent/phase-02-scene-camera`                                      |
-| Current Commit      | `a184ccba1597ff70721b04b49254eaea6149c45c` (P2-04 camera)          |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                     |
-| Current Task        | P2-05 — Frustum/layer visibility and deterministic Render Queues   |
-| Last Completed Task | P2-04 — Perspective Camera, Orbit Controller, and auto framing     |
-| Next Action         | Implement backend-neutral Render Items, culling, and queue sorting |
-| CI Status           | P2-03 Run 29845122846 PASS; P2-04 local quality gates PASS         |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development                |
-| Known Blockers      | No active blockers                                                 |
-| Last Updated        | 2026-07-21 08:46 PDT                                               |
+| Field               | Value                                                            |
+| ------------------- | ---------------------------------------------------------------- |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering           |
+| Current Branch      | `agent/phase-02-scene-camera`                                    |
+| Current Commit      | `bb7c29f407d91843b3941cc6ac0ecc8ee2116bce` (P2-05 visibility)    |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 In Development                   |
+| Current Task        | P2-06 — Scene Render Items through Renderer and public SDK       |
+| Last Completed Task | P2-05 — Frustum/layer visibility and deterministic Render Queues |
+| Next Action         | Add Scene rendering feature, GPU mesh ownership, and SDK surface |
+| CI Status           | P2-04 Run 29845630396 PASS; P2-05 local quality gates PASS       |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 acceptance in development              |
+| Known Blockers      | No active blockers                                               |
+| Last Updated        | 2026-07-21 08:53 PDT                                             |
 
 ## Phase Progress
 
