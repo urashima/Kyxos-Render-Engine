@@ -933,3 +933,103 @@ Tag 对应 Commit 必须满足：
 + 人工步骤可复现
 = Phase Accepted
 ```
+
+---
+
+## 24. Continuous Deployment Gate（持续部署门禁）
+
+This section applies to every development phase (Phase 0–14).
+
+A phase MUST NOT be marked as Accepted unless all requirements in this section are satisfied.
+
+---
+
+### Mandatory Online Playground
+
+Every completed phase must produce a publicly accessible online Playground through GitHub Pages.
+
+The Playground is considered the official acceptance environment for all rendering, interaction, and visual validation.
+
+### Required Workflow
+
+After each Phase is completed:
+
+1. Build the Playground automatically using GitHub Actions.
+2. Deploy the latest build to GitHub Pages automatically.
+3. Publish a stable online URL.
+4. Ensure the Playground can run independently without any local development environment.
+5. Showcase all newly implemented features of the current Phase.
+6. All interactions required by the Phase Acceptance Checklist must be executable online.
+7. Performance statistics (FPS, Frame Time, Draw Calls, GPU Timing when available) must be visible whenever applicable.
+8. The Playground must pass every visual, interaction, and performance acceptance item defined for the current Phase.
+
+---
+
+### Required Demo URLs
+
+The deployment must always maintain the following structure:
+
+```text
+/latest/      -> Latest stable Playground
+/phase-0/
+/phase-1/
+/phase-2/
+...
+/phase-14/
+```
+
+Requirements:
+
+- `latest` always points to the newest accepted version.
+- Every Phase keeps a historical Playground snapshot.
+- Historical Playgrounds must remain accessible for regression testing and visual comparison.
+
+---
+
+### GitHub Actions Requirements
+
+Every accepted Phase must successfully complete:
+
+- Build
+- Type Check
+- Lint
+- Tests (when applicable)
+- Playground Build
+- GitHub Pages Deployment
+
+Any failed workflow automatically blocks Phase acceptance.
+
+---
+
+### Phase Acceptance Gate
+
+A Phase is considered Accepted only if all of the following are true:
+
+- All development tasks are completed.
+- All Phase Acceptance Checklist items pass.
+- GitHub Actions completes successfully.
+- GitHub Pages deployment succeeds.
+- Online Playground is publicly accessible.
+- Newly implemented functionality is fully demonstrable online.
+- No blocking rendering or interaction defects remain.
+
+---
+
+### Not Accepted
+
+The following DO NOT qualify as a completed Phase:
+
+- Code committed but not deployed.
+- Pull Request created without an online Playground.
+- Local-only demonstration.
+- Screenshots or recorded videos instead of an interactive demo.
+- Manual verification without a deployable Playground.
+- GitHub Pages deployment failure.
+
+---
+
+### Objective
+
+Every development milestone must be immediately reviewable from any device through a web browser.
+
+This guarantees continuous integration, continuous delivery, transparent progress tracking, rapid regression testing, and a permanent online showcase of the Kyxos Render Engine development process.
