@@ -12,6 +12,10 @@ import type {
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSurfaceDescriptor,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
   FrameRequestDriver,
   GraphicsBackend,
 } from '../src/index.js';
@@ -55,9 +59,19 @@ class SdkOnlyBackend implements GraphicsBackend {
     throw new Error('The SDK-only foundation fixture does not allocate resources.');
   }
 
+  createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle {
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate surfaces.');
+  }
+
   destroyResource(handle: BackendResourceHandle): boolean {
     void handle;
     return false;
+  }
+
+  getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo {
+    void handle;
+    throw new Error('The SDK-only foundation fixture does not allocate surfaces.');
   }
 
   getResourceStatistics(): BackendResourceStatistics {
@@ -75,6 +89,12 @@ class SdkOnlyBackend implements GraphicsBackend {
       createdTotal: 0,
       destroyedTotal: 0,
     });
+  }
+
+  resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo {
+    void handle;
+    void resize;
+    throw new Error('The SDK-only foundation fixture does not allocate surfaces.');
   }
 
   dispose(): void {

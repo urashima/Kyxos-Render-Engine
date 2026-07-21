@@ -7,6 +7,12 @@ import type {
   BackendResourceKind,
   BackendResourceStatistics,
 } from './resources.js';
+import type {
+  BackendSurfaceDescriptor,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
+} from './surface.js';
 
 export type BackendLifecycleState = 'disposed' | 'initializing' | 'lost' | 'new' | 'ready';
 
@@ -36,9 +42,12 @@ export interface GraphicsBackend extends Disposable {
     kind: Kind,
     descriptor?: BackendResourceDescriptor,
   ): BackendResourceHandle<Kind>;
+  createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle;
   destroyResource(handle: BackendResourceHandle): boolean;
+  getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo;
   getResourceStatistics(): BackendResourceStatistics;
   initialize(): Promise<void>;
+  resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo;
   waitForIdle(): Promise<void>;
   on<EventName extends keyof BackendEvents>(
     eventName: EventName,

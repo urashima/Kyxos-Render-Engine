@@ -9,12 +9,17 @@ import type {
   BackendResourceKind,
   BackendResourceKindStatistics,
   BackendResourceStatistics,
+  BackendSurfaceDescriptor,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import {
   BACKEND_RESOURCE_KINDS,
   backendResourceHandleKind,
   createBackendCapabilityReport,
+  normalizeBackendSurfaceSize,
 } from '@kyxos/render-backend-api';
 import { HandleAllocator, KyxosEngineError, TypedEventEmitter } from '@kyxos/render-core';
 import type { EventListener, Unsubscribe } from '@kyxos/render-core';
@@ -24,6 +29,11 @@ interface MockResourceRecord {
   readonly handle: BackendResourceHandle;
   readonly kind: BackendResourceKind;
   readonly label: string | undefined;
+}
+
+interface MockSurfaceRecord {
+  info: BackendSurfaceInfo;
+  readonly target: BackendSurfaceDescriptor['target'];
 }
 
 export interface MockBackendOptions {
@@ -58,6 +68,7 @@ export class MockBackend implements GraphicsBackend {
   readonly #allocators = createAllocators();
   readonly #events = new TypedEventEmitter<BackendEvents>();
   readonly #resources = new Map<BackendResourceHandle, MockResourceRecord>();
+  readonly #surfaces = new Map<BackendSurfaceHandle, MockSurfaceRecord>();
   #createdTotal = 0;
   #destroyedTotal = 0;
   #state: BackendLifecycleState = 'new';
@@ -151,13 +162,47 @@ export class MockBackend implements GraphicsBackend {
     return handle;
   }
 
+  createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle {
+    this.#assertReady('create a surface');
+    const size = normalizeBackendSurfaceSize(
+      descriptor,
+      this.capabilities.limits.maxTextureDimension2D,
+    );
+    descriptor.target.width = size.physicalWidth;
+    descriptor.target.height = size.physicalHeight;
+    const handle = this.createResource(
+      'surface',
+      descriptor.label === undefined ? {} : { label: descriptor.label },
+    );
+    this.#surfaces.set(handle, {
+      info: Object.freeze({ format: 'bgra8unorm', size }),
+      target: descriptor.target,
+    });
+    return handle;
+  }
+
   destroyResource(handle: BackendResourceHandle): boolean {
     if (!this.#resources.delete(handle)) {
       return false;
     }
 
+    if (handle.kind === backendResourceHandleKind('surface')) {
+      this.#surfaces.delete(handle as BackendSurfaceHandle);
+    }
     this.#destroyedTotal += 1;
     return true;
+  }
+
+  getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo {
+    const record = this.#surfaces.get(handle);
+    if (record === undefined) {
+      throw new KyxosEngineError('Mock surface handle is stale or foreign.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'backend',
+        recoverable: false,
+      });
+    }
+    return record.info;
   }
 
   getResourceStatistics(): BackendResourceStatistics {
@@ -187,6 +232,23 @@ export class MockBackend implements GraphicsBackend {
       createdTotal: this.#createdTotal,
       destroyedTotal: this.#destroyedTotal,
     });
+  }
+
+  resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo {
+    this.#assertReady('resize a surface');
+    const record = this.#surfaces.get(handle);
+    if (record === undefined) {
+      return this.getSurfaceInfo(handle);
+    }
+    const size = normalizeBackendSurfaceSize(
+      resize,
+      this.capabilities.limits.maxTextureDimension2D,
+    );
+    const info = Object.freeze({ format: 'bgra8unorm' as const, size });
+    record.target.width = size.physicalWidth;
+    record.target.height = size.physicalHeight;
+    record.info = info;
+    return info;
   }
 
   simulateLoss(loss: Partial<BackendLossInfo> = {}): void {
@@ -223,6 +285,7 @@ export class MockBackend implements GraphicsBackend {
   #releaseAllResources(): void {
     this.#destroyedTotal += this.#resources.size;
     this.#resources.clear();
+    this.#surfaces.clear();
   }
 
   #setState(current: BackendLifecycleState): void {

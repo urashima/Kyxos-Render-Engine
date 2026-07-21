@@ -7,15 +7,33 @@ import type {
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSurfaceDescriptor,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
-import { BACKEND_FEATURES, createBackendCapabilityReport } from '@kyxos/render-backend-api';
+import {
+  BACKEND_FEATURES,
+  createBackendCapabilityReport,
+  normalizeBackendSurfaceSize,
+} from '@kyxos/render-backend-api';
 import { KyxosEngineError, TypedEventEmitter, toKyxosEngineError } from '@kyxos/render-core';
 import type { EventListener, Unsubscribe } from '@kyxos/render-core';
 
 import { createBrowserWebGpuPlatform } from './browser-platform.js';
-import type { WebGpuDevicePort, WebGpuPlatformPort, WebGpuPowerPreference } from './platform.js';
+import type {
+  WebGpuDevicePort,
+  WebGpuPlatformPort,
+  WebGpuPowerPreference,
+  WebGpuSurfacePort,
+} from './platform.js';
 import { WebGpuResourceRegistry } from './resource-registry.js';
+
+interface WebGpuSurfaceRecord {
+  info: BackendSurfaceInfo;
+  readonly surface: WebGpuSurfacePort;
+}
 
 export interface WebGpuBackendOptions {
   readonly forceFallbackAdapter?: boolean;
@@ -147,12 +165,79 @@ export class WebGpuBackend implements GraphicsBackend {
     );
   }
 
+  createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle {
+    const device = this.#requireDevice('create a Canvas surface');
+    const size = normalizeBackendSurfaceSize(
+      descriptor,
+      this.#capabilities.limits.maxTextureDimension2D,
+    );
+    let surface: WebGpuSurfacePort | undefined;
+    try {
+      surface = device.createSurface({
+        alphaMode: descriptor.alphaMode ?? 'opaque',
+        colorSpace: descriptor.colorSpace ?? 'srgb',
+        label: descriptor.label,
+        target: descriptor.target,
+      });
+      surface.configure(size);
+      const record: WebGpuSurfaceRecord = {
+        info: Object.freeze({ format: surface.format, size }),
+        surface,
+      };
+      return this.#resources.register(
+        'surface',
+        descriptor.label === undefined ? {} : { label: descriptor.label },
+        record,
+        () => surface?.unconfigure(),
+      );
+    } catch (error) {
+      try {
+        surface?.unconfigure();
+      } catch {
+        // The original creation/configuration error remains the actionable cause.
+      }
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to create or configure the WebGPU Canvas surface.',
+        module: 'backend',
+        recoverable: true,
+        suggestedAction: 'Verify the Canvas, dimensions, DPR, and WebGPU context availability.',
+      });
+    }
+  }
+
   destroyResource(handle: BackendResourceHandle): boolean {
     return this.#resources.destroy(handle);
   }
 
+  getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo {
+    return this.#resources.resolve<'surface', WebGpuSurfaceRecord>(handle, 'surface').info;
+  }
+
   getResourceStatistics(): BackendResourceStatistics {
     return this.#resources.getStatistics();
+  }
+
+  resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo {
+    this.#assertReady('resize a Canvas surface');
+    const record = this.#resources.resolve<'surface', WebGpuSurfaceRecord>(handle, 'surface');
+    const size = normalizeBackendSurfaceSize(
+      resize,
+      this.#capabilities.limits.maxTextureDimension2D,
+    );
+    try {
+      record.surface.configure(size);
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to resize or reconfigure the WebGPU Canvas surface.',
+        module: 'backend',
+        recoverable: true,
+        suggestedAction: 'Verify the Canvas dimensions and retry after restoring visibility.',
+      });
+    }
+    record.info = Object.freeze({ format: record.surface.format, size });
+    return record.info;
   }
 
   dispose(): void {
@@ -288,6 +373,14 @@ export class WebGpuBackend implements GraphicsBackend {
         `WebGPU backend must be ready to ${action}; current state is "${this.#state}".`,
       );
     }
+  }
+
+  #requireDevice(action: string): WebGpuDevicePort {
+    this.#assertReady(action);
+    if (this.#device === undefined) {
+      throw this.#stateError(`WebGPU device is unavailable while attempting to ${action}.`);
+    }
+    return this.#device;
   }
 
   #handleDeviceLost(

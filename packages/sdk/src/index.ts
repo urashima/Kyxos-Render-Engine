@@ -10,6 +10,12 @@ export type {
   BackendResourceHandle,
   BackendResourceKind,
   BackendResourceStatistics,
+  BackendSurfaceDescriptor,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
+  BackendSurfaceSize,
+  BackendSurfaceTarget,
   BackendType,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';

@@ -596,3 +596,26 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-02 checkpoint.
 - Implement Canvas context ownership, physical-size calculation, DPR changes, hidden/zero-size suspension, reconfiguration, and multiple independent surfaces.
+
+## 2026-07-21 06:07 PDT — P1-03 Canvas surface lifecycle
+
+### Completed
+
+- Added backend-neutral Surface target, descriptor, opaque handle, size, info, Resize, alpha-mode, color-space, and preferred-format contracts without exposing `GPUCanvasContext`.
+- Added deterministic CSS size × DPR × render-scale conversion with finite-input validation and device-limit enforcement.
+- Corrected device-limit handling to scale both dimensions uniformly, preserving aspect ratio instead of deforming output through independent clamping.
+- Added WebGPU Surface creation, configure, reconfigure, zero-area unconfigure, explicit destruction, and resource accounting.
+- Added real browser wrapper coverage over fake native `navigator.gpu`, adapter, device, queue, and Canvas context objects, proving those objects remain contained inside the backend package.
+- Mock Backend implements the same Surface lifecycle; public SDK types accept both `HTMLCanvasElement` and `OffscreenCanvas` structurally.
+
+### Validation
+
+- Added 4 surface-sizing cases, 2 WebGPU backend Surface lifecycle cases, and 2 browser-native wrapper cases.
+- Full unit suite: 13 files / 54 tests PASS.
+- Resize/DPR calculation, aspect-safe device clamp, zero-size suspension, restore-ready reconfiguration, multiple Surface isolation, loss invalidation, context absence, and idempotent unconfigure are covered.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-03 checkpoint.
+- Add typed Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder descriptors plus native lifecycle accounting.

@@ -29,3 +29,15 @@ export {
   backendResourceHandleKind,
   isBackendResourceHandle,
 } from './resources.js';
+export type {
+  BackendSurfaceAlphaMode,
+  BackendSurfaceColorSpace,
+  BackendSurfaceDescriptor,
+  BackendSurfaceFormat,
+  BackendSurfaceHandle,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
+  BackendSurfaceSize,
+  BackendSurfaceTarget,
+} from './surface.js';
+export { normalizeBackendSurfaceSize } from './surface.js';

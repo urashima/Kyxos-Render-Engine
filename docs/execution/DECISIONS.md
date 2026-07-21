@@ -139,3 +139,13 @@
 - **Reason:** Separate Canvas/backend instances legitimately allocate equal-looking first handles. Numeric lookup alone lets one backend accidentally destroy another backend's resource. Object identity rejects foreign handles while preserving compact immutable public handles and deterministic stale-handle behavior.
 - **Impact:** Handles are transferable as opaque references within one renderer but are intentionally not reconstructible from JSON. WebGPU and Mock Backend now enforce the same ownership rule; WebGL2 must follow it. Resource statistics retain lifetime totals across device recovery.
 - **ADR required:** No; this strengthens the already accepted opaque-handle and resource-lifetime boundary without changing the public dependency direction.
+
+## ED-015 — Size Canvas surfaces from explicit logical inputs and suspend zero area
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Surface sizing consumes explicit CSS width, CSS height, DPR, and optional render scale. Physical dimensions are rounded once, uniformly scaled down when either device limit would be exceeded, and never inferred by a backend-owned layout observer. A zero width or height produces a suspended 0 × 0 surface and unconfigures the context; a later nonzero resize reconfigures it.
+- **Candidates:** Independently clamp width and height; query layout and poll inside Backend; use explicit inputs with aspect-preserving uniform clamp and zero-area suspension.
+- **Reason:** Independent clamping can deform geometry, while backend-owned DOM observation would couple graphics code to page layout and invite permanent work. Explicit inputs are deterministic for Canvas, OffscreenCanvas, tests, multiple viewports, and future Worker adapters.
+- **Impact:** SDK/platform adapters own ResizeObserver and DPR change detection. WebGPU and future WebGL2 implementations share identical physical-size math. Hidden Canvas instances allocate no swapchain size until restored.
+- **ADR required:** No; this refines the existing Canvas/backend responsibility without changing public product scope.

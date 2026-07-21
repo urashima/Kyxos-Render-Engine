@@ -1,4 +1,9 @@
-import type { BackendFeature, BackendLimits, BackendLossInfo } from '@kyxos/render-backend-api';
+import type {
+  BackendFeature,
+  BackendLimits,
+  BackendLossInfo,
+  BackendSurfaceSize,
+} from '@kyxos/render-backend-api';
 import { KyxosEngineError } from '@kyxos/render-core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -8,6 +13,8 @@ import type {
   WebGpuDevicePort,
   WebGpuDeviceRequest,
   WebGpuPlatformPort,
+  WebGpuSurfacePort,
+  WebGpuSurfaceRequest,
 } from '../src/platform.js';
 
 const TEST_LIMITS: BackendLimits = Object.freeze({
@@ -34,6 +41,12 @@ class Deferred<Value> {
   }
 }
 
+class FakeSurface implements WebGpuSurfacePort {
+  readonly configure = vi.fn<(size: BackendSurfaceSize) => void>();
+  readonly format = 'bgra8unorm' as const;
+  readonly unconfigure = vi.fn();
+}
+
 class FakeDevice implements WebGpuDevicePort {
   readonly #loss = new Deferred<BackendLossInfo>();
   readonly destroy = vi.fn();
@@ -41,6 +54,13 @@ class FakeDevice implements WebGpuDevicePort {
   readonly queue = Object.freeze({
     onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
   });
+  readonly createSurface = vi.fn<(request: WebGpuSurfaceRequest) => WebGpuSurfacePort>();
+
+  constructor(surfaces: readonly FakeSurface[] = []) {
+    for (const surface of surfaces) {
+      this.createSurface.mockReturnValueOnce(surface);
+    }
+  }
 
   lose(loss: BackendLossInfo): void {
     this.#loss.resolve(loss);
@@ -237,5 +257,106 @@ describe('WebGpuBackend device lifecycle', () => {
       activeCount: 0,
       activeEstimatedBytes: 0,
     });
+  });
+
+  it('owns surface configure, Resize, DPR, suspension, and disposal', async () => {
+    const surface = new FakeSurface();
+    const device = new FakeDevice([surface]);
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter(['compute'], [device])]),
+    );
+    const target = { height: 0, width: 0, getContext: vi.fn(() => ({})) };
+    await backend.initialize();
+
+    const handle = backend.createSurface({
+      alphaMode: 'premultiplied',
+      colorSpace: 'display-p3',
+      cssHeight: 180,
+      cssWidth: 320,
+      devicePixelRatio: 2,
+      label: 'primary',
+      target,
+    });
+
+    expect(device.createSurface).toHaveBeenCalledExactlyOnceWith({
+      alphaMode: 'premultiplied',
+      colorSpace: 'display-p3',
+      label: 'primary',
+      target,
+    });
+    expect(surface.configure).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        physicalHeight: 360,
+        physicalWidth: 640,
+        suspended: false,
+      }),
+    );
+    expect(backend.getSurfaceInfo(handle)).toMatchObject({
+      format: 'bgra8unorm',
+      size: { physicalHeight: 360, physicalWidth: 640 },
+    });
+    expect(backend.getResourceStatistics().byKind.surface.activeCount).toBe(1);
+
+    expect(
+      backend.resizeSurface(handle, {
+        cssHeight: 0,
+        cssWidth: 640,
+        devicePixelRatio: 1.5,
+      }),
+    ).toMatchObject({
+      size: { physicalHeight: 0, physicalWidth: 0, suspended: true },
+    });
+    expect(surface.configure).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ suspended: true }),
+    );
+
+    expect(backend.destroyResource(handle)).toBe(true);
+    expect(backend.destroyResource(handle)).toBe(false);
+    expect(surface.unconfigure).toHaveBeenCalledTimes(1);
+    expect(backend.getResourceStatistics().byKind.surface.activeCount).toBe(0);
+  });
+
+  it('keeps multiple Canvas surfaces independent and invalidates them on device loss', async () => {
+    const firstSurface = new FakeSurface();
+    const secondSurface = new FakeSurface();
+    const device = new FakeDevice([firstSurface, secondSurface]);
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter(['compute'], [device])]),
+    );
+    await backend.initialize();
+    const target = () => ({ height: 0, width: 0, getContext: vi.fn(() => ({})) });
+    const first = backend.createSurface({
+      cssHeight: 100,
+      cssWidth: 100,
+      devicePixelRatio: 1,
+      target: target(),
+    });
+    backend.createSurface({
+      cssHeight: 200,
+      cssWidth: 300,
+      devicePixelRatio: 2,
+      target: target(),
+    });
+
+    expect(firstSurface.configure).toHaveBeenCalledWith(
+      expect.objectContaining({ physicalHeight: 100, physicalWidth: 100 }),
+    );
+    expect(secondSurface.configure).toHaveBeenCalledWith(
+      expect.objectContaining({ physicalHeight: 400, physicalWidth: 600 }),
+    );
+    expect(backend.getResourceStatistics().byKind.surface.activeCount).toBe(2);
+
+    device.lose({ message: 'surface device lost', reason: 'unknown', recoverable: true });
+    await vi.waitFor(() => expect(backend.state).toBe('lost'));
+    expect(backend.getResourceStatistics().byKind.surface.activeCount).toBe(0);
+    expect(firstSurface.unconfigure).not.toHaveBeenCalled();
+    expect(secondSurface.unconfigure).not.toHaveBeenCalled();
+    expect(() => backend.getSurfaceInfo(first)).toThrow(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
   });
 });

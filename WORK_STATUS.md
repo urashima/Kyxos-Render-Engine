@@ -4,15 +4,15 @@
 | ------------------- | --------------------------------------------------------------------------------- |
 | Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                          |
 | Current Branch      | `agent/phase-01-webgpu-core`                                                      |
-| Current Commit      | `1c27da58333b9065edb093c9e4d5c0800baca98e` (last verified remote checkpoint)      |
+| Current Commit      | `077c43d36159d9ae93e841e2e512f5d2db7643fc` (last verified remote checkpoint)      |
 | Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                    |
-| Current Task        | P1-03 — Canvas surface lifecycle, Resize, DPR, and zero-size suspension           |
-| Last Completed Task | P1-02 — Queue idle contract and identity-safe native resource ownership           |
-| Next Action         | Add surface port, size calculation, configure/unconfigure, and multi-canvas tests |
+| Current Task        | P1-04 — Native Buffer, Texture, Sampler, Shader, Pipeline, and Encoder ownership  |
+| Last Completed Task | P1-03 — Surface lifecycle, aspect-safe Resize/DPR, suspension, multi-canvas tests |
+| Next Action         | Add typed backend resource descriptors and private native creation/destruction    |
 | CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                      |
 | Acceptance Status   | In Development                                                                    |
 | Known Blockers      | No active blockers                                                                |
-| Last Updated        | 2026-07-21 05:58 PDT                                                              |
+| Last Updated        | 2026-07-21 06:07 PDT                                                              |
 
 ## Phase Progress
 

@@ -11,6 +11,8 @@ import type {
   WebGpuDeviceRequest,
   WebGpuPlatformPort,
   WebGpuQueuePort,
+  WebGpuSurfacePort,
+  WebGpuSurfaceRequest,
 } from './platform.js';
 
 type OptionalWebGpuFeature = Exclude<BackendFeature, 'compute'>;
@@ -35,6 +37,61 @@ function readFeatures(features: GPUSupportedFeatures): ReadonlySet<BackendFeatur
     'compute',
     ...OPTIONAL_WEBGPU_FEATURES.filter((feature) => features.has(feature)),
   ]);
+}
+
+function preferredSurfaceFormat(): 'bgra8unorm' | 'rgba8unorm' {
+  const format = navigator.gpu.getPreferredCanvasFormat();
+  if (format !== 'bgra8unorm' && format !== 'rgba8unorm') {
+    throw new Error(`Unsupported preferred WebGPU Canvas format: ${format}.`);
+  }
+  return format;
+}
+
+function requireCanvasContext(value: unknown): GPUCanvasContext {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('configure' in value) ||
+    typeof value.configure !== 'function' ||
+    !('unconfigure' in value) ||
+    typeof value.unconfigure !== 'function'
+  ) {
+    throw new Error('Canvas did not provide a WebGPU context.');
+  }
+  return value as GPUCanvasContext;
+}
+
+class BrowserWebGpuSurface implements WebGpuSurfacePort {
+  readonly #context: GPUCanvasContext;
+  readonly #device: GPUDevice;
+  readonly #request: WebGpuSurfaceRequest;
+  readonly format: 'bgra8unorm' | 'rgba8unorm';
+
+  constructor(device: GPUDevice, request: WebGpuSurfaceRequest) {
+    this.#device = device;
+    this.#request = request;
+    this.#context = requireCanvasContext(request.target.getContext('webgpu'));
+    this.format = preferredSurfaceFormat();
+  }
+
+  configure(size: Parameters<WebGpuSurfacePort['configure']>[0]): void {
+    this.#request.target.width = size.physicalWidth;
+    this.#request.target.height = size.physicalHeight;
+    if (size.suspended) {
+      this.#context.unconfigure();
+      return;
+    }
+    this.#context.configure({
+      alphaMode: this.#request.alphaMode,
+      colorSpace: this.#request.colorSpace,
+      device: this.#device,
+      format: this.format,
+    });
+  }
+
+  unconfigure(): void {
+    this.#context.unconfigure();
+  }
 }
 
 class BrowserWebGpuDevice implements WebGpuDevicePort {
@@ -62,6 +119,10 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
 
   destroy(): void {
     this.#device.destroy();
+  }
+
+  createSurface(request: WebGpuSurfaceRequest): WebGpuSurfacePort {
+    return new BrowserWebGpuSurface(this.#device, request);
   }
 }
 
