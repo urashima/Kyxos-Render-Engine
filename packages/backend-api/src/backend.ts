@@ -39,6 +39,7 @@ export interface GraphicsBackend extends Disposable {
   destroyResource(handle: BackendResourceHandle): boolean;
   getResourceStatistics(): BackendResourceStatistics;
   initialize(): Promise<void>;
+  waitForIdle(): Promise<void>;
   on<EventName extends keyof BackendEvents>(
     eventName: EventName,
     listener: EventListener<BackendEvents[EventName]>,

@@ -129,3 +129,13 @@
 - **Reason:** A real Git tag is a mandatory acceptance gate, while a similarly named branch would be false evidence. The repository's own post-merge workflow can use GitHub's short-lived token without exposing credentials or granting write access to the read-only PR verification job.
 - **Impact:** Only the phase-freeze job has `contents: write`, only on `main`, with no pull-request or user-controlled input. The fixed tag cannot be overwritten or moved. The tag target is verified after merge by reading repository content through that ref.
 - **ADR required:** No; this is release automation for one acceptance checkpoint.
+
+## ED-014 — Scope resource ownership to a backend instance by handle identity
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Each backend owns a private resource registry keyed by the opaque handle object's identity, not only its serializable `kind` and numeric `id`. Native destroy callbacks never cross the backend package. Device loss clears invalid native records without invoking their destroy methods; explicit backend disposal attempts native cleanup, destroys the device, and returns diagnostic counts to baseline. The backend-neutral `waitForIdle()` contract waits for queue completion without exposing the queue.
+- **Candidates:** Globally unique numeric handles; per-backend numeric lookup; object-identity ownership with per-backend monotonic IDs.
+- **Reason:** Separate Canvas/backend instances legitimately allocate equal-looking first handles. Numeric lookup alone lets one backend accidentally destroy another backend's resource. Object identity rejects foreign handles while preserving compact immutable public handles and deterministic stale-handle behavior.
+- **Impact:** Handles are transferable as opaque references within one renderer but are intentionally not reconstructible from JSON. WebGPU and Mock Backend now enforce the same ownership rule; WebGL2 must follow it. Resource statistics retain lifetime totals across device recovery.
+- **ADR required:** No; this strengthens the already accepted opaque-handle and resource-lifetime boundary without changing the public dependency direction.

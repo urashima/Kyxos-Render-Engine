@@ -6,46 +6,22 @@ import type {
   BackendResourceDescriptor,
   BackendResourceHandle,
   BackendResourceKind,
-  BackendResourceKindStatistics,
   BackendResourceStatistics,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
-import {
-  BACKEND_FEATURES,
-  BACKEND_RESOURCE_KINDS,
-  createBackendCapabilityReport,
-} from '@kyxos/render-backend-api';
+import { BACKEND_FEATURES, createBackendCapabilityReport } from '@kyxos/render-backend-api';
 import { KyxosEngineError, TypedEventEmitter, toKyxosEngineError } from '@kyxos/render-core';
 import type { EventListener, Unsubscribe } from '@kyxos/render-core';
 
 import { createBrowserWebGpuPlatform } from './browser-platform.js';
 import type { WebGpuDevicePort, WebGpuPlatformPort, WebGpuPowerPreference } from './platform.js';
+import { WebGpuResourceRegistry } from './resource-registry.js';
 
 export interface WebGpuBackendOptions {
   readonly forceFallbackAdapter?: boolean;
   readonly label?: string;
   readonly powerPreference?: WebGpuPowerPreference;
   readonly requiredFeatures?: readonly BackendFeature[];
-}
-
-function emptyResourceStatistics(): BackendResourceStatistics {
-  const byKind = Object.fromEntries(
-    BACKEND_RESOURCE_KINDS.map((kind) => [
-      kind,
-      Object.freeze({
-        activeCount: 0,
-        activeEstimatedBytes: 0,
-      }) satisfies BackendResourceKindStatistics,
-    ]),
-  ) as Record<BackendResourceKind, BackendResourceKindStatistics>;
-
-  return Object.freeze({
-    activeCount: 0,
-    activeEstimatedBytes: 0,
-    byKind: Object.freeze(byKind),
-    createdTotal: 0,
-    destroyedTotal: 0,
-  });
 }
 
 function validateOptions(options: WebGpuBackendOptions): readonly BackendFeature[] {
@@ -69,6 +45,7 @@ export class WebGpuBackend implements GraphicsBackend {
   readonly #platform: WebGpuPlatformPort;
   readonly #powerPreference: WebGpuPowerPreference | undefined;
   readonly #requiredFeatures: readonly BackendFeature[];
+  readonly #resources = new WebGpuResourceRegistry();
   #attempt = 0;
   #capabilities: BackendCapabilityReport;
   #device: WebGpuDevicePort | undefined;
@@ -134,6 +111,25 @@ export class WebGpuBackend implements GraphicsBackend {
     return this.#events.on(eventName, listener);
   }
 
+  async waitForIdle(): Promise<void> {
+    this.#assertReady('wait for submitted work');
+    const device = this.#device;
+    if (device === undefined) {
+      throw this.#stateError('WebGPU device is unavailable while waiting for submitted work.');
+    }
+    try {
+      await device.queue.onSubmittedWorkDone();
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'DEVICE_LOST',
+        message: 'WebGPU queue work did not complete because the device was lost.',
+        module: 'backend',
+        recoverable: true,
+        suggestedAction: 'Reinitialize the renderer and recreate device-owned resources.',
+      });
+    }
+  }
+
   createResource<Kind extends BackendResourceKind>(
     kind: Kind,
     descriptor: BackendResourceDescriptor = {},
@@ -152,12 +148,11 @@ export class WebGpuBackend implements GraphicsBackend {
   }
 
   destroyResource(handle: BackendResourceHandle): boolean {
-    void handle;
-    return false;
+    return this.#resources.destroy(handle);
   }
 
   getResourceStatistics(): BackendResourceStatistics {
-    return emptyResourceStatistics();
+    return this.#resources.getStatistics();
   }
 
   dispose(): void {
@@ -170,8 +165,25 @@ export class WebGpuBackend implements GraphicsBackend {
     const device = this.#device;
     this.#device = undefined;
     this.#setState('disposed');
-    device?.destroy();
+    const errors: unknown[] = [];
+    try {
+      this.#resources.releaseAll(true);
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      device?.destroy();
+    } catch (error) {
+      errors.push(error);
+    }
+    this.#resources.releaseAll(false);
     this.#events.dispose();
+    if (errors.length === 1) {
+      throw errors[0];
+    }
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'WebGPU backend disposal failed.');
+    }
   }
 
   async #initializeAttempt(
@@ -290,6 +302,7 @@ export class WebGpuBackend implements GraphicsBackend {
       return;
     }
     this.#device = undefined;
+    this.#resources.releaseAll(false);
     this.#setState('lost');
     this.#events.emit('lost', Object.freeze({ ...loss }));
   }

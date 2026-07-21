@@ -16,12 +16,7 @@ import {
   backendResourceHandleKind,
   createBackendCapabilityReport,
 } from '@kyxos/render-backend-api';
-import {
-  HandleAllocator,
-  KyxosEngineError,
-  TypedEventEmitter,
-  handleKey,
-} from '@kyxos/render-core';
+import { HandleAllocator, KyxosEngineError, TypedEventEmitter } from '@kyxos/render-core';
 import type { EventListener, Unsubscribe } from '@kyxos/render-core';
 
 interface MockResourceRecord {
@@ -62,7 +57,7 @@ function validateEstimatedBytes(estimatedBytes: number): void {
 export class MockBackend implements GraphicsBackend {
   readonly #allocators = createAllocators();
   readonly #events = new TypedEventEmitter<BackendEvents>();
-  readonly #resources = new Map<string, MockResourceRecord>();
+  readonly #resources = new Map<BackendResourceHandle, MockResourceRecord>();
   #createdTotal = 0;
   #destroyedTotal = 0;
   #state: BackendLifecycleState = 'new';
@@ -123,6 +118,11 @@ export class MockBackend implements GraphicsBackend {
     return this.#events.on(eventName, listener);
   }
 
+  async waitForIdle(): Promise<void> {
+    this.#assertReady('wait for submitted work');
+    await Promise.resolve();
+  }
+
   createResource<Kind extends BackendResourceKind>(
     kind: Kind,
     descriptor: BackendResourceDescriptor = {},
@@ -141,7 +141,7 @@ export class MockBackend implements GraphicsBackend {
     }
 
     const handle = allocator.create() as BackendResourceHandle<Kind>;
-    this.#resources.set(handleKey(handle), {
+    this.#resources.set(handle, {
       estimatedBytes,
       handle,
       kind,
@@ -152,8 +152,7 @@ export class MockBackend implements GraphicsBackend {
   }
 
   destroyResource(handle: BackendResourceHandle): boolean {
-    const key = handleKey(handle);
-    if (!this.#resources.delete(key)) {
+    if (!this.#resources.delete(handle)) {
       return false;
     }
 

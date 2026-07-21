@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                            |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                         |
-| Current Branch      | `agent/phase-01-webgpu-core`                                                     |
-| Current Commit      | `c91f7760a9b963ce76ba4a4aa24e9dd42dfcc2df` (last verified remote checkpoint)     |
-| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                   |
-| Current Task        | P1-02 — Queue ownership, device lifecycle completion, and recovery tests         |
-| Last Completed Task | P1-01 — WebGPU contracts, platform seam, capability negotiation, lifecycle tests |
-| Next Action         | Add private queue submission and native resource registry with loss cleanup      |
-| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                     |
-| Acceptance Status   | In Development                                                                   |
-| Known Blockers      | No active blockers                                                               |
-| Last Updated        | 2026-07-21 05:51 PDT                                                             |
+| Field               | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Current Phase       | Phase 1 — WebGPU Core and Basic Geometry                                          |
+| Current Branch      | `agent/phase-01-webgpu-core`                                                      |
+| Current Commit      | `1c27da58333b9065edb093c9e4d5c0800baca98e` (last verified remote checkpoint)      |
+| Overall Progress    | 1 / 15 phases accepted; Phase 1 In Development                                    |
+| Current Task        | P1-03 — Canvas surface lifecycle, Resize, DPR, and zero-size suspension           |
+| Last Completed Task | P1-02 — Queue idle contract and identity-safe native resource ownership           |
+| Next Action         | Add surface port, size calculation, configure/unconfigure, and multi-canvas tests |
+| CI Status           | Phase 0 final run 29831061041 PASS; Phase 1 baseline pending                      |
+| Acceptance Status   | In Development                                                                    |
+| Known Blockers      | No active blockers                                                                |
+| Last Updated        | 2026-07-21 05:58 PDT                                                              |
 
 ## Phase Progress
 

@@ -33,6 +33,10 @@ class SdkOnlyBackend implements GraphicsBackend {
     this.#state = 'ready';
   }
 
+  async waitForIdle(): Promise<void> {
+    await Promise.resolve();
+  }
+
   on<EventName extends keyof BackendEvents>(
     eventName: EventName,
     listener: (payload: BackendEvents[EventName]) => void,

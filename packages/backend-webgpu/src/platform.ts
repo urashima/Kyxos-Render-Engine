@@ -12,8 +12,13 @@ export interface WebGpuDeviceRequest {
   readonly requiredFeatures: readonly BackendFeature[];
 }
 
+export interface WebGpuQueuePort {
+  onSubmittedWorkDone(): Promise<void>;
+}
+
 export interface WebGpuDevicePort {
   readonly lost: Promise<BackendLossInfo>;
+  readonly queue: WebGpuQueuePort;
   destroy(): void;
 }
 

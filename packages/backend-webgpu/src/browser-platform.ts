@@ -10,6 +10,7 @@ import type {
   WebGpuDevicePort,
   WebGpuDeviceRequest,
   WebGpuPlatformPort,
+  WebGpuQueuePort,
 } from './platform.js';
 
 type OptionalWebGpuFeature = Exclude<BackendFeature, 'compute'>;
@@ -43,9 +44,13 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
     readonly reason: 'destroyed' | 'unknown';
     readonly recoverable: boolean;
   }>;
+  readonly queue: WebGpuQueuePort;
 
   constructor(device: GPUDevice) {
     this.#device = device;
+    this.queue = Object.freeze({
+      onSubmittedWorkDone: () => device.queue.onSubmittedWorkDone(),
+    });
     this.lost = device.lost.then((info) =>
       Object.freeze({
         message: info.message || 'WebGPU device lost.',

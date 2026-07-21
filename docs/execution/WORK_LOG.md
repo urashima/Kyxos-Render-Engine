@@ -574,3 +574,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P1-01 checkpoint.
 - Add queue submission ownership and a native resource registry whose destroy/loss/dispose paths return debug counts to baseline.
+
+## 2026-07-21 05:58 PDT — P1-02 queue and native resource ownership
+
+### Completed
+
+- Added a private device queue port and a backend-neutral `waitForIdle()` method; callers can wait for submitted GPU work without receiving a native queue.
+- Added `WebGpuResourceRegistry` with per-kind monotonic handles, exact active/created/destroyed counts, byte estimates, kind validation, native destroy callbacks, and aggregate cleanup errors.
+- Changed registry lookup to opaque handle object identity so equal-looking handles from two backend instances cannot cross ownership boundaries.
+- Applied the same foreign-handle protection to `MockBackend`, keeping deterministic tests aligned with real backend behavior.
+- Device loss now clears all device-invalidated records without calling native destroy methods. Explicit disposal attempts resource cleanup, destroys the device, clears any failed records against the destroyed device, and leaves debug counts at baseline.
+
+### Validation
+
+- Added 6 resource-registry tests plus a Mock Backend cross-owner regression; full suite is 11 files / 43 tests PASS.
+- Verified exact per-kind memory/count accounting, idempotent native destruction, stale/wrong-kind rejection, failed-destroy retention, loss cleanup, and cross-backend isolation.
+- WebGPU queue idle delegation is exercised through the device lifecycle test.
+- Format, zero-warning lint, strict typecheck, all package builds, dependency graph, and deliberate boundary-negative fixture: PASS.
+
+### Next
+
+- Commit and remotely verify the P1-02 checkpoint.
+- Implement Canvas context ownership, physical-size calculation, DPR changes, hidden/zero-size suspension, reconfiguration, and multiple independent surfaces.

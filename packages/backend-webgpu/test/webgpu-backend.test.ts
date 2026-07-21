@@ -38,6 +38,9 @@ class FakeDevice implements WebGpuDevicePort {
   readonly #loss = new Deferred<BackendLossInfo>();
   readonly destroy = vi.fn();
   readonly lost = this.#loss.promise;
+  readonly queue = Object.freeze({
+    onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
+  });
 
   lose(loss: BackendLossInfo): void {
     this.#loss.resolve(loss);
@@ -132,6 +135,9 @@ describe('WebGpuBackend device lifecycle', () => {
       limits: TEST_LIMITS,
     });
     expect(Object.isFrozen(backend.capabilities)).toBe(true);
+
+    await backend.waitForIdle();
+    expect(device.queue.onSubmittedWorkDone).toHaveBeenCalledTimes(1);
   });
 
   it('rejects unsupported required features before requesting a device', async () => {
