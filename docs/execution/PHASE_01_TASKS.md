@@ -2,17 +2,17 @@
 
 Phase 1 starts from accepted tag `phase-00-accepted` and branch base `6522a6d7ff35ebef39c2efd7627a3f23a7b1da2c`.
 
-| ID    | Task                                                                                          | Depends on  | Verification                                                                                 | Status         |
-| ----- | --------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------- | -------------- |
-| P1-01 | Define WebGPU initialization contracts, injectable native seam, feature/limit negotiation     | Phase 0     | Strict types; unavailable/adapter/device/loss unit coverage; no native objects cross Backend | Completed      |
-| P1-02 | Implement adapter, device, queue, loss lifecycle, recovery policy, and stable errors          | P1-01       | Lifecycle/state/event tests; repeated initialize; deterministic disposal                     | Completed      |
-| P1-03 | Implement Canvas surface ownership, configure/unconfigure, Resize, DPR, and zero-size suspend | P1-02       | Resize/DPR/hidden/restore/multiple-surface tests                                             | Completed      |
-| P1-04 | Implement Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder ownership           | P1-02       | Create/destroy/native-destroy/resource-count tests; loss returns resource baseline           | Completed      |
-| P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | Completed      |
-| P1-06 | Connect Renderer and public SDK Canvas options without exposing `GPUDevice`                   | P1-03,P1-05 | SDK-only consumer; create/dispose/recreate; clear fallback errors                            | Completed      |
-| P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | Completed      |
-| P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Completed      |
-| P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | In Development |
+| ID    | Task                                                                                          | Depends on  | Verification                                                                                 | Status    |
+| ----- | --------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------- | --------- |
+| P1-01 | Define WebGPU initialization contracts, injectable native seam, feature/limit negotiation     | Phase 0     | Strict types; unavailable/adapter/device/loss unit coverage; no native objects cross Backend | Completed |
+| P1-02 | Implement adapter, device, queue, loss lifecycle, recovery policy, and stable errors          | P1-01       | Lifecycle/state/event tests; repeated initialize; deterministic disposal                     | Completed |
+| P1-03 | Implement Canvas surface ownership, configure/unconfigure, Resize, DPR, and zero-size suspend | P1-02       | Resize/DPR/hidden/restore/multiple-surface tests                                             | Completed |
+| P1-04 | Implement Buffer, Texture, Sampler, Shader, Pipeline, and Command Encoder ownership           | P1-02       | Create/destroy/native-destroy/resource-count tests; loss returns resource baseline           | Completed |
+| P1-05 | Implement clear, triangle, and generated sphere draw paths with validated WGSL                | P1-03,P1-04 | Compiler-backed Shader gate; command-order tests; WebGPU smoke                               | Completed |
+| P1-06 | Connect Renderer and public SDK Canvas options without exposing `GPUDevice`                   | P1-03,P1-05 | SDK-only consumer; create/dispose/recreate; clear fallback errors                            | Completed |
+| P1-07 | Add independent `/acceptance/phase-01` Playground controls and diagnostics                    | P1-06       | Clear/triangle/sphere, Resize/DPR, hidden/restore, canvas switch, loss/dispose browser flows | Completed |
+| P1-08 | Add visual, performance, resource, and WebGPU integration evidence                            | P1-07       | Reference/Current/Difference; frame/resource metrics; comparison to Phase 0                  | Completed |
+| P1-09 | Complete full CI, technical QA, autonomous owner review, PR, merge, and accepted tag          | P1-08       | All Phase 1 gates green; `phase-01-accepted` resolves to accepted merge                      | Completed |
 
 ### P1-05 checkpoints
 
