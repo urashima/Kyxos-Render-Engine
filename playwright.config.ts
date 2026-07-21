@@ -13,6 +13,13 @@ const webGpuLaunchArguments = [
   '--use-vulkan=swiftshader',
   '--use-webgpu-adapter=swiftshader',
 ];
+const chromiumUse = {
+  ...devices['Desktop Chrome'],
+  launchOptions: {
+    args: webGpuLaunchArguments,
+    ...(chromiumExecutablePath === undefined ? {} : { executablePath: chromiumExecutablePath }),
+  },
+};
 
 export default defineConfig({
   expect: {
@@ -23,20 +30,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: webGpuLaunchArguments,
-          ...(chromiumExecutablePath === undefined
-            ? {}
-            : { executablePath: chromiumExecutablePath }),
-        },
-      },
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-00/{arg}{ext}',
+      testMatch: /phase-00\.spec\.ts/,
+      use: chromiumUse,
+    },
+    {
+      name: 'chromium-webgpu',
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-01/{arg}{ext}',
+      testMatch: /phase-01\.spec\.ts/,
+      use: chromiumUse,
     },
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env['CI'] === undefined ? 0 : 1,
-  snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-00/{arg}{ext}',
   testDir: './tests/e2e',
   timeout: 30_000,
   use: {

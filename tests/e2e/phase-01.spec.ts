@@ -74,6 +74,9 @@ test.describe('Phase 1 WebGPU Playground', () => {
       writeFile(path.join(visualDirectory, 'sphere.png'), sphere),
       writeFile(path.join(visualDirectory, 'triangle.png'), triangle),
     ]);
+    expect(triangle).toMatchSnapshot('triangle.png', { maxDiffPixels: 0, threshold: 0.2 });
+    expect(sphere).toMatchSnapshot('sphere.png', { maxDiffPixels: 0, threshold: 0.2 });
+    expect(current).toMatchSnapshot('reference.png', { maxDiffPixels: 0, threshold: 0.2 });
 
     const staticToSleep = await page.evaluate(async () => {
       const wakeButton = document.querySelector<HTMLButtonElement>('[data-action="wake"]');
