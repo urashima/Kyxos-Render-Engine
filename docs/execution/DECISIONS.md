@@ -19,3 +19,13 @@
 - **Reason:** Current typescript-eslint declares TypeScript support below 6.1.0. The selected versions are mutually compatible and older than the active supply-chain minimum-release-age window.
 - **Impact:** Reproducible CI and strict typing without unsupported parser behavior. No WebGPU or WebGL2 runtime impact.
 - **ADR required:** No; upgrades remain routine dependency maintenance while strictness rules stay stable.
+
+## ED-003 — Establish explicit Phase 0 package layers before runtime implementation
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Start with seven independently buildable packages: core, backend-api, backend-webgpu, frame-scheduler, renderer, sdk, and testing. Every package exposes only its root entry point.
+- **Candidates:** One renderer package split later; the complete long-term package tree immediately; a minimal dependency-directed Phase 0 graph.
+- **Reason:** The selected graph proves ownership and dependency direction without creating dozens of empty packages or a monolith that would be costly to split.
+- **Impact:** Core has no engine dependency; backend-api depends only on core; renderer sees the backend contract but no concrete GPU API; sdk stays above renderer; testing cannot enter production packages. WebGPU and future WebGL2 remain replaceable implementations.
+- **ADR required:** Yes; ADR-004 will freeze the public SDK boundary and the architecture overview will record all allowed edges.

@@ -14,6 +14,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b --pretty false",
+    "build": "tsc -b --pretty false",
+    "build:packages": "pnpm --recursive --filter './packages/*' build",
     "clean": "tsc -b --clean"
   },
   "devDependencies": {

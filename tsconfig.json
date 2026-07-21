@@ -1,5 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "files": ["types/workspace.d.ts"],
-  "references": []
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/backend-api" },
+    { "path": "packages/backend-webgpu" },
+    { "path": "packages/frame-scheduler" },
+    { "path": "packages/renderer" },
+    { "path": "packages/sdk" },
+    { "path": "packages/testing" }
+  ]
 }

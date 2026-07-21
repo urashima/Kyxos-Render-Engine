@@ -1,0 +1,28 @@
+{
+  "name": "@kyxos/render-renderer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend-neutral renderer orchestration and feature registration.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@kyxos/render-core": "workspace:*",
+    "@kyxos/render-backend-api": "workspace:*",
+    "@kyxos/render-frame-scheduler": "workspace:*"
+  }
+}

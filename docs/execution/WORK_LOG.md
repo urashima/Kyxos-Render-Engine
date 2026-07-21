@@ -55,3 +55,30 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the toolchain checkpoint.
 - Scaffold the package manifests, TypeScript references, and public-only export map.
+
+## 2026-07-21 02:28 PDT — P0-03 package boundary checkpoint
+
+### Completed
+
+- Added independently buildable packages for core, backend-api, backend-webgpu, frame-scheduler, renderer, sdk, and testing.
+- Added exact workspace dependencies and TypeScript project references matching the required one-way architecture.
+- Restricted every package export map to the public root entry point; private source subpaths are not exported.
+- Added root package-build orchestration and a complete TypeScript solution graph.
+
+### Validation
+
+- `pnpm install`: PASS across eight workspace projects.
+- `pnpm format:check`: PASS.
+- `pnpm lint`: PASS with zero warnings.
+- `pnpm typecheck`: PASS.
+- `pnpm build:packages`: PASS for all seven packages, including isolated package build scripts.
+- Export-map audit: PASS; every package exposes only `.`.
+
+### Performance
+
+- No runtime code or GPU work was added; performance baseline is unchanged.
+
+### Next
+
+- Commit and remotely verify the package graph.
+- Implement core ownership, lifecycle, typed event, stable error, and handle primitives with regression tests.

@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 0 — Repository and Architecture Baseline                                          |
-| Current Branch      | `agent/phase-00-foundation`                                                             |
-| Current Commit      | `8f3f6bead4348430c232822d7331df881f6f2420` (last verified remote checkpoint)            |
-| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                          |
-| Current Task        | P0-03 — Create package manifests, public exports, and the dependency reference graph    |
-| Last Completed Task | P0-02 — pnpm workspace and strict toolchain validated locally                           |
-| Next Action         | Commit the toolchain checkpoint, then scaffold independently buildable Phase 0 packages |
-| CI Status           | Not configured; local install, format, lint, and typecheck pass                         |
-| Acceptance Status   | In Development                                                                          |
-| Known Blockers      | No active blockers                                                                      |
-| Last Updated        | 2026-07-21 02:25 PDT                                                                    |
+| Field               | Value                                                                             |
+| ------------------- | --------------------------------------------------------------------------------- |
+| Current Phase       | Phase 0 — Repository and Architecture Baseline                                    |
+| Current Branch      | `agent/phase-00-foundation`                                                       |
+| Current Commit      | `26d04b2250556374ff437be8f7485fd799bbd357` (last verified remote checkpoint)      |
+| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                    |
+| Current Task        | P0-04 — Implement core lifecycle, events, errors, handles, and disposal contracts |
+| Last Completed Task | P0-03 — Seven package boundaries and independent builds validated locally         |
+| Next Action         | Commit the package graph, then implement and unit-test the core contracts         |
+| CI Status           | Not configured; local install, format, lint, and typecheck pass                   |
+| Acceptance Status   | In Development                                                                    |
+| Known Blockers      | No active blockers                                                                |
+| Last Updated        | 2026-07-21 02:28 PDT                                                              |
 
 ## Phase Progress
 

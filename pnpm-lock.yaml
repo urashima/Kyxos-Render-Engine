@@ -30,6 +30,62 @@ importers:
         specifier: 8.64.0
         version: 8.64.0(eslint@10.7.0)(typescript@6.0.3)
 
+  packages/backend-api:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/backend-webgpu:
+    dependencies:
+      '@kyxos/render-backend-api':
+        specifier: workspace:*
+        version: link:../backend-api
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/core: {}
+
+  packages/frame-scheduler:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/renderer:
+    dependencies:
+      '@kyxos/render-backend-api':
+        specifier: workspace:*
+        version: link:../backend-api
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-frame-scheduler':
+        specifier: workspace:*
+        version: link:../frame-scheduler
+
+  packages/sdk:
+    dependencies:
+      '@kyxos/render-backend-api':
+        specifier: workspace:*
+        version: link:../backend-api
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-renderer':
+        specifier: workspace:*
+        version: link:../renderer
+
+  packages/testing:
+    dependencies:
+      '@kyxos/render-backend-api':
+        specifier: workspace:*
+        version: link:../backend-api
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@eslint-community/eslint-utils@4.9.1':
