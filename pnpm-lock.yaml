@@ -99,6 +99,15 @@ importers:
         specifier: workspace:*
         version: link:../testing
 
+  packages/scene:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-math':
+        specifier: workspace:*
+        version: link:../math
+
   packages/sdk:
     dependencies:
       '@kyxos/render-backend-api':

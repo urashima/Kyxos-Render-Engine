@@ -239,3 +239,13 @@
 - **Reason:** Caller mutation after validation would invalidate bounds and culling, while GPU ownership in Geometry would create a concrete-backend dependency. Frozen CPU values provide deterministic Custom Mesh behavior and allow Scene/Visibility to operate without Renderer or GPU access.
 - **Impact:** Construction intentionally copies and validates data; primitive meshes are small and deterministic. Later dynamic geometry will require an explicit versioned update API rather than mutating this value. Both WebGPU and WebGL2 can upload the same data and choose native index representations behind their backend boundaries.
 - **ADR required:** No; this adds a downward Geometry-to-Math edge under existing architecture rules and does not alter the public SDK boundary.
+
+## ED-025 — Scope Entity identity and transform caches to one Scene
+
+- **Status:** Accepted
+- **Date:** 2026-07-21
+- **Decision:** Allocate non-reused opaque Entity Handles per Scene and resolve them by object identity. Store local TRS and cached local/world matrices in Scene records, propagate world dirtiness iteratively through descendants, and recompute parent-before-child on demand without recursive call stacks.
+- **Candidates:** Globally mutable Entity registry; recursive Node objects with public parent mutation; Scene-owned records with opaque identity and controlled hierarchy methods.
+- **Reason:** A global registry would couple engine instances and tests, while public mutable nodes could create cycles and bypass dirty propagation. Scene ownership rejects foreign/stale handles, centralizes cycle checks, and gives visibility, bounds, scheduling, and diagnostics one reliable revision source.
+- **Impact:** Reparenting preserves local TRS and intentionally changes world placement; a future preserve-world option requires an explicit matrix-decomposition contract. Transform reads are cached, unchanged trees cause no recomputation, and deep trees avoid stack overflow. The design is backend-neutral and adds no GPU ownership.
+- **ADR required:** No; this implements the lightweight Entity + Component Handle direction already accepted in the development plan without changing a public product boundary.

@@ -5,6 +5,7 @@
     { "path": "packages/core" },
     { "path": "packages/math" },
     { "path": "packages/geometry" },
+    { "path": "packages/scene" },
     { "path": "packages/backend-api" },
     { "path": "packages/backend-webgpu" },
     { "path": "packages/frame-scheduler" },
