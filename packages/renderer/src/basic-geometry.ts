@@ -20,6 +20,11 @@ export interface SphereGeometryOptions {
   readonly radius?: number;
 }
 
+export interface BasicGeometryViewport {
+  readonly height: number;
+  readonly width: number;
+}
+
 function requireSegmentCount(name: string, value: number, minimum: number): void {
   if (!Number.isSafeInteger(value) || value < minimum) {
     throw new KyxosEngineError(
@@ -46,6 +51,36 @@ export function createTriangleGeometry(): BasicGeometryData {
     vertexCount: 3,
     vertices,
   });
+}
+
+export function projectBasicGeometryVertices(
+  geometry: BasicGeometryData,
+  viewport: BasicGeometryViewport,
+): Float32Array {
+  if (
+    !Number.isSafeInteger(viewport.width) ||
+    viewport.width < 1 ||
+    !Number.isSafeInteger(viewport.height) ||
+    viewport.height < 1
+  ) {
+    throw new KyxosEngineError(
+      'Basic geometry viewport width and height must be positive safe integers.',
+      {
+        code: 'INVALID_ARGUMENT',
+        module: 'renderer',
+        recoverable: false,
+      },
+    );
+  }
+
+  const scaleX = Math.min(1, viewport.height / viewport.width);
+  const scaleY = Math.min(1, viewport.width / viewport.height);
+  const projected = geometry.vertices.slice();
+  for (let offset = 0; offset < projected.length; offset += BASIC_GEOMETRY_VERTEX_FLOATS) {
+    projected[offset] = (projected[offset] ?? 0) * scaleX;
+    projected[offset + 1] = (projected[offset + 1] ?? 0) * scaleY;
+  }
+  return projected;
 }
 
 export function createSphereGeometry(options: SphereGeometryOptions = {}): BasicGeometryData {

@@ -6,6 +6,7 @@ export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometr
 export type {
   BasicGeometryData,
   BasicGeometryPrimitive,
+  BasicGeometryViewport,
   SphereGeometryOptions,
 } from './basic-geometry.js';
 export {
@@ -13,6 +14,7 @@ export {
   BASIC_GEOMETRY_VERTEX_STRIDE,
   createSphereGeometry,
   createTriangleGeometry,
+  projectBasicGeometryVertices,
 } from './basic-geometry.js';
 export type {
   AssetDecoder,

@@ -17,6 +17,7 @@ import {
   BASIC_GEOMETRY_VERTEX_STRIDE,
   createSphereGeometry,
   createTriangleGeometry,
+  projectBasicGeometryVertices,
 } from './basic-geometry.js';
 import type {
   BasicGeometryData,
@@ -85,6 +86,7 @@ export class BasicGeometryFeature implements RenderFeature {
   #clearColor: BackendClearColor;
   #disposed = false;
   #primitive: BasicGeometryPrimitive;
+  #projectionScale: readonly [number, number] | undefined;
   #resources: BasicGeometryResources | undefined;
 
   constructor(options: BasicGeometryFeatureOptions) {
@@ -201,8 +203,13 @@ export class BasicGeometryFeature implements RenderFeature {
         usage: ['copy-dst', 'index'],
       });
       created.push(indexBuffer);
-      backend.writeBuffer(triangleVertexBuffer, this.#triangle.vertices);
-      backend.writeBuffer(sphereVertexBuffer, this.#sphere.vertices);
+      this.#writeProjectedGeometry(
+        backend,
+        triangleVertexBuffer,
+        sphereVertexBuffer,
+        surfaceInfo,
+        true,
+      );
       backend.writeBuffer(indexBuffer, this.#sphere.indices);
 
       this.#backend = backend;
@@ -294,12 +301,21 @@ export class BasicGeometryFeature implements RenderFeature {
         recoverable: false,
       });
     }
-    return backend.resizeSurface(resources.surface, resize);
+    const surfaceInfo = backend.resizeSurface(resources.surface, resize);
+    this.#writeProjectedGeometry(
+      backend,
+      resources.triangleVertexBuffer,
+      resources.sphereVertexBuffer,
+      surfaceInfo,
+      false,
+    );
+    return surfaceInfo;
   }
 
   onBackendLost(): void {
     this.#resources = undefined;
     this.#backend = undefined;
+    this.#projectionScale = undefined;
   }
 
   dispose(): void {
@@ -309,6 +325,7 @@ export class BasicGeometryFeature implements RenderFeature {
     const resources = this.#resources;
     this.#backend = undefined;
     this.#resources = undefined;
+    this.#projectionScale = undefined;
     if (backend === undefined || resources === undefined) return;
     const errors = this.#destroyHandles(backend, [
       resources.indexBuffer,
@@ -355,5 +372,43 @@ export class BasicGeometryFeature implements RenderFeature {
       });
     }
     return this.#resources;
+  }
+
+  #writeProjectedGeometry(
+    backend: GraphicsBackend,
+    triangleVertexBuffer: BackendBufferHandle,
+    sphereVertexBuffer: BackendBufferHandle,
+    surfaceInfo: BackendSurfaceInfo,
+    force: boolean,
+  ): void {
+    const { physicalHeight, physicalWidth, suspended } = surfaceInfo.size;
+    if (suspended) return;
+    const scale = Object.freeze([
+      Math.min(1, physicalHeight / physicalWidth),
+      Math.min(1, physicalWidth / physicalHeight),
+    ] as const);
+    if (
+      !force &&
+      this.#projectionScale?.[0] === scale[0] &&
+      this.#projectionScale[1] === scale[1]
+    ) {
+      return;
+    }
+
+    backend.writeBuffer(
+      triangleVertexBuffer,
+      projectBasicGeometryVertices(this.#triangle, {
+        height: physicalHeight,
+        width: physicalWidth,
+      }),
+    );
+    backend.writeBuffer(
+      sphereVertexBuffer,
+      projectBasicGeometryVertices(this.#sphere, {
+        height: physicalHeight,
+        width: physicalWidth,
+      }),
+    );
+    this.#projectionScale = scale;
   }
 }
