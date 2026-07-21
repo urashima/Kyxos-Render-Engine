@@ -76,6 +76,37 @@ test.describe('Phase 0 independent Playground', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
+  test('survives refresh and reports resize and DPR changes', async ({ browser }) => {
+    const context = await browser.newContext({
+      colorScheme: 'dark',
+      deviceScaleFactor: 2,
+      viewport: { height: 600, width: 800 },
+    });
+    const page = await context.newPage();
+    const runtimeErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') runtimeErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
+
+    try {
+      await page.goto('/acceptance/phase-00');
+      await expect(page.getByTestId('renderer-state')).toHaveText('ready');
+      await expect(page.getByTestId('viewport')).toHaveText('800 × 600');
+      await expect(page.getByTestId('dpr')).toHaveText('2.00');
+
+      await page.reload();
+      await expect(page.getByTestId('renderer-state')).toHaveText('ready');
+      await expect(page.getByTestId('dpr')).toHaveText('2.00');
+
+      await page.setViewportSize({ height: 768, width: 1024 });
+      await expect(page.getByTestId('viewport')).toHaveText('1024 × 768');
+      expect(runtimeErrors).toEqual([]);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('matches the deterministic Phase 0 visual baseline', async ({ page }) => {
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto('/acceptance/phase-00');

@@ -1,6 +1,6 @@
 # Phase 0 Task Graph — Repository and Architecture Baseline
 
-Phase status: **Technical QA Passed**  
+Phase status: **Owner Acceptance Passed**  
 Branch: `agent/phase-00-foundation`
 
 Each task must be validated and committed before its dependants begin.

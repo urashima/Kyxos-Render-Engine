@@ -6,10 +6,12 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const requiredTextFiles = [
   'docs/acceptance/phase-00/PHASE_00_ACCEPTANCE.md',
+  'docs/acceptance/phase-00/OWNER_ACCEPTANCE.md',
   'docs/acceptance/phase-00/TECHNICAL_QA.md',
   'test-results/phase-00/automated-summary.json',
   'test-results/phase-00/bundle-metrics.json',
   'test-results/phase-00/dependency-graph.json',
+  'test-results/phase-00/owner-acceptance.json',
   'test-results/phase-00/technical-qa.json',
   'benchmarks/phase-00/static-to-sleep.json',
   'benchmarks/phase-00/summary.json',
@@ -54,7 +56,7 @@ if (summary?.phase !== '00' || summary?.localStatus !== 'PASS') {
 }
 if (
   summary?.remoteCiStatus !== 'PASS' ||
-  summary?.remoteCi?.runId !== 29829543107 ||
+  summary?.remoteCi?.runId !== 29829946332 ||
   summary?.remoteCi?.conclusion !== 'success'
 ) {
   failures.push('automated summary: inspected Phase 0 pull-request CI must pass');
@@ -83,6 +85,22 @@ if (
   technicalQa?.blockers?.length !== 0
 ) {
   failures.push('technical QA evidence: reviewed source, CI, or blocker state is invalid');
+}
+
+const ownerAcceptance = await readJson('test-results/phase-00/owner-acceptance.json');
+if (
+  ownerAcceptance?.status !== 'PASS' ||
+  ownerAcceptance?.acceptanceState !== 'Owner Acceptance Passed' ||
+  ownerAcceptance?.reviewedCheckpoint !== '565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7' ||
+  ownerAcceptance?.ci?.runId !== 29829946332 ||
+  ownerAcceptance?.ci?.conclusion !== 'success' ||
+  ownerAcceptance?.evidence?.localBrowserTests !== 5 ||
+  ownerAcceptance?.evidence?.canonicalVisualDiffPixels !== 0 ||
+  Object.values(ownerAcceptance?.phaseOperations ?? {}).some((status) => status !== 'PASS') ||
+  Object.values(ownerAcceptance?.generalChecklist ?? {}).some((status) => status !== 'PASS') ||
+  ownerAcceptance?.blockers?.length !== 0
+) {
+  failures.push('owner acceptance evidence: checklist, reviewed CI, or blocker state is invalid');
 }
 
 const bundle = await readJson('test-results/phase-00/bundle-metrics.json');
@@ -198,8 +216,11 @@ try {
   ]) {
     if (!acceptance.includes(heading)) failures.push(`acceptance document: missing ${heading}`);
   }
-  if (!acceptance.includes('GitHub Actions run `29829543107` passed')) {
+  if (!acceptance.includes('GitHub Actions run `29829946332` passed')) {
     failures.push('acceptance document: successful inspected CI run is not declared');
+  }
+  if (!acceptance.includes('Owner Acceptance Passed — Autonomous Evidence Review')) {
+    failures.push('acceptance document: autonomous owner evidence review is not declared');
   }
 } catch (error) {
   failures.push(`acceptance document: ${String(error)}`);

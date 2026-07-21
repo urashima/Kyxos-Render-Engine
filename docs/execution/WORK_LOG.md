@@ -458,3 +458,34 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Execute the P0-12 autonomous Owner Checklist against the complete evidence package.
 - Mark PR #1 ready only after owner evidence is versioned, require its final CI, then merge and create `phase-00-accepted`.
+
+## 2026-07-21 05:26 PDT — P0-12 owner evidence review passed
+
+### Reviewed checkpoint
+
+- GitHub Actions run `29829946332`, job `88631999549`, passed for technical-QA commit `565ef4f5ed38e3e9bcf61670c2d93b363a0dcfc7`.
+- Browser diagnostics artifact `8494859109` has digest `sha256:b99d0b08114708fb391dba2d7c54a0b1c8190ed6e0ae1098c38b0938bebaa712`.
+- PR #1 remains mergeable and has 0 review threads, 0 submitted reviews, and 0 comments requiring action.
+
+### Owner operations
+
+- Open Playground: PASS.
+- Confirm no Texture Lab dependency: PASS.
+- Inspect all CI checks: PASS.
+- Inspect dependency graph: PASS.
+- Build without `integration-texture-lab`: PASS — the package is absent and all standalone builds pass.
+- Consume only `@kyxos/render-sdk` from a blank boundary: PASS.
+- General page, controls, refresh, Resize/DPR, console, visual, performance, degradation, and independence checklist: PASS.
+
+### Acceptance strengthening
+
+- Added a fifth Playwright test for a fresh DPR 2 context, 800 × 600 initial diagnostics, reload survival, live resize to 1024 × 768, renderer readiness, and empty console/page-error collectors.
+- The focused refresh/Resize/DPR test passes locally.
+- Added `OWNER_ACCEPTANCE.md` and machine-readable `owner-acceptance.json` with every objective checklist item and evidence link.
+- Extended the acceptance schema to fail unless all Phase 0 and general owner items are `PASS`, the reviewed CI is successful, local browser count is 5, canonical visual difference is 0, and blockers are empty.
+- Owner Acceptance Passed — Autonomous Evidence Review. No subjective claim of GPU visual quality is made for the Phase 0 Mock Backend.
+
+### Next
+
+- Commit the owner evidence, update PR #1, and mark it ready for review.
+- Require the owner-evidence head to pass all five browser tests in clean CI before merge and accepted-tag freeze.
