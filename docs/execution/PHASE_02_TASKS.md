@@ -4,8 +4,8 @@ Phase 2 starts from accepted tag `phase-01-accepted` and branch base `1244a06f9c
 
 | ID    | Task                                                                              | Depends on              | Verification                                                                      | Status         |
 | ----- | --------------------------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- | -------------- |
-| P2-01 | Implement math primitives, TRS matrices, AABB, spheres, and frusta                | Phase 1, ADR-002        | Reference-vector tests; finite guards; transform/projection/frustum invariants    | In Development |
-| P2-02 | Implement immutable Mesh data, validation, bounds, and Plane/Cube/Sphere builders | P2-01                   | Geometry counts, winding, normals, bounds, 16/32-bit indices, invalid-input tests | Planned        |
+| P2-01 | Implement math primitives, TRS matrices, AABB, spheres, and frusta                | Phase 1, ADR-002        | Reference-vector tests; finite guards; transform/projection/frustum invariants    | Completed      |
+| P2-02 | Implement immutable Mesh data, validation, bounds, and Plane/Cube/Sphere builders | P2-01                   | Geometry counts, winding, normals, bounds, 16/32-bit indices, invalid-input tests | In Development |
 | P2-03 | Implement Entity Scene Graph, local/world Transform, hierarchy, and dirty flow    | P2-01                   | Parent/reparent/remove tests; deep dirty propagation; cycle and nonfinite guards  | Planned        |
 | P2-04 | Implement perspective Camera, Orbit Controller, and automatic framing             | P2-01,P2-03             | Projection/look tests; DOM-free orbit tests; fitted bounds coverage               | Planned        |
 | P2-05 | Implement layer/frustum visibility and opaque/transparent Render Queues           | P2-01,P2-02,P2-03       | Offscreen exclusion; stable opaque keys; predictable transparency ordering        | Planned        |

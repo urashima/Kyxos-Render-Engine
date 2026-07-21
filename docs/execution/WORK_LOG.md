@@ -867,3 +867,25 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement the dependency-free Math package with ADR-002 conventions and reference-vector tests.
 - Use its accepted transform, bounds, and frustum contracts as the only foundation for Geometry, Scene, Camera, and Visibility.
+
+## 2026-07-21 08:22 PDT — P2-01 Math contract complete
+
+### Completed
+
+- Added dependency-free `@kyxos/render-math` with immutable Vec3, normalized Quaternion, column-major Mat4, AABB, Bounding Sphere, Plane, and Frustum values.
+- Implemented ADR-002 right-handed positive rotation, Y-up camera basis, `parentWorld × local`, local `T × R × S`, negative-Z camera view, and canonical zero-to-one projection depth.
+- Added finite and degeneracy guards for NaN/Infinity, zero-length vectors and quaternions, invalid camera bases, invalid projection ranges, reversed/empty bounds, negative radii, and zero-normal planes.
+- Registered the package as a dependency-free architecture layer, updated the executable boundary graph, and recorded ED-023.
+
+### Validation
+
+- Math reference suite: 3 files / 19 tests PASS.
+- Full unit suite: 18 files / 81 tests PASS.
+- Format, zero-warning lint, strict package/test/app typecheck, all package/app builds, boundaries plus negative fixture, architecture, Phase 0/1 evidence schemas, Shader validation, and bundle budgets: PASS.
+- Complete Playground output remains 136,457 raw / 74,945 gzip bytes; the dependency-free Math package is not pulled into accepted Phase 0/1 routes.
+- No active blockers.
+
+### Next
+
+- Implement validated indexed Mesh data with deterministic Plane, Cube, and UV Sphere builders plus caller-owned Custom Mesh construction.
+- Derive all Mesh bounds through `@kyxos/render-math` and cover winding, normal direction, index width, and malformed data.
