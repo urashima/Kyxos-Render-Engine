@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                                  |
-| Current Branch      | `agent/phase-02-scene-camera`                                                           |
-| Current Commit      | `552474486100cb1fb683d86fbafa4b900b48dcb8` (evidence-pack checkpoint)                   |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 Owner Acceptance Passed, deployment pending             |
-| Current Task        | P2-09 — Evidence-pack CI, PR merge, Pages deployment, online verification, accepted tag |
-| Last Completed Task | P2-08 — Canonical visual, performance, lifecycle, technical, and owner evidence         |
-| Next Action         | Push final provenance, pass the immutable PR head, then merge and deploy public Pages   |
-| CI Status           | Evidence-pack Run 29855226827 PASS; fail-closed Phase 2 schema and 10/10 browser tests  |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 Owner Passed — Deployment Pending                             |
-| Known Blockers      | No active blockers                                                                      |
-| Last Updated        | 2026-07-21 11:02 PDT                                                                    |
+| Field               | Value                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                                       |
+| Current Branch      | `agent/phase-02-pages-enablement`                                                            |
+| Current Commit      | `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721` (merged Phase 2 release candidate)                |
+| Overall Progress    | 2 / 15 phases accepted; Phase 2 is blocked only at the mandatory public deployment gate      |
+| Current Task        | P2-10 — Enable GitHub Pages, deploy accepted snapshots, verify online, and freeze the tag    |
+| Last Completed Task | PR #3 merged at `a77ee9d`; immutable PR-head Run 29855919463 passed                          |
+| Next Action         | Enable Settings → Pages → Build and deployment → GitHub Actions, then resume this branch/PR  |
+| CI Status           | PR-head Run 29855919463 PASS; merged code, 136 unit tests, and 10/10 browser tests are green |
+| Acceptance Status   | Phase 1 Accepted; Phase 2 Owner Passed — Deployment Blocked                                  |
+| Known Blockers      | P2-B01 — GitHub Pages is not enabled/configured for GitHub Actions                           |
+| Last Updated        | 2026-07-21 11:26 PDT                                                                         |
 
 ## Phase Progress
 
@@ -20,7 +20,7 @@
 | ----: | -------------- | ------------------------------------ | --- | ---- | -------------- | ------------------- |
 |    00 | Phase Accepted | `agent/phase-00-foundation`          | #1  | PASS | Phase Accepted | `phase-00-accepted` |
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
-|    02 | In Development | `agent/phase-02-scene-camera`        | #3  | PASS | Deploy Pending | —                   |
+|    02 | Blocked        | `agent/phase-02-pages-enablement`    | #3  | PASS | Deploy Blocked | —                   |
 |    03 | Planned        | `agent/phase-03-pbr-ibl`             | —   | —    | Planned        | —                   |
 |    04 | Planned        | `agent/phase-04-temporal`            | —   | —    | Planned        | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —    | Planned        | —                   |
