@@ -1,0 +1,43 @@
+{
+  "name": "kyxos-render-engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Independent, modular WebGPU-first real-time rendering engine for Kyxos products.",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=24.13.0",
+    "pnpm": ">=11.7.0"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -b --pretty false && pnpm typecheck:tests && pnpm typecheck:apps",
+    "typecheck:apps": "pnpm --recursive --filter './apps/*' typecheck",
+    "typecheck:tests": "tsc --noEmit --pretty false -p tsconfig.test.json",
+    "test:unit": "pnpm build:packages && vitest run --config vitest.config.ts",
+    "test:e2e": "playwright test",
+    "build": "pnpm build:packages && pnpm build:apps",
+    "build:apps": "pnpm --recursive --filter './apps/*' build",
+    "build:packages": "pnpm --recursive --filter './packages/*' build",
+    "check:acceptance:phase-00": "node tools/quality/check-phase-00-acceptance.mjs",
+    "check:architecture": "node tools/quality/check-architecture-docs.mjs",
+    "check:boundaries": "node tools/quality/check-boundaries.mjs && node tools/quality/check-boundaries.mjs --verify-fixture",
+    "check:bundle": "node tools/quality/check-bundle-budget.mjs",
+    "validate:shaders": "node tools/shader-build/validate-shaders.mjs",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm check:boundaries && pnpm check:architecture && pnpm check:acceptance:phase-00 && pnpm validate:shaders && pnpm build && pnpm check:bundle && pnpm test:e2e",
+    "clean": "tsc -b --clean"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.13.3",
+    "eslint": "10.7.0",
+    "globals": "17.7.0",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10"
+  }
+}

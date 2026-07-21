@@ -1,0 +1,8 @@
+{
+  "budgetMs": 250,
+  "maxMs": 66.2,
+  "medianMs": 16.6,
+  "minMs": 10.5,
+  "p95Ms": 66.2,
+  "sampleCount": 10
+}

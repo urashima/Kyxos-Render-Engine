@@ -1,0 +1,10 @@
+DEVELOPMENT_PLAN.md
+PHASE_ACCEPTANCE_PLAN.md
+node_modules
+dist
+coverage
+playwright-report
+test-results
+visual-baselines
+pnpm-lock.yaml
+

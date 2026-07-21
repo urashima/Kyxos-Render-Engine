@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "phase": "00",
+  "route": "/acceptance/phase-00",
+  "capture": {
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
+    "fullPage": true,
+    "operatingSystem": "GitHub Actions Ubuntu 24.04.4",
+    "runnerImage": "ubuntu-24.04 20260714.240.1",
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    }
+  },
+  "comparison": {
+    "actualDiffPixels": 0,
+    "maximumDiffPixels": 0,
+    "status": "PASS",
+    "threshold": 0.2
+  },
+  "files": {
+    "reference": {
+      "bytes": 462800,
+      "height": 1306,
+      "path": "reference.png",
+      "sha256": "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
+      "width": 1440
+    },
+    "current": {
+      "bytes": 462800,
+      "height": 1306,
+      "path": "current.png",
+      "sha256": "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
+      "width": 1440
+    },
+    "difference": {
+      "bytes": 386,
+      "height": 1306,
+      "path": "difference.png",
+      "sha256": "3846200193cd137d45010ac88e0bd51a6d77ca653b561963510ccd4ebe4437a1",
+      "width": 1440
+    }
+  },
+  "canonicalProvenance": {
+    "workflowRunId": 29828781956,
+    "jobId": 88628203423,
+    "artifactId": 8494401336,
+    "attemptHashes": [
+      "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
+      "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7"
+    ],
+    "attemptsByteIdentical": true
+  },
+  "referenceMigration": {
+    "reason": "The original reference used a network-restricted sandbox Chromium build. The mandatory fixed acceptance environment is the pinned official Playwright browser on GitHub Actions Ubuntu.",
+    "oldProfile": "sandbox-chromium-149",
+    "newProfile": "canonical",
+    "absoluteDifferentPixels": 20028,
+    "playwrightDifferentPixels": 2983,
+    "threshold": 0.2,
+    "oldReference": {
+      "bytes": 465017,
+      "height": 1306,
+      "path": "reference-sandbox-chromium-149.png",
+      "sha256": "bcf3737e7185f49d6925b7a0fc392653cc4152b61e9a1ebe5863176dafeebf41",
+      "width": 1440
+    },
+    "environmentDifference": {
+      "bytes": 173936,
+      "height": 1306,
+      "path": "environment-difference.png",
+      "sha256": "d63c082e75d204eb28bd48b31b029dc94e56d9ee38e52a0b454b64f9b07e8264",
+      "width": 1440
+    },
+    "assessment": "Differences are confined to glyph antialiasing; layout, panels, colors, controls, and vector geometry are unchanged. Both profiles retain a zero-pixel regression limit against their own versioned reference."
+  },
+  "dynamicRegions": [
+    {
+      "selector": ".event-log time",
+      "treatment": "Hidden only during deterministic screenshot capture; event names and runtime state remain visible."
+    }
+  ],
+  "limitations": [
+    "This baseline proves the independent Phase 0 acceptance UI and Mock Backend diagnostics, not GPU-rendered pixels.",
+    "Canonical pixel acceptance requires the official Playwright Chromium on GitHub Actions Ubuntu; the sandbox profile is development evidence only.",
+    "The first accepted canonical baseline has no older canonical reference to compare; future canonical runs compare against reference.png."
+  ]
+}

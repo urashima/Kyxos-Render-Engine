@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "phase": "00",
+  "acceptanceState": "Technical QA Passed",
+  "status": "PASS",
+  "sourceCommit": "95531062fc432b68e36c99f08983088971e9f534",
+  "verifiedAt": "2026-07-21T05:20:32-07:00",
+  "ci": {
+    "runId": 29829543107,
+    "jobId": 88630686057,
+    "conclusion": "success",
+    "artifactId": 8494704218,
+    "artifactDigest": "sha256:38181c314669104493de7ffa38f1f02fb62965e68c9bf2026b092eb93a6e02ec"
+  },
+  "checks": {
+    "cleanInstall": "PASS",
+    "formatLintTypecheck": "PASS",
+    "unitAndIntegration": "PASS",
+    "architectureBoundaries": "PASS",
+    "standaloneSdkAndPlayground": "PASS",
+    "resourceLifecycle": "PASS",
+    "deviceLossRecovery": "PASS",
+    "dirtySchedulingAndSleep": "PASS",
+    "canonicalVisual": "PASS",
+    "responsiveLayout": "PASS",
+    "bundleBudget": "PASS",
+    "dependencyAudit": "PASS",
+    "documentation": "PASS"
+  },
+  "metrics": {
+    "unitTestFiles": 9,
+    "unitTests": 28,
+    "browserTests": 4,
+    "canonicalVisualDiffPixels": 0,
+    "activeResourcesAfterDispose": 0,
+    "activeEstimatedBytesAfterDispose": 0,
+    "staticToSleepP95Ms": 66.2,
+    "staticToSleepBudgetMs": 250,
+    "bundleRawBytes": 77075,
+    "bundleGzipBytes": 57665
+  },
+  "notApplicable": [
+    "WebGPU smoke rendering begins in Phase 1.",
+    "WebGL2 smoke rendering begins in Phase 10.",
+    "Shader compilation begins with the first Shader capability.",
+    "Temporal History begins in Phase 4.",
+    "Asset load timing begins in Phase 6."
+  ],
+  "blockers": [],
+  "nextAction": "Execute the autonomous owner evidence review for P0-12."
+}

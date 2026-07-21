@@ -1,0 +1,23 @@
+{
+  "name": "@kyxos/render-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lifecycle, errors, handles, events, and shared engine contracts.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --pretty false"
+  }
+}

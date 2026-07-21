@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "phase": "00",
+  "sourceCheckpoint": "be995152a985ab2318b5e5e90849de1dba138b68",
+  "generatedAt": "2026-07-21T05:37:00-07:00",
+  "localStatus": "PASS",
+  "remoteCiStatus": "PASS",
+  "remoteCi": {
+    "runId": 29830386590,
+    "jobId": 88633434507,
+    "sourceCommit": "be995152a985ab2318b5e5e90849de1dba138b68",
+    "conclusion": "success"
+  },
+  "gates": [
+    {
+      "id": "format",
+      "status": "PASS",
+      "command": "pnpm format:check"
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "command": "pnpm lint",
+      "warnings": 0
+    },
+    {
+      "id": "typecheck",
+      "status": "PASS",
+      "command": "pnpm typecheck"
+    },
+    {
+      "id": "unit",
+      "status": "PASS",
+      "command": "pnpm test:unit",
+      "testFiles": 9,
+      "tests": 28
+    },
+    {
+      "id": "boundaries",
+      "status": "PASS",
+      "command": "pnpm check:boundaries",
+      "cycles": 0,
+      "violations": 0,
+      "deliberateFixtureRejected": true
+    },
+    {
+      "id": "architecture",
+      "status": "PASS",
+      "command": "pnpm check:architecture",
+      "acceptedAdrs": 5,
+      "architectureDocuments": 2
+    },
+    {
+      "id": "shaders",
+      "status": "NOT_APPLICABLE",
+      "command": "pnpm validate:shaders",
+      "reason": "Phase 0 has no Shader capability or Shader source. The gate fails if sources appear before compiler validation exists."
+    },
+    {
+      "id": "build",
+      "status": "PASS",
+      "command": "pnpm build",
+      "apps": 1,
+      "packages": 7
+    },
+    {
+      "id": "bundle",
+      "status": "PASS",
+      "command": "pnpm check:bundle",
+      "rawBytes": 77075,
+      "gzipBytes": 57665
+    },
+    {
+      "id": "browser",
+      "status": "PASS",
+      "command": "pnpm test:e2e",
+      "browser": "Chrome Headless Shell 149.0.7827.55",
+      "visualProfile": "canonical",
+      "tests": 5,
+      "remoteVerifiedTestsAtCheckpoint": 5
+    },
+    {
+      "id": "visual",
+      "status": "PASS",
+      "profile": "canonical",
+      "actualDiffPixels": 0,
+      "maximumDiffPixels": 0,
+      "canonicalAttemptHash": "f6a82ba78ecba88bff71ad9d103f8942d5fa8a600ea881b6d65244e96084e9d7",
+      "canonicalAttemptsByteIdentical": true
+    },
+    {
+      "id": "performance",
+      "status": "PASS",
+      "staticToSleepBudgetMs": 250,
+      "staticToSleepP95Ms": 66.2
+    }
+  ],
+  "requiredFailures": [],
+  "notes": [
+    "Pull-request GitHub Actions run 29830386590 completed the authoritative pipeline successfully for the owner-evidence checkpoint, including all five browser tests.",
+    "The freeze-automation commit must pass the same authoritative pipeline before merge.",
+    "The local sandbox profile and canonical CI profile each enforce zero differing pixels against their own versioned reference.",
+    "GPU rendering, CPU/GPU frame timers, Shader compilation, and asset loading are not Phase 0 capabilities."
+  ]
+}
