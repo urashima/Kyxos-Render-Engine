@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Current Phase       | Phase 0 — Repository and Architecture Baseline                                      |
-| Current Branch      | `agent/phase-00-foundation`                                                         |
-| Current Commit      | `b87f699569bc6f9fe9d7310cc5264abc5ba5fc07` (last verified remote checkpoint)        |
-| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                      |
-| Current Task        | P0-09 — Add GitHub Actions, ADR-001 through ADR-005, and architecture documentation |
-| Last Completed Task | P0-08 — Full local verify, 28 unit tests, and 2 Chromium acceptance tests pass      |
-| Next Action         | Commit P0-08, add reproducible CI, then freeze the five Phase 0 architecture ADRs   |
-| CI Status           | Not configured; the complete local `pnpm verify` pipeline passes                    |
-| Acceptance Status   | In Development                                                                      |
-| Known Blockers      | No active blockers                                                                  |
-| Last Updated        | 2026-07-21 04:28 PDT                                                                |
+| Field               | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Current Phase       | Phase 0 — Repository and Architecture Baseline                                       |
+| Current Branch      | `agent/phase-00-foundation`                                                          |
+| Current Commit      | `b87f699569bc6f9fe9d7310cc5264abc5ba5fc07` (last verified remote checkpoint)         |
+| Overall Progress    | 0 / 15 phases accepted; Phase 0 in development                                       |
+| Current Task        | P0-09 — Add GitHub Actions, ADR-001 through ADR-005, and architecture documentation  |
+| Last Completed Task | P0-08 — Full local verify, 28 unit tests, and 2 Chromium acceptance tests pass       |
+| Next Action         | Push the verification workflow, inspect its run, then freeze ADR-001 through ADR-005 |
+| CI Status           | Workflow implementation in progress; complete local `pnpm verify` passes             |
+| Acceptance Status   | In Development                                                                       |
+| Known Blockers      | No active blockers                                                                   |
+| Last Updated        | 2026-07-21 04:31 PDT                                                                 |
 
 ## Phase Progress
 

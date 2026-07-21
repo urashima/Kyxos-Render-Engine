@@ -255,3 +255,22 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit and remotely verify the P0-08 checkpoint.
 - Add GitHub Actions and freeze ADR-001 through ADR-005 plus the architecture and dependency rules.
+
+## 2026-07-21 04:31 PDT — P0-09 CI workflow implementation
+
+### Completed
+
+- Added a least-privilege GitHub Actions workflow for pushes to `main`, Phase branches, and pull requests targeting `main`.
+- Pinned the repository's Node.js 24.14.0 and lockfile-controlled pnpm 11.7.0 toolchain.
+- Configured one authoritative CI gate to install Chromium and run the same complete `pnpm verify` pipeline used locally.
+- Added concurrency cancellation and seven-day browser diagnostic artifact upload without weakening a failed gate.
+
+### Validation
+
+- Workflow YAML parses and is formatted by the repository toolchain.
+- Complete local `pnpm verify` remains PASS before the workflow commit.
+
+### Next
+
+- Push the workflow and inspect the resulting GitHub Actions run.
+- Write and validate ADR-001 through ADR-005 plus the architecture and dependency rules.
