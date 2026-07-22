@@ -4,7 +4,10 @@ import {
   TemporalConvergenceTracker,
   TemporalHistory,
   createTemporalHistorySignature,
+  createTemporalJitterSample,
+  createTemporalJitterSequence,
   temporalHistorySignaturesEqual,
+  temporalJitterToNdc,
 } from '../src/index.js';
 import type { TemporalHistorySignatureDescriptor } from '../src/index.js';
 
@@ -133,5 +136,52 @@ describe('temporal convergence contract', () => {
     expect(() => tracker.recordSample(Number.NaN)).toThrowError(
       expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
     );
+  });
+});
+
+describe('temporal Halton jitter contract', () => {
+  it('produces the frozen deterministic base-2/base-3 prefix', () => {
+    const samples = createTemporalJitterSequence(4);
+
+    expect(samples.map(({ unitSample }) => unitSample)).toEqual([
+      [0.5, 1 / 3],
+      [0.25, 2 / 3],
+      [0.75, 1 / 9],
+      [0.125, 4 / 9],
+    ]);
+    expect(samples.map(({ rasterOffsetPixels }) => rasterOffsetPixels)).toEqual([
+      [0, 1 / 3 - 0.5],
+      [-0.25, 2 / 3 - 0.5],
+      [0.25, 1 / 9 - 0.5],
+      [-0.375, 4 / 9 - 0.5],
+    ]);
+    expect(Object.isFrozen(samples)).toBe(true);
+    expect(samples.every(Object.isFrozen)).toBe(true);
+  });
+
+  it('converts right/down raster offsets into right/up canonical NDC', () => {
+    const converted = temporalJitterToNdc(createTemporalJitterSample(2), {
+      height: 500,
+      width: 1000,
+    });
+
+    expect(converted.rasterOffsetPixels).toEqual([-0.25, 2 / 3 - 0.5]);
+    expect(converted.ndcOffset[0]).toBeCloseTo(-0.0005, 15);
+    expect(converted.ndcOffset[1]).toBeCloseTo(-1 / 1500, 15);
+  });
+
+  it('keeps all 256 supported samples inside the half-pixel cell and rejects invalid input', () => {
+    const samples = createTemporalJitterSequence(256);
+    expect(
+      samples.every(({ rasterOffsetPixels: [x, y] }) =>
+        [x, y].every((value) => value >= -0.5 && value < 0.5),
+      ),
+    ).toBe(true);
+    expect(() => createTemporalJitterSample(0)).toThrowError(
+      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
+    );
+    expect(() =>
+      temporalJitterToNdc(createTemporalJitterSample(1), { height: 0, width: 1 }),
+    ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
   });
 });

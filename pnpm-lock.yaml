@@ -78,6 +78,9 @@ importers:
       '@kyxos/render-scene':
         specifier: workspace:*
         version: link:../scene
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
 
   packages/core: {}
 

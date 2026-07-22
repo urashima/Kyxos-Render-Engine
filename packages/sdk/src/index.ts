@@ -65,6 +65,8 @@ export {
 export {
   OrbitController,
   PerspectiveCamera,
+  TemporalCameraMatrixTracker,
+  applyProjectionJitter,
   frameScene,
   type CameraChangeEvent,
   type CameraChangeKind,
@@ -78,6 +80,10 @@ export {
   type OrbitControllerOptions,
   type OrbitState,
   type PerspectiveCameraOptions,
+  type TemporalCameraFrameMatrices,
+  type TemporalCameraFrameOptions,
+  type TemporalCameraMatrixTrackerOptions,
+  type TemporalCameraResetReason,
 } from '@kyxos/render-camera';
 export {
   createCubeGeometry,
@@ -211,11 +217,16 @@ export {
   TEMPORAL_HISTORY_INVALIDATION_REASONS,
   TEMPORAL_HISTORY_KINDS,
   TEMPORAL_HISTORY_SIGNATURE_FIELDS,
+  TEMPORAL_JITTER_SEQUENCE,
   TEMPORAL_PACKAGE_NAME,
   TEMPORAL_SAMPLE_LIMIT,
   TemporalConvergenceTracker,
   TemporalHistory,
+  createTemporalJitterSample,
+  createTemporalJitterSequence,
   createTemporalHistorySignature,
+  radicalInverse,
+  temporalJitterToNdc,
   temporalHistorySignaturesEqual,
   type TemporalConvergenceOptions,
   type TemporalConvergenceReason,
@@ -227,6 +238,10 @@ export {
   type TemporalHistorySignatureDescriptor,
   type TemporalHistorySignatureField,
   type TemporalHistorySnapshot,
+  type TemporalJitterNdc,
+  type TemporalJitterSample,
+  type TemporalVec2,
+  type TemporalViewportSize,
 } from '@kyxos/render-temporal';
 export type {
   AssetDecoder,

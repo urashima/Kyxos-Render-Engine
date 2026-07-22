@@ -18,6 +18,17 @@ export {
   type TemporalHistorySnapshot,
 } from './history.js';
 export {
+  TEMPORAL_JITTER_SEQUENCE,
+  createTemporalJitterSample,
+  createTemporalJitterSequence,
+  radicalInverse,
+  temporalJitterToNdc,
+  type TemporalJitterNdc,
+  type TemporalJitterSample,
+  type TemporalVec2,
+  type TemporalViewportSize,
+} from './jitter.js';
+export {
   TEMPORAL_HISTORY_SIGNATURE_FIELDS,
   createTemporalHistorySignature,
   temporalHistorySignaturesEqual,

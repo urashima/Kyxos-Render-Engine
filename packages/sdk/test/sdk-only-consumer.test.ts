@@ -8,10 +8,13 @@ import {
   PbrMaterial,
   PbrTextureLibrary,
   PbrTextureSource,
+  PerspectiveCamera,
+  TemporalCameraMatrixTracker,
   TemporalFrameScheduler,
   TemporalHistory,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
+  createTemporalJitterSample,
   evaluateDeterministicIblReference,
   evaluatePbrOutputTransform,
   evaluateSplitSumIbl,
@@ -274,6 +277,24 @@ describe('SDK-only consumer', () => {
 
     scheduler.dispose();
     history.dispose();
+  });
+
+  it('constructs jittered Previous/Current Camera matrices from the public SDK', () => {
+    const camera = new PerspectiveCamera();
+    const matrices = new TemporalCameraMatrixTracker({ camera });
+    const frame = matrices.update({
+      historyGeneration: 1,
+      jitter: createTemporalJitterSample(1),
+      viewport: { height: 720, width: 1280 },
+    });
+
+    expect(frame).toMatchObject({
+      historyReset: true,
+      historyResetReason: 'first-frame',
+      jitter: { sampleIndex: 1 },
+    });
+    matrices.dispose();
+    camera.dispose();
   });
 
   it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {

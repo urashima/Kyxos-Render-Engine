@@ -17,9 +17,20 @@ This checkpoint includes:
 - explicit interaction, animation, upload, and Shader-compilation activity blockers;
 - coalesced Dirty Flags, per-batch history generations, and Renderer frame metadata.
 
-It deliberately excludes Jitter, motion vectors, reprojection, History Textures, neighborhood
+P4-01 deliberately excluded Jitter, motion vectors, reprojection, History Textures, neighborhood
 clamping, disocclusion rejection, accumulation Shaders, and Phase 4 visual acceptance. Those depend
-on this state contract and are subsequent checkpoints.
+on its state contract and are subsequent checkpoints.
+
+P4-02 adds only the deterministic sampling and Camera matrix layer above this contract. It selects a
+one-based Halton base-2/base-3 sequence for the supported 1–256 samples, converts top-left Raster
+offsets into canonical +Y-up NDC, and applies the offset to a copied Projection Matrix. The Camera's
+canonical Projection and Frustum remain unjittered.
+
+`TemporalCameraMatrixTracker` retains Current/Previous jittered View-Projection matrices for future
+reprojection. First use, History Generation change, Projection change, Viewport change, and explicit
+reset fail closed by setting Previous equal to Current. Camera pose motion within one Generation
+retains the true prior matrix and Jitter so a later Dynamic TAA pass can reproject it. The tracker
+owns neither its caller-provided Camera nor a GPU resource.
 
 ## Scheduling invariants
 

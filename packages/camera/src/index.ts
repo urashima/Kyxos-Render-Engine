@@ -16,3 +16,11 @@ export {
   type CameraPoseOptions,
   type PerspectiveCameraOptions,
 } from './perspective-camera.js';
+export {
+  TemporalCameraMatrixTracker,
+  applyProjectionJitter,
+  type TemporalCameraFrameMatrices,
+  type TemporalCameraFrameOptions,
+  type TemporalCameraMatrixTrackerOptions,
+  type TemporalCameraResetReason,
+} from './temporal-camera.js';
