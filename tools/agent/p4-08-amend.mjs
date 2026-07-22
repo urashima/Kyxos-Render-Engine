@@ -20,7 +20,7 @@ source = replaceOnce(
 source = replaceOnce(
   source,
   '            depthAttachment: { texture: resources.depthTexture },',
-  '            depthAttachment: { texture: surfaceDepthTexture },',
+  '            depthAttachment: { texture: surfaceDepthTexture as BackendTextureHandle },',
   'narrowed Surface Depth attachment',
 );
 await writeFile(path, source);
