@@ -91,10 +91,13 @@ coordinate.
 - An SDK-only consumer reaches the oracle exclusively through `@kyxos/render-sdk`.
 - The Shader validator requires an exact source/runtime mirror.
 - Chromium/WebGPU compiles and executes the 64-sample compute Shader, reads back 16 float32 values,
-  and compares physical irradiance, `E/pi`, prefiltered RGB/weight, and LUT scale/bias/input against
-  the CPU oracle with an absolute tolerance of `0.0005`.
+  and compares physical irradiance, `E/pi`, prefiltered RGB, and LUT scale/bias/input against the CPU
+  oracle with an absolute tolerance of `0.0005`. The unnormalized diagnostic prefilter-weight sum
+  uses `0.001`; it accumulates 64 float32 terms and is not a shading output. The normalized
+  prefiltered RGB remains under the stricter `0.0005` gate.
 - CI retains `test-results/phase-03/runtime/ibl-reference.json`, including compiler messages, every
-  CPU/GPU value, every absolute difference, and the maximum difference.
+  CPU/GPU value, every absolute difference, each field's tolerance, and the maximum tolerance
+  ratio.
 
 ## Deferred work
 

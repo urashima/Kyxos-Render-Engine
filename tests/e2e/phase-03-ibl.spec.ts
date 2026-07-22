@@ -10,7 +10,8 @@ import {
 } from '../../packages/material-pbr/src/ibl-reference.js';
 import { PHASE_03_IBL_REFERENCE_WGSL } from '../../packages/material-pbr/src/generated/phase-03-ibl-reference.wgsl.js';
 
-const absoluteTolerance = 0.0005;
+const referenceOutputAbsoluteTolerance = 0.0005;
+const accumulatedWeightAbsoluteTolerance = 0.001;
 const outputLabels = [
   'diffuse irradiance red',
   'diffuse irradiance green',
@@ -29,6 +30,11 @@ const outputLabels = [
   'BRDF LUT N dot V',
   'BRDF LUT roughness',
 ] as const;
+const absoluteTolerances = outputLabels.map((label) =>
+  label === 'specular sample weight'
+    ? accumulatedWeightAbsoluteTolerance
+    : referenceOutputAbsoluteTolerance,
+);
 
 test.describe('Phase 3 deterministic IBL reference', () => {
   test('matches diffuse, GGX prefilter, and BRDF LUT CPU results through WebGPU readback', async ({
@@ -118,7 +124,7 @@ test.describe('Phase 3 deterministic IBL reference', () => {
       expect(
         difference,
         `${outputLabels[index]}: CPU ${expected[index]}, GPU ${gpuResult.values[index]}`,
-      ).toBeLessThanOrEqual(absoluteTolerance);
+      ).toBeLessThanOrEqual(absoluteTolerances[index] as number);
     });
 
     const runtimeDirectory = path.resolve('test-results/phase-03/runtime');
@@ -143,7 +149,14 @@ test.describe('Phase 3 deterministic IBL reference', () => {
           gpu: gpuResult.values,
           absoluteDifferences,
           maximumAbsoluteDifference: Math.max(...absoluteDifferences),
-          absoluteTolerance,
+          referenceOutputAbsoluteTolerance,
+          accumulatedWeightAbsoluteTolerance,
+          absoluteTolerances,
+          maximumToleranceRatio: Math.max(
+            ...absoluteDifferences.map(
+              (difference, index) => difference / (absoluteTolerances[index] as number),
+            ),
+          ),
           compilationMessages: gpuResult.compilationMessages,
           status: 'PASS',
         },
