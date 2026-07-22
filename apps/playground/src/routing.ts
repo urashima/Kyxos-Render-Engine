@@ -1,16 +1,9 @@
-const supportedPhases = [0, 1, 2] as const;
-
-export type PlaygroundPhase = (typeof supportedPhases)[number];
+export type PlaygroundPhase = 0 | 1 | 2 | 3;
 
 function parseSupportedPhase(value: string | undefined): PlaygroundPhase | undefined {
-  if (value === undefined || !/^\d{1,2}$/.test(value)) return undefined;
-  const phase = Number(value);
-  return supportedPhases.find((candidate) => candidate === phase);
-}
-
-function normalizedPath(pathname: string): string {
-  const normalized = pathname.replace(/\/+$/, '');
-  return normalized === '' ? '/' : normalized;
+  return value !== undefined && /^0?[0-3]$/.test(value)
+    ? (Number(value) as PlaygroundPhase)
+    : undefined;
 }
 
 function deployedPhase(): PlaygroundPhase | undefined {
@@ -45,7 +38,7 @@ export function resolveAcceptancePhase(pathname: string): PlaygroundPhase | unde
   const fixedPhase = deployedPhase();
   if (fixedPhase !== undefined) return fixedPhase;
 
-  const path = normalizedPath(pathname);
+  const path = pathname.replace(/\/+$/, '') || '/';
   if (path === '/') return 0;
   if (path.endsWith('/latest')) return latestAcceptedPhase();
 

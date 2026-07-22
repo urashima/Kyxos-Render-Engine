@@ -72,6 +72,10 @@ function requireElement<ElementType extends Element>(
   return element;
 }
 
+function setText(root: ParentNode, testId: string, value: string | number): void {
+  requireElement(root, `[data-testid="${testId}"]`).textContent = String(value);
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
@@ -293,8 +297,11 @@ function applyGeometryFocus(root: ParentNode, runtime: AcceptanceRuntime): void 
   for (const entity of handles.geometry.participants) {
     updateMeshEnabled(renderer, entity, selected === undefined || entity === selected);
   }
-  requireElement(root, '[data-testid="geometry-focus"]').textContent =
-    focus === 'all' ? 'All' : `${focus[0]?.toUpperCase() ?? ''}${focus.slice(1)}`;
+  setText(
+    root,
+    'geometry-focus',
+    focus === 'all' ? 'All' : `${focus[0]?.toUpperCase() ?? ''}${focus.slice(1)}`,
+  );
   appendEvent(root, `geometry.focus · ${focus}`);
 }
 
@@ -394,9 +401,8 @@ function populateScene(renderer: KyxosSceneCanvasRenderer): SceneHandles {
 }
 
 function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
-  requireElement(root, '[data-testid="viewport"]').textContent =
-    `${window.innerWidth} × ${window.innerHeight}`;
-  requireElement(root, '[data-testid="dpr"]').textContent = window.devicePixelRatio.toFixed(2);
+  setText(root, 'viewport', `${window.innerWidth} × ${window.innerHeight}`);
+  setText(root, 'dpr', window.devicePixelRatio.toFixed(2));
   const renderer = runtime.renderer;
   if (renderer === undefined) return;
   const diagnostics = renderer.getDiagnostics();
@@ -406,28 +412,25 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   backendType.textContent = diagnostics.backend.type;
   const timestampQueryAvailable = diagnostics.backend.capabilities.features['timestamp-query'];
   backendType.dataset['timestampQuery'] = String(timestampQueryAvailable);
-  requireElement(root, '[data-testid="renderer-state"]').textContent = diagnostics.state;
-  requireElement(root, '[data-testid="render-mode"]').textContent = diagnostics.renderMode;
-  requireElement(root, '[data-testid="fps"]').textContent =
-    diagnostics.renderMode === 'sleeping' ? '0 · sleeping' : 'active';
+  setText(root, 'renderer-state', diagnostics.state);
+  setText(root, 'render-mode', diagnostics.renderMode);
+  setText(root, 'fps', diagnostics.renderMode === 'sleeping' ? '0 · sleeping' : 'active');
   const cpuFrameTime = requireElement<HTMLElement>(root, '[data-testid="cpu-frame-time"]');
   cpuFrameTime.textContent = `${diagnostics.lastCpuFrameTimeMs.toFixed(2)} ms`;
   cpuFrameTime.dataset['milliseconds'] = String(diagnostics.lastCpuFrameTimeMs);
-  requireElement(root, '[data-testid="gpu-frame-time"]').textContent = timestampQueryAvailable
-    ? 'unavailable · timestamp-query'
-    : 'unavailable';
+  setText(
+    root,
+    'gpu-frame-time',
+    timestampQueryAvailable ? 'unavailable · timestamp-query' : 'unavailable',
+  );
   const frameIndex = requireElement<HTMLElement>(root, '[data-testid="frame-index"]');
   frameIndex.textContent = String(diagnostics.frameIndex);
   frameIndex.dataset['cpuFrameTimeMs'] = String(diagnostics.lastCpuFrameTimeMs);
-  requireElement(root, '[data-testid="draw-calls"]').textContent = String(statistics.drawCalls);
-  requireElement(root, '[data-testid="triangles"]').textContent = String(statistics.triangles);
-  requireElement(root, '[data-testid="vertices"]').textContent = String(statistics.vertices);
-  requireElement(root, '[data-testid="pipeline-count"]').textContent = String(
-    resources.byKind.pipeline.activeCount,
-  );
-  requireElement(root, '[data-testid="resource-count"]').textContent = String(
-    resources.activeCount,
-  );
+  setText(root, 'draw-calls', statistics.drawCalls);
+  setText(root, 'triangles', statistics.triangles);
+  setText(root, 'vertices', statistics.vertices);
+  setText(root, 'pipeline-count', resources.byKind.pipeline.activeCount);
+  setText(root, 'resource-count', resources.activeCount);
   const bufferMemory = requireElement<HTMLElement>(root, '[data-testid="buffer-memory"]');
   bufferMemory.textContent = formatBytes(resources.byKind.buffer.activeEstimatedBytes);
   bufferMemory.dataset['bytes'] = String(resources.byKind.buffer.activeEstimatedBytes);
@@ -444,16 +447,19 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   liveStatus.dataset['state'] = diagnostics.state;
   liveStatus.lastChild?.remove();
   liveStatus.append(document.createTextNode(` ${diagnostics.state.toUpperCase()}`));
-  requireElement(root, '[data-testid="culling-mode"]').textContent =
-    `FRUSTUM ${runtime.frustumCulling ? 'ON' : 'OFF'}`;
+  setText(root, 'culling-mode', `FRUSTUM ${runtime.frustumCulling ? 'ON' : 'OFF'}`);
 
   try {
     const surface = renderer.getSurfaceInfo();
-    requireElement(root, '[data-testid="surface-size"]').textContent = surface.size.suspended
-      ? 'suspended'
-      : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`;
+    setText(
+      root,
+      'surface-size',
+      surface.size.suspended
+        ? 'suspended'
+        : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`,
+    );
   } catch {
-    requireElement(root, '[data-testid="surface-size"]').textContent = 'unavailable';
+    setText(root, 'surface-size', 'unavailable');
   }
   if (diagnostics.state !== 'ready') return;
 
@@ -464,49 +470,34 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
     visibilityOptions(runtime),
   );
   const queueDiagnostics = queues.diagnostics;
-  requireElement(root, '[data-testid="visible-count"]').textContent = String(
-    queueDiagnostics.visibleCount,
+  setText(root, 'visible-count', queueDiagnostics.visibleCount);
+  setText(root, 'opaque-count', queueDiagnostics.opaqueCount);
+  setText(root, 'transparent-count', queueDiagnostics.transparentCount);
+  setText(root, 'disabled-count', queueDiagnostics.disabledCount);
+  setText(root, 'hidden-count', queueDiagnostics.hiddenCount);
+  setText(root, 'layer-culled-count', queueDiagnostics.layerCulledCount);
+  setText(root, 'frustum-culled-count', queueDiagnostics.frustumCulledCount);
+  setText(
+    root,
+    'transparent-order',
+    queues.transparent.map(({ entity }) => renderer.scene.nameOf(entity)).join(' → '),
   );
-  requireElement(root, '[data-testid="opaque-count"]').textContent = String(
-    queueDiagnostics.opaqueCount,
-  );
-  requireElement(root, '[data-testid="transparent-count"]').textContent = String(
-    queueDiagnostics.transparentCount,
-  );
-  requireElement(root, '[data-testid="disabled-count"]').textContent = String(
-    queueDiagnostics.disabledCount,
-  );
-  requireElement(root, '[data-testid="hidden-count"]').textContent = String(
-    queueDiagnostics.hiddenCount,
-  );
-  requireElement(root, '[data-testid="layer-culled-count"]').textContent = String(
-    queueDiagnostics.layerCulledCount,
-  );
-  requireElement(root, '[data-testid="frustum-culled-count"]').textContent = String(
-    queueDiagnostics.frustumCulledCount,
-  );
-  requireElement(root, '[data-testid="transparent-order"]').textContent = queues.transparent
-    .map(({ entity }) => renderer.scene.nameOf(entity))
-    .join(' → ');
-  requireElement(root, '[data-testid="material-count"]').textContent = String(
+  setText(
+    root,
+    'material-count',
     new Set([...queues.opaque, ...queues.transparent].map(({ materialKey }) => materialKey)).size,
   );
   const sceneDiagnostics = renderer.getSceneDiagnostics();
-  requireElement(root, '[data-testid="gpu-mesh-count"]').textContent = String(
-    sceneDiagnostics.feature.gpuMeshCount,
+  setText(root, 'gpu-mesh-count', sceneDiagnostics.feature.gpuMeshCount);
+  setText(root, 'object-binding-count', sceneDiagnostics.feature.objectBindingCount);
+  setText(root, 'camera-aspect', renderer.camera.aspect.toFixed(3));
+  setText(
+    root,
+    'orbit-angle',
+    `${sceneDiagnostics.orbit.yawRadians.toFixed(3)} / ${sceneDiagnostics.orbit.pitchRadians.toFixed(3)}`,
   );
-  requireElement(root, '[data-testid="object-binding-count"]').textContent = String(
-    sceneDiagnostics.feature.objectBindingCount,
-  );
-  requireElement(root, '[data-testid="camera-aspect"]').textContent =
-    renderer.camera.aspect.toFixed(3);
-  requireElement(root, '[data-testid="orbit-angle"]').textContent =
-    `${sceneDiagnostics.orbit.yawRadians.toFixed(3)} / ${sceneDiagnostics.orbit.pitchRadians.toFixed(3)}`;
-  requireElement(root, '[data-testid="orbit-distance"]').textContent =
-    sceneDiagnostics.orbit.distance.toFixed(3);
-  requireElement(root, '[data-testid="entity-count"]').textContent = String(
-    sceneDiagnostics.scene.entityCount,
-  );
+  setText(root, 'orbit-distance', sceneDiagnostics.orbit.distance.toFixed(3));
+  setText(root, 'entity-count', sceneDiagnostics.scene.entityCount);
 }
 
 function bindRendererEvents(

@@ -276,6 +276,8 @@ export type {
   KyxosBackendSelection,
 } from './create-renderer.js';
 export { createKyxosRenderer } from './create-renderer.js';
+export type { CreateKyxosPbrRendererOptions } from './create-pbr-renderer.js';
+export { createKyxosPbrRenderer } from './create-pbr-renderer.js';
 export type { CreateKyxosSceneRendererOptions } from './create-scene-renderer.js';
 export { createKyxosSceneRenderer } from './create-scene-renderer.js';
 export type {
@@ -283,3 +285,8 @@ export type {
   KyxosSceneRendererDiagnostics,
 } from './scene-canvas-renderer.js';
 export { KyxosSceneCanvasRenderer } from './scene-canvas-renderer.js';
+export type {
+  KyxosPbrCanvasRendererOptions,
+  KyxosPbrRendererDiagnostics,
+} from './pbr-canvas-renderer.js';
+export { KyxosPbrCanvasRenderer } from './pbr-canvas-renderer.js';

@@ -12,8 +12,8 @@
     "rawBytes": 65536
   },
   "javascript": {
-    "gzipBytes": 49152,
-    "rawBytes": 163840
+    "gzipBytes": 81920,
+    "rawBytes": 262144
   },
   "phase0InitialJavascript": {
     "gzipBytes": 24576,
@@ -39,8 +39,16 @@
     "gzipBytes": 98304,
     "rawBytes": 196608
   },
+  "phase3RouteJavascript": {
+    "gzipBytes": 61440,
+    "rawBytes": 196608
+  },
+  "phase3RouteTotal": {
+    "gzipBytes": 114688,
+    "rawBytes": 262144
+  },
   "total": {
     "gzipBytes": 131072,
-    "rawBytes": 262144
+    "rawBytes": 327680
   }
 }
