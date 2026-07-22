@@ -105,3 +105,10 @@ export {
   type SceneRenderFeatureDiagnostics,
   type SceneRenderFeatureOptions,
 } from './scene-render-feature.js';
+export {
+  StaticAccumulationGpuHistory,
+  type StaticAccumulationGpuFrame,
+  type StaticAccumulationGpuHistoryDiagnostics,
+  type StaticAccumulationGpuHistoryOptions,
+  type StaticAccumulationGpuHistorySize,
+} from './static-accumulation-gpu-history.js';
