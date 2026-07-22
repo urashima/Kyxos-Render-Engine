@@ -46,6 +46,12 @@ export default defineConfig({
       testMatch: /phase-02\.spec\.ts/,
       use: chromiumUse,
     },
+    {
+      name: 'chromium-pbr',
+      snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-03/{arg}{ext}',
+      testMatch: /phase-03-brdf\.spec\.ts/,
+      use: chromiumUse,
+    },
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env['CI'] === undefined ? 0 : 1,

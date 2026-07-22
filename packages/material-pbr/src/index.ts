@@ -1,4 +1,18 @@
 export {
+  PBR_DIELECTRIC_F0,
+  PBR_MIN_ALPHA,
+  deriveMetallicRoughnessColors,
+  evaluateMetallicRoughnessBrdf,
+  ggxTrowbridgeReitzDistribution,
+  perceptualRoughnessToAlpha,
+  schlickFresnel,
+  smithGgxVisibility,
+  type BrdfRgb,
+  type MetallicRoughnessBrdfInput,
+  type MetallicRoughnessBrdfResult,
+  type MetallicRoughnessColors,
+} from './brdf.js';
+export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
   type PbrAlphaMode,

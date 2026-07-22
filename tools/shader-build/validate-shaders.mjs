@@ -19,6 +19,13 @@ const generatedMirrors = new Map([
       path: 'packages/renderer/src/generated/phase-02-scene.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-03-brdf-reference.wgsl',
+    {
+      exportName: 'PHASE_03_BRDF_REFERENCE_WGSL',
+      path: 'packages/material-pbr/src/generated/phase-03-brdf-reference.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {
@@ -106,7 +113,7 @@ try {
     process.stdout.write(
       `${JSON.stringify(
         {
-          browserCompilerGate: 'tests/webgpu/phase-01',
+          browserCompilerGate: 'tests/e2e/phase-01.spec.ts and phase-03-brdf.spec.ts',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',
