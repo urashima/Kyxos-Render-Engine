@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "phase": "03",
+  "route": "/acceptance/phase-03",
+  "environment": {
+    "backend": "webgpu",
+    "devicePixelRatio": 1,
+    "viewport": { "height": 1100, "width": 1440 },
+    "identity": "fixed-studio",
+    "specularFaceSize": 32,
+    "specularMipLevels": 6,
+    "diffuseFaceSize": 4,
+    "brdfLutSize": 16
+  },
+  "gallery": {
+    "drawCalls": 20,
+    "triangles": 10560,
+    "visibleCount": 20,
+    "materialCount": 20,
+    "metallicSteps": [0, 0.25, 0.5, 0.75, 1],
+    "roughnessSteps": [0.05, 0.25, 0.5, 0.75, 1],
+    "namedMaterials": ["White dielectric", "Gold", "Copper", "Iron"],
+    "contractTests": [
+      "Normal Y direction",
+      "Indirect-only AO",
+      "Emission sRGB",
+      "Base Color sRGB",
+      "Metallic-Roughness linear",
+      "HDRI rotation",
+      "Exposure",
+      "Tone Mapping"
+    ]
+  },
+  "controls": {
+    "metallic": 0.85,
+    "roughness": 0.2,
+    "ao": "off",
+    "exposure": 1,
+    "normalY": "Y-down",
+    "rotationDegrees": 90,
+    "toneMapping": "clamp"
+  },
+  "resources": {
+    "activeCount": 88,
+    "activeEstimatedBytes": 2743112,
+    "gpuMeshCount": 1,
+    "objectBindingCount": 20,
+    "pipelineCount": 12,
+    "materialCount": 20,
+    "cpuTextureCount": 6,
+    "stableAfterControls": true
+  },
+  "performance": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 3.9,
+      "medianMs": 1.9,
+      "minMs": 1.1,
+      "p95Ms": 3.9,
+      "sampleCount": 10
+    },
+    "dirtyToSleepMs": {
+      "budgetMs": 250,
+      "maxMs": 168.1,
+      "medianMs": 101.2,
+      "minMs": 6,
+      "p95Ms": 168.1,
+      "sampleCount": 10
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "status": "NOT_AVAILABLE",
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 3 public diagnostics contract."
+    }
+  },
+  "publicSdkOnly": true,
+  "shaderCompilation": "pass",
+  "status": "PASS"
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "phase": "03",
+  "status": "PASS",
+  "acceptanceState": "Owner Acceptance Passed — Deployment Pending",
+  "reviewedCheckpoint": "7e4abe7a625769cc830ee8db8d419fea8243c3ad",
+  "ci": {
+    "runId": 29917288982,
+    "jobId": 88914018637,
+    "conclusion": "success",
+    "artifactId": 8528484011,
+    "artifactDigest": "sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250"
+  },
+  "finalOwnerEvidenceCi": {
+    "status": "PENDING",
+    "reason": "The evidence-pack commit must pass its complete browser and schema gate."
+  },
+  "reviewMethod": "Mechanical Phase 3 checklist plus direct canonical full-page and Gallery image inspection",
+  "subjectiveReview": {
+    "status": "PASS",
+    "materialWorkflow": "The metallic ramp, white dielectric, gold, copper, and iron exhibit the expected glTF metallic-roughness separation.",
+    "roughness": "The roughness ramp widens and softens the fixed-studio reflection in the correct direction.",
+    "normalAndAo": "Normal-Y changes orientation and AO affects the indirect term without crushing the direct light.",
+    "environmentAndOutput": "Continuous HDR reflections, rotation, Exposure, and PBR Neutral/clipped output remain coherent and free of cube-face blocks.",
+    "colorSpace": "sRGB Base Color and Emission remain distinct from linear Metallic-Roughness and AO inputs.",
+    "defects": []
+  },
+  "phaseOperations": {
+    "adjustMetallicAndRoughness": "PASS",
+    "rotateHdri": "PASS",
+    "switchNormalY": "PASS",
+    "toggleIndirectAo": "PASS",
+    "adjustExposure": "PASS",
+    "toggleToneMapping": "PASS",
+    "compareFixedGltfPbrReference": "PASS",
+    "orbitCamera": "PASS",
+    "simulateDeviceLossAndRecover": "PASS",
+    "disposeAndRecreate": "PASS"
+  },
+  "generalChecklist": {
+    "architectureBoundary": "PASS",
+    "controlsTakeEffect": "PASS",
+    "deviceLostAndDispose": "PASS",
+    "noSustainedErrors": "PASS",
+    "pageOpensNormally": "PASS",
+    "performanceWithinBudget": "PASS",
+    "playgroundIndependent": "PASS",
+    "refreshResizeAndDpr": "PASS",
+    "visualResult": "PASS"
+  },
+  "deploymentGate": {
+    "status": "PENDING",
+    "requiredRoutes": ["/latest/", "/phase-0/", "/phase-1/", "/phase-2/", "/phase-3/"],
+    "requiredWorkflow": "Deploy accepted Playgrounds",
+    "requiredOnlineVerification": "Verify public interactions"
+  },
+  "blockingDefects": [],
+  "remainingGates": [
+    "Evidence-pack head CI",
+    "Final provenance head CI",
+    "Merge to main",
+    "GitHub Pages deployment",
+    "Public online interaction verification",
+    "Immutable phase-03-accepted tag"
+  ]
+}

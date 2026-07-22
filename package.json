@@ -26,12 +26,13 @@
     "check:acceptance:phase-00": "node tools/quality/check-phase-00-acceptance.mjs",
     "check:acceptance:phase-01": "node tools/quality/check-phase-01-acceptance.mjs",
     "check:acceptance:phase-02": "node tools/quality/check-phase-02-acceptance.mjs",
+    "check:acceptance:phase-03": "node tools/quality/check-phase-03-acceptance.mjs",
     "check:architecture": "node tools/quality/check-architecture-docs.mjs",
     "check:boundaries": "node tools/quality/check-boundaries.mjs && node tools/quality/check-boundaries.mjs --verify-fixture",
     "check:bundle": "node tools/quality/check-bundle-budget.mjs",
     "check:pages": "node tools/deployment/check-pages-build.mjs",
     "validate:shaders": "node tools/shader-build/validate-shaders.mjs",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm check:boundaries && pnpm check:architecture && pnpm check:acceptance:phase-00 && pnpm check:acceptance:phase-01 && pnpm check:acceptance:phase-02 && pnpm validate:shaders && pnpm build && pnpm check:bundle && pnpm build:pages:verify && pnpm check:pages && pnpm test:e2e",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm check:boundaries && pnpm check:architecture && pnpm check:acceptance:phase-00 && pnpm check:acceptance:phase-01 && pnpm check:acceptance:phase-02 && pnpm check:acceptance:phase-03 && pnpm validate:shaders && pnpm build && pnpm check:bundle && pnpm build:pages:verify && pnpm check:pages && pnpm test:e2e",
     "clean": "tsc -b --clean"
   },
   "devDependencies": {

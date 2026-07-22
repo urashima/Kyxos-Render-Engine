@@ -1682,3 +1682,65 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement P3-10 public SDK PBR Canvas lifecycle plus the fixed interactive Phase 3 material
   gallery and deterministic visual, performance, and resource-lifecycle gates.
+
+## 2026-07-22 04:58 PDT — P3-10 public PBR gallery lifecycle and frozen visuals passed
+
+### Completed
+
+- Added the public `createKyxosPbrRenderer` factory and `KyxosPbrCanvasRenderer` lifecycle wrapper
+  while keeping the concrete WebGPU implementation private behind the SDK. Scene, Camera, Orbit,
+  Mesh Renderer, Material, Texture, Environment, and PBR Feature containers expose automatic dirty
+  propagation, sleep/wake behavior, diagnostics, recovery, and idempotent disposal.
+- Verified that continuous Camera, Material, Texture, Exposure, HDRI rotation, AO, and Normal-Y
+  changes preserve stable Shader, Pipeline, Mesh, Uniform, Texture, Sampler, and Bind Group
+  ownership. Device Lost reconstructs the complete retained graph, and caller-owned registered
+  Materials remain caller-owned after Renderer disposal.
+- Added the independent `/acceptance/phase-03` Playground route using only the public SDK. Its fixed
+  20-sphere gallery covers Metallic and Roughness ramps, white Dielectric, Gold, Copper, Iron,
+  Normal Y, AO, Emission, sRGB Base Color, linear Metallic-Roughness, HDRI rotation, Exposure, and
+  Tone Mapping controls.
+- Replaced the first face-constant environment draft with a deterministic continuous HDR studio
+  environment: 32-pixel Specular Cubemap faces with six complete mips, 4-pixel Diffuse faces, and a
+  16x16 BRDF LUT. This removed visible cube-face boundaries and retained reproducible reflections.
+- Shared one immutable sphere Mesh across all 20 instances. Added public lifecycle controls,
+  responsive navigation, orbit/dolly/pan interaction, mobile overflow coverage, and independent
+  Phase 3 Bundle accounting without changing the frozen Phase 2 threshold.
+- Froze exact Chromium/SwiftShader baselines for the complete acceptance page and Gallery Canvas.
+  Both use `maxDiffPixels: 0`; the corrected reference source and final verification images are
+  byte-identical.
+
+### Validation
+
+- Initial lifecycle implementation commit `5a1a2e3ef4a4812262e7aa54736763092406c049`, Run
+  `29916418182`: PASS. Its face-constant environment was manually rejected as non-canonical because
+  the reflections exposed cube-face blocks; no weakened visual baseline was retained from it.
+- Corrected reference-source commit `4f0e812cf0382777d407edf27f5eae0e8b095e8e`, Run
+  `29916911020`, job `88912823746`: PASS. Artifact `8528332559`, digest
+  `sha256:a2753bc3dceb2b226c18ef4e87d10adad0b52a5e8d11dce0591d9a543e61a7c9`, is the canonical source
+  for the frozen visuals.
+- Current baseline commit `7e4abe7a625769cc830ee8db8d419fea8243c3ad` has Git Tree
+  `1cff0beb48e56b380b679966d485244dab4d023b`. Run `29917288982`, job `88914018637`: PASS. Artifact
+  `8528484011`, digest
+  `sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250`, proves 45 unit files /
+  201 tests and all 21 Chromium/WebGPU browser cases pass.
+- `visual-baselines/phase-03/reference.png` is 1440x1692, 392,300 bytes, SHA-256
+  `71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151`.
+  `visual-baselines/phase-03/gallery.png` is 1014x651, 142,603 bytes, SHA-256
+  `91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967`. Final Artifact images have
+  the same hashes, so both comparisons have exactly zero differing pixels.
+- The fixed scene renders 20 Draw Calls, 10,560 triangles, 20 Materials, and one GPU Mesh. DPR1
+  estimated active bytes are 2,743,112. Across ten samples CPU frame time is 1.9 ms median and
+  3.9 ms p95/max; Dirty-to-Sleep is 101.2 ms median and 168.1 ms p95/max under the 250 ms budget.
+- The DPR2 lifecycle gate records 88 active Handles and 8,988,312 estimated bytes before loss,
+  after recovery, and after recreation; Device Lost, Dispose, and final cleanup each record zero
+  active Handles and zero estimated bytes.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,474 / 131,072 bytes. Phase 3 has a separate 180,095 / 196,608-byte raw JavaScript route
+  budget. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Assemble P3-11 fail-closed technical and owner evidence, validate the canonical Gallery against
+  the complete Phase 3 rubric, and prepare the public deployment gate without marking Phase 3
+  Accepted.

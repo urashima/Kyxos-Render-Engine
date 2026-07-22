@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "phase": "03",
+  "status": "PASS_WITH_DECLARED_UNAVAILABLE_GPU_TIMING",
+  "previousAcceptedTagComparison": {
+    "tag": "phase-02-accepted",
+    "sourceCiRunId": 29854505862,
+    "cpuFrameTimeP95": {
+      "previousMs": 2.9,
+      "currentMs": 3.9,
+      "deltaMs": 1,
+      "deltaPercent": 34.483,
+      "status": "PASS_WITHIN_PHASE_03_BUDGET",
+      "context": "Phase 3 submits 20 PBR plus IBL draws and remains below one 60 Hz CPU frame budget."
+    },
+    "staticToSleepP95": {
+      "previousMs": 61.1,
+      "currentMs": 168.1,
+      "deltaMs": 107,
+      "deltaPercent": 175.123,
+      "status": "PASS_WITHIN_PHASE_03_BUDGET",
+      "context": "The 20-object PBR gallery remains below the unchanged 250 ms dirty-to-sleep budget."
+    },
+    "routeJavaScript": {
+      "previousRawBytes": 125160,
+      "currentRawBytes": 180095,
+      "rawDeltaPercent": 43.892,
+      "previousGzipBytes": 37668,
+      "currentGzipBytes": 53209,
+      "gzipDeltaPercent": 41.258,
+      "status": "PASS_WITHIN_PHASE_03_BUDGET"
+    },
+    "routeTotal": {
+      "previousRawBytes": 185176,
+      "currentRawBytes": 241887,
+      "rawDeltaPercent": 30.625,
+      "previousGzipBytes": 89642,
+      "currentGzipBytes": 105543,
+      "gzipDeltaPercent": 17.738,
+      "status": "PASS_WITHIN_PHASE_03_BUDGET"
+    }
+  },
+  "environment": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "backend": "webgpu-swiftshader",
+    "viewport": "1440x1100",
+    "devicePixelRatio": 1
+  },
+  "metrics": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 3.9,
+      "medianMs": 1.9,
+      "minMs": 1.1,
+      "p95Ms": 3.9,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "gpuFrameTimeMs": {
+      "capabilityAvailable": true,
+      "status": "NOT_AVAILABLE",
+      "reason": "GPU timestamp instrumentation is not exposed through the Phase 3 public diagnostics contract."
+    },
+    "staticToSleep": {
+      "budgetMs": 250,
+      "maxMs": 168.1,
+      "medianMs": 101.2,
+      "minMs": 6,
+      "p95Ms": 168.1,
+      "sampleCount": 10,
+      "status": "PASS"
+    },
+    "drawCalls": { "status": "PASS", "value": 20 },
+    "triangles": { "status": "PASS", "value": 10560 },
+    "visibleObjects": { "status": "PASS", "value": 20 },
+    "activeResourcesReady": { "status": "PASS", "value": 88 },
+    "activeResourceCountAfterDeviceLoss": { "status": "PASS", "value": 0 },
+    "activeResourceCountAfterDispose": { "status": "PASS", "value": 0 },
+    "phase3RouteRawBytes": { "budget": 262144, "status": "PASS", "value": 241887 },
+    "phase3RouteGzipBytes": { "budget": 114688, "status": "PASS", "value": 105543 },
+    "assetLoadTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The asset loading system begins in Phase 6; Phase 3 uses deterministic generated material and environment data."
+    },
+    "disposeResourceDelta": {
+      "activeEstimatedBytes": 0,
+      "activeResources": 0,
+      "status": "PASS"
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "phase": "03",
+  "route": "/acceptance/phase-03",
+  "capture": {
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
+    "fullPage": true,
+    "operatingSystem": "GitHub Actions Ubuntu 24.04",
+    "viewport": { "height": 1100, "width": 1440 },
+    "webGpuAdapter": "SwiftShader"
+  },
+  "comparison": {
+    "status": "PASS",
+    "threshold": 0.2,
+    "maximumDiffPixels": 0,
+    "fullPageActualDiffPixels": 0,
+    "galleryActualDiffPixels": 0
+  },
+  "files": {
+    "reference": {
+      "path": "reference.png",
+      "bytes": 392300,
+      "height": 1692,
+      "width": 1440,
+      "sha256": "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151"
+    },
+    "current": {
+      "path": "current.png",
+      "bytes": 392300,
+      "height": 1692,
+      "width": 1440,
+      "sha256": "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151"
+    },
+    "difference": {
+      "path": "difference.png",
+      "bytes": 453,
+      "height": 1692,
+      "width": 1440,
+      "sha256": "b827a79649ce47a076446e32c94ae295fdb448337a6a93b6e357dbb566a1ad83"
+    },
+    "galleryReference": {
+      "path": "gallery.png",
+      "bytes": 142603,
+      "height": 651,
+      "width": 1014,
+      "sha256": "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967"
+    },
+    "galleryCurrent": {
+      "path": "gallery-current.png",
+      "bytes": 142603,
+      "height": 651,
+      "width": 1014,
+      "sha256": "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967"
+    },
+    "galleryDifference": {
+      "path": "gallery-difference.png",
+      "bytes": 237,
+      "height": 651,
+      "width": 1014,
+      "sha256": "3d149adc6f818307fe8e1127d5f9d3b1ef4d8061163536aa2459799b94328a83"
+    }
+  },
+  "canonicalProvenance": {
+    "rejectedDraftRunId": 29916418182,
+    "rejectedDraftArtifactId": 8528142187,
+    "rejectedReason": "Face-constant Cubemap lighting exposed block boundaries and was not accepted as the canonical visual.",
+    "sourceRunId": 29916911020,
+    "sourceJobId": 88912823746,
+    "sourceCommit": "4f0e812cf0382777d407edf27f5eae0e8b095e8e",
+    "sourceArtifactId": 8528332559,
+    "sourceArtifactDigest": "sha256:a2753bc3dceb2b226c18ef4e87d10adad0b52a5e8d11dce0591d9a543e61a7c9",
+    "verificationRunId": 29917288982,
+    "verificationJobId": 88914018637,
+    "verificationCommit": "7e4abe7a625769cc830ee8db8d419fea8243c3ad",
+    "verificationArtifactId": 8528484011,
+    "verificationArtifactDigest": "sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250",
+    "attemptsByteIdentical": true,
+    "fullPageAttemptHashes": [
+      "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151",
+      "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151"
+    ],
+    "galleryAttemptHashes": [
+      "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967",
+      "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967"
+    ],
+    "evidencePackCi": { "status": "PENDING" }
+  },
+  "subjectiveReview": {
+    "status": "PASS",
+    "materialWorkflow": "Metallic progression removes dielectric diffuse while increasing colored specular; white dielectric, gold, copper, and iron remain visibly distinct.",
+    "roughnessDirection": "Reflections progress from sharp to broad and diffuse from roughness 0.05 through 1.0.",
+    "specialCases": "Normal-Y, indirect-only AO, Emission, sRGB Base Color, and linear Metallic-Roughness cases are visually distinct.",
+    "environment": "Continuous studio reflections have no cube-face blocks, black frame, clipping, or obvious seams.",
+    "defects": []
+  }
+}
