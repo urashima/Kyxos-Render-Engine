@@ -1528,3 +1528,53 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement P3-07 environment Cubemap/LUT resource identity, cache ownership, mip lifecycle, Device
   Lost recovery, and complete disposal before binding indirect IBL into `PbrRenderFeature`.
+
+## 2026-07-22 03:25 PDT — P3-07 environment GPU resource lifecycle passed
+
+### Completed
+
+- Added independent `@kyxos/render-environment` ownership with immutable `EnvironmentSource`
+  identity, deterministic IEEE-754 binary16 encoding, fixed WebGPU cube-face ordering, a complete
+  GGX Specular Prefilter mip chain, Diffuse Irradiance, linear BRDF LUT data, and a caller-owned
+  `EnvironmentLibrary`.
+- Included Texture dimensions and mip structure alongside id, version, and payload checksum in the
+  cache identity so differently shaped resources cannot alias despite identical flattened values.
+- Extended Backend Texture formats with `rgba16float` and `rg16float`, format-aware mip storage and
+  writes, and backend-neutral `2d`, `2d-array`, and `cube` Texture View descriptors. Native WebGPU
+  Texture Views remain inside the WebGPU port.
+- Added reference-counted `EnvironmentGpuCache` ownership for exactly three Textures and two
+  Samplers per identity. Every Specular mip uploads all six faces; the last Lease destroys all five
+  Handles.
+- Preserved logical Leases across Device Lost while invalidating device Handles, then atomically
+  restored every retained environment after Backend reinitialization. Partial creation and restore
+  failures roll back their complete Handle sets, and disposal is idempotent.
+- Kept Renderer IBL Bind Groups, AO, environment rotation/intensity, HDR panorama decoding,
+  preprocessing, background rendering, exposure, and tone mapping outside this checkpoint.
+- Recorded the clean-room resource contract from the W3C WebGPU specification and Khronos glTF IBL
+  Sampler without changing accepted Phase 0–2 implementations, baselines, or budgets.
+
+### Validation
+
+- Remote implementation commit `91e68991a644b1494c2b40443d8eec6f1f317485` has Git Tree
+  `70444f7e895f8c4c7b15e7f44d89d525f082fc8e`, identical to the locally verified implementation
+  commit. PR-head Run `29911609878`, job `88895618109`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 42 unit files / 191 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, five
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 16
+  Chromium/WebGPU browser cases.
+- Artifact `8526165163`, digest
+  `sha256:4c7262a0f9802887ca83207da3e2c97c05a7dee8c774233eaa74220c27af644f`, contains
+  `test-results/phase-03/runtime/environment-resources.json`. WGSL compilation messages are empty;
+  explicit cube/2d Views sampled the complete HDR resource set and GPU pixel `[64, 112, 84, 255]`
+  exactly matched the expected value.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 16 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-08 Renderer indirect IBL binding with Diffuse Irradiance, prefiltered GGX Specular,
+  the BRDF LUT, indirect-only material AO, and explicit environment rotation/intensity controls.

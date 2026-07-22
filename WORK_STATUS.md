@@ -4,15 +4,15 @@
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                                                              |
 | Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                                                  |
-| Current Commit      | `6286604428cf8536be42fedaace1ab4c2e099e37` (P3-06 deterministic IBL oracle)                                                                               |
-| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-06 complete                                                                                  |
-| Current Task        | P3-07 — Environment GPU resource identity, cache ownership, and lifecycle                                                                                 |
-| Last Completed Task | P3-06 — Deterministic Diffuse Irradiance, GGX Specular Prefilter, and BRDF LUT CPU/WGSL parity                                                            |
-| Next Action         | Implement P3-07 environment Cubemap/LUT resource identity, cache ownership, mip lifecycle, Device Lost recovery, and disposal before Renderer IBL binding |
-| CI Status           | Run 29898755457 PASS; 183 unit tests + 15 browser cases; Artifact 8521074469 retains the 16-float P3-06 CPU/GPU record                                    |
+| Current Commit      | `91e68991a644b1494c2b40443d8eec6f1f317485` (P3-07 environment GPU resource lifecycle)                                                                     |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-07 complete                                                                                  |
+| Current Task        | P3-08 — Renderer indirect IBL, AO, and environment controls                                                                                               |
+| Last Completed Task | P3-07 — Environment Cubemap/LUT identity, cache ownership, mip lifecycle, Device Lost recovery, and disposal                                              |
+| Next Action         | Implement P3-08 Renderer indirect IBL binding with Diffuse Irradiance, prefiltered Specular, BRDF LUT, indirect-only AO, rotation, and intensity controls |
+| CI Status           | Run 29911609878 PASS; 191 unit tests + 16 browser cases; Artifact 8526165163 retains exact P3-07 cube/LUT sampling evidence                               |
 | Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                                                            |
 | Known Blockers      | None                                                                                                                                                      |
-| Last Updated        | 2026-07-22 00:06 PDT                                                                                                                                      |
+| Last Updated        | 2026-07-22 03:25 PDT                                                                                                                                      |
 
 ## Phase Progress
 
