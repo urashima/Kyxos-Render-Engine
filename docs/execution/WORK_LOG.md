@@ -2004,3 +2004,50 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-05 deterministic Camera-motion reprojection from Current Depth through inverse
   Current and Previous jittered View-Projection matrices, including UV/out-of-bounds validity and
   CPU/WGSL float32 parity, without Skinned/Morph Motion Vectors or Renderer resolve integration.
+
+## 2026-07-22 07:53 PDT — P4-05 deterministic Camera-motion reprojection passed
+
+### Completed
+
+- Added a general finite 4×4 inverse to Math with singular rejection and affine/perspective inverse
+  tests, then exposed the inverse Current jittered View-Projection from
+  `TemporalCameraMatrixTracker` without changing its Previous-matrix reset rules.
+- Added the Camera-layer float32 reprojection contract from top-left Current Raster UV and canonical
+  `[0, 1]` Depth through inverse Current and Previous jittered View-Projection matrices.
+- Froze Motion as `Current UV - History UV`, so History sampling uses
+  `History UV = Current UV - Motion UV` and includes both Camera movement and Jitter difference.
+- Added fail-closed background, homogeneous-W, Previous-camera, Previous-depth, and Previous-UV
+  validity reasons with immutable diagnostic results and public SDK exports.
+- Added a byte-exact WGSL mirror plus four deterministic branches: stationary, Camera motion plus
+  Jitter, Previous UV rejection, and background rejection. The compute gate reads 64 float32 values.
+- Recorded the W3C WebGPU/WGSL clean-room coordinate, depth, matrix, storage, and float32 inputs.
+- Preserved the checkpoint boundary: P4-05 creates no Renderer resolve/present Pass, sampled TAA
+  Bind Group, Depth/Normal History Texture, Skinned/Morph Motion Vector, or Phase 4 route.
+
+### Validation
+
+- Initial implementation commit `b6b20c13d4386189792d522be6608a7a8d8eb70f` has Git Tree
+  `a09f23c5dcc54aaaa0187a2946fc2db3e31cc72e`, identical to the complete locally verified Tree.
+- Run `29929857878` proved all prior 23 browser cases but rejected a Shader-creation-time Infinity
+  constant in the finite-value guard. Commit `10f639f5f7ab466b72550801cec887eb24b5c539`
+  replaced only that guard with a runtime float32 exponent-bit test; its Git Tree is
+  `0725be3887748ed4110e719e672fc32e86396450` and no algorithm, vector, or tolerance changed.
+- Final Run `29930318354`, job `88958014722`: PASS. Formatting, zero-warning Lint, strict
+  TypeScript, 51 unit files / 243 tests, package/architecture gates, Phase 0–3 frozen Schemas, nine
+  Shader mirrors, build, Bundle, Pages, and all 24 pinned Chromium/WebGPU cases passed.
+- Artifact `8533845081`, digest
+  `sha256:2851a611573aa76a5524e5143881f51bc3793c233623ce7183fbcf196fa374c0`, contains
+  `test-results/phase-04/runtime/camera-reprojection.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages. All 64 CPU/GPU values are exactly equal,
+  maximum absolute difference and tolerance occupancy are both `0`, and the frozen absolute
+  tolerance remains `0.00001`.
+- The unchanged Bundle thresholds pass with Phase 0 at 36,225 / 65,536, Phase 2 at
+  113,130 / 131,072, Phase 3 at 162,894 / 196,608, and total JavaScript at
+  303,849 / 327,680 raw bytes. Pages still contain only accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-06 validated two-target offscreen MRT and expand Dynamic TAA GPU History to own one
+  Current linear-HDR Color target plus ping-pong resolved Color/Depth/Normal target sets, preserving
+  atomic Resize, Device Lost, and disposal without resolve/present integration.
