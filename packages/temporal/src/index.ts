@@ -37,6 +37,17 @@ export {
   type TemporalHistorySignatureField,
 } from './signature.js';
 export {
+  STATIC_ACCUMULATION_REFERENCE_CASES,
+  STATIC_ACCUMULATION_REFERENCE_OUTPUT_FIELDS,
+  accumulateStaticSample,
+  evaluateDeterministicStaticAccumulationReference,
+  type DeterministicStaticAccumulationReference,
+  type StaticAccumulationInput,
+  type StaticAccumulationReferenceCase,
+  type StaticAccumulationResult,
+  type StaticAccumulationRgba,
+} from './static-accumulation.js';
+export {
   TEMPORAL_TAA_DEFAULT_OPTIONS,
   TEMPORAL_TAA_REFERENCE_CASES,
   TEMPORAL_TAA_REFERENCE_OUTPUT_FIELDS,
