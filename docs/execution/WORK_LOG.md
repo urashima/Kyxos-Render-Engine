@@ -1362,3 +1362,55 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Extend Backend Bind Group resources with sampled Texture and Sampler entries, then bind base-color
   and metallic-roughness maps through `PbrRenderFeature` with their existing sRGB/linear and channel
   semantics.
+
+## 2026-07-21 22:47 PDT — P3-04 sampled factor-map PBR passed
+
+### Completed
+
+- Extended the backend-neutral Bind Group resource contract from Buffer-only entries to a
+  runtime-validated union containing exactly one Buffer, sampled Texture, or Sampler Handle.
+- Added validated `writeTexture` uploads with `copy-dst`, color/single-sample, mip, origin, extent,
+  row-layout, byte-length, subresource-bound, stale-Handle, and foreign-Handle checks. Native
+  `GPUTexture`, `GPUTextureView`, and `GPUSampler` objects remain inside the WebGPU port.
+- Added immutable caller-owned `PbrTextureSource` data and `PbrTextureLibrary` registration, transfer
+  function validation, sampler normalization, change diagnostics, and explicit disposal ownership.
+- Extended `PbrRenderFeature` with a stable five-entry Bind Group, owned white sRGB/linear fallback
+  Textures, Base Color RGBA sampling, linear Metallic-Roughness G/B sampling, UV0 transforms, and a
+  352-byte per-object Uniform layout.
+- Preserved the six P3-03 Pipeline variants. Source replacement rebuilds only the affected GPU
+  Texture, Sampler, and Entity Bind Group while retaining Shader, Pipeline, Mesh Buffer, and Uniform
+  Buffer caches; Device Lost and disposal release every new resource.
+- Kept Normal, Occlusion, and Emissive maps fail-closed. Additional UV sets, mip generation, image
+  decoding, HDRI/IBL, tone mapping, and the Phase 3 gallery remain explicitly unclaimed.
+- Recorded the clean-room contract from Khronos glTF/KHR_texture_transform and W3C WebGPU/WGSL
+  specifications. No external renderer implementation or third-party Shader source was used.
+- Detected a 1,098-byte Phase 2 route Bundle regression during the full gate and removed duplicated
+  runtime error-construction code instead of raising the accepted budget. The final route is
+  129,866 / 131,072 raw bytes.
+
+### Validation
+
+- Remote implementation commit `efcec035b95745d0d1fb3462c259760fff95326e` has Git Tree
+  `3d625e83dd3fa2daaf97d5b79dde003a6d56320c`, identical to the locally verified implementation
+  commit. PR-head Run `29894590807`, job `88841955504`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 38 unit files / 171 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, four
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 13
+  Chromium/WebGPU browser cases.
+- Artifact `8519523154`, digest
+  `sha256:4c6d49b24831234bc6bed5efe0dc16405947899bdedb5c432952f5368a56454b`, contains all three Phase 3
+  runtime records, including `pbr-texture-renderer.json` for P3-04.
+- The P3-04 browser gate selected distinct Texels from a 2×2 sRGB Base Color map and a 2×2 linear
+  Metallic-Roughness map through separate UV offsets. WGSL compilation messages were empty, and the
+  GPU pixel `[175, 99, 84, 64]` exactly matched the CPU color-transfer and BRDF expectation.
+- The complete local non-browser pipeline passed. All 13 local browser cases stopped before test
+  execution only because this workspace lacks the Playwright Chromium executable; the fixed CI
+  environment installed pinned Chromium and ran the unmodified gate successfully.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Add the Mesh Tangent contract and deterministic Tangent generator, then bind tangent-space Normal
+  and Emission maps in `PbrRenderFeature`. Retain material AO for the later IBL indirect-light pass so
+  it cannot incorrectly darken direct lighting.

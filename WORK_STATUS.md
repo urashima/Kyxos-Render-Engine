@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                         |
-| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                             |
-| Current Commit      | `b3e531dd5e9e87ec76c6c661dfd1cd0e68a6d7c5` (P3-03 direct-light Renderer checkpoint)                                  |
-| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-03 complete                                             |
-| Current Task        | P3-04 — Sampled Texture/Sampler Backend bindings and factor-map PBR                                                  |
-| Last Completed Task | P3-03 — Material GPU layout, explicit cache ownership, and direct-light PBR Renderer                                 |
-| Next Action         | Extend Backend Bind Groups with sampled Texture/Sampler entries and bind base-color plus metallic-roughness PBR maps |
-| CI Status           | Run 29890593096 PASS; 168 unit tests + 12 browser cases; Artifact 8518126596 retains exact P3-03 pixel diagnostics   |
-| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                       |
-| Known Blockers      | None                                                                                                                 |
-| Last Updated        | 2026-07-21 21:19 PDT                                                                                                 |
+| Field               | Value                                                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                                  |
+| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                      |
+| Current Commit      | `efcec035b95745d0d1fb3462c259760fff95326e` (P3-04 sampled factor-map checkpoint)                                              |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-04 complete                                                      |
+| Current Task        | P3-05 — Tangent-space Normal and Emission Texture rendering                                                                   |
+| Last Completed Task | P3-04 — Sampled Texture/Sampler Backend contract and Base Color/Metallic-Roughness maps                                       |
+| Next Action         | Add the Mesh Tangent contract/generator and bind tangent-space Normal plus Emission maps; retain AO for the IBL indirect pass |
+| CI Status           | Run 29894590807 PASS; 171 unit tests + 13 browser cases; Artifact 8519523154 retains exact P3-04 factor-map pixel diagnostics |
+| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                                |
+| Known Blockers      | None                                                                                                                          |
+| Last Updated        | 2026-07-21 22:47 PDT                                                                                                          |
 
 ## Phase Progress
 
