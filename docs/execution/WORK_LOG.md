@@ -1825,3 +1825,47 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Merge the green Phase 3 closure record, create `agent/phase-04-temporal` from updated `main`, and
   begin P4-01 with the deterministic Renderer scheduling, Temporal History, and convergence state
   contract before adding TAA or accumulation Shaders.
+
+## 2026-07-22 06:09 PDT — P4-01 temporal scheduling and history state contract passed
+
+### Completed
+
+- Merged Phase 3 closure PR #6 as `a3b3c4f2ca113db78c9ce42f026e7c2fabad16c4`, confirmed
+  `phase-03-accepted` remained immutable at deployed source
+  `6b3331251fd1a20257aeebab26a72c2f26103f0a`, and created `agent/phase-04-temporal` from the new
+  `main`.
+- Added independent `@kyxos/render-temporal` with immutable nine-revision History Signatures,
+  owner-isolated Dynamic/Static records, explicit invalidation causes, fixed Sample Limits, and
+  consecutive Error-Threshold convergence.
+- Added opt-in `TemporalFrameScheduler` implementing Interactive → Stabilizing → Accumulating →
+  Sleeping over the injected Frame Driver. Dirty Events coalesce, one History Generation is issued
+  per reset batch, active interaction/animation/upload/compilation prevents convergence, and
+  Selection-only work may retain converged samples.
+- Added Renderer scheduler injection and immutable per-frame Temporal metadata: Mode, Sample Index,
+  Target Samples, History Generation, and reset state. Render Features and the public SDK receive
+  this contract without native GPU objects.
+- Preserved the Phase 0–3 default `FrameScheduler` as dirty-only. P4-01 creates no Jitter, TAA,
+  reprojection, accumulation Shader, Motion Vector, or GPU History resource and does not claim
+  visual Temporal acceptance.
+- Added architecture and state-contract records and extended the mechanical boundary gate to enforce
+  `Temporal → Core` and `Frame Scheduler → Core + Temporal` without cycles.
+
+### Validation
+
+- Implementation commit `8760566cb92fb935b13ba2a7380b3a4dab29b7f6` has Git Tree
+  `409e2af0419ffe1197082c2088c43e14f64d7f80`, identical to the complete locally verified Tree.
+- Run `29922302477`, job `88930549175`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  47 unit files / 215 tests, package/architecture gates, Phase 0–3 frozen Schemas, seven Shader
+  mirrors, build, Bundle, Pages, and all 21 pinned Chromium/WebGPU cases passed.
+- Artifact `8530517987`, digest
+  `sha256:cae3ef1d0d579175429e2e74de4d8283adac6d951fabe3bb2e3e12c886f084cf`, is bound to the exact
+  implementation Head and retains the complete historical browser diagnostics.
+- The Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,745 / 131,072 bytes. Pages still contain only contiguous accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, public route, deployment, or
+  Accepted Tag yet.
+
+### Next
+
+- Implement P4-02 deterministic Halton Jitter, pixel-to-NDC projection offsets, and explicit
+  Current/Previous Camera matrices without creating GPU History or TAA Shaders.
