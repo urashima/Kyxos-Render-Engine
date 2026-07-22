@@ -905,6 +905,21 @@ footer code {
     display: none;
   }
 
+  .phase-03-shell .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .phase-03-shell .phase-nav {
+    width: 100%;
+  }
+
+  .phase-03-shell .phase-nav a {
+    flex: 1;
+    text-align: center;
+  }
+
   .hero {
     grid-template-columns: 1fr;
     gap: 24px;

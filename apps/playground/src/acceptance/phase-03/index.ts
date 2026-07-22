@@ -7,8 +7,10 @@ import {
   createMaterialTextureBinding,
   createMaterialTextureReference,
   createUvSphereGeometry,
+  integrateGgxBrdfLut,
 } from '@kyxos/render-sdk';
 import type {
+  EnvironmentCubeFace,
   EnvironmentCubeFaceData,
   KyxosPbrCanvasRenderer,
   PbrMaterialDescriptor,
@@ -57,23 +59,63 @@ function requireElement<ElementType extends Element>(
   return element;
 }
 
+function normalizeDirection(x: number, y: number, z: number): readonly number[] {
+  const inverseLength = 1 / Math.hypot(x, y, z);
+  return [x * inverseLength, y * inverseLength, z * inverseLength];
+}
+
+function cubeDirection(face: EnvironmentCubeFace, u: number, v: number): readonly number[] {
+  switch (face) {
+    case 'positive-x':
+      return normalizeDirection(1, -v, -u);
+    case 'negative-x':
+      return normalizeDirection(-1, -v, u);
+    case 'positive-y':
+      return normalizeDirection(u, 1, v);
+    case 'negative-y':
+      return normalizeDirection(u, -1, -v);
+    case 'positive-z':
+      return normalizeDirection(u, -v, 1);
+    case 'negative-z':
+      return normalizeDirection(-u, -v, -1);
+  }
+}
+
+function studioRadiance(direction: readonly number[], blur: number): readonly number[] {
+  const [x = 0, y = 0, z = 0] = direction;
+  const sky = Math.max(0, y) ** 0.65;
+  const ground = Math.max(0, -y);
+  const horizon = Math.exp(-Math.abs(y) * 5);
+  const lobeExponent = 64 * (1 - blur) + 1.5;
+  const sunDirection = normalizeDirection(0.42, 0.78, 0.46);
+  const cyanDirection = normalizeDirection(-0.78, 0.18, 0.6);
+  const warmDirection = normalizeDirection(0.82, 0.08, 0.56);
+  const lobe = (target: readonly number[], exponentScale: number) =>
+    Math.max(0, x * (target[0] ?? 0) + y * (target[1] ?? 0) + z * (target[2] ?? 0)) **
+    (lobeExponent * exponentScale);
+  const sun = lobe(sunDirection, 3) * (10 * (1 - blur) + 0.8);
+  const cyan = lobe(cyanDirection, 0.22) * (1.6 - blur * 0.75);
+  const warm = lobe(warmDirection, 0.3) * (1.3 - blur * 0.65);
+  return [
+    0.035 + sky * 0.08 + ground * 0.035 + horizon * 0.045 + sun + warm,
+    0.045 + sky * 0.16 + ground * 0.025 + horizon * 0.055 + sun * 0.78 + cyan * 0.75,
+    0.065 + sky * 0.36 + ground * 0.02 + horizon * 0.07 + sun * 0.5 + cyan,
+  ];
+}
+
 function cubeFaces(size: number, blur: number): EnvironmentCubeFaceData {
-  const colors = [
-    [2.2, 0.42, 0.12],
-    [0.12, 0.45, 2.1],
-    [1.25, 1.12, 0.84],
-    [0.06, 0.08, 0.12],
-    [0.24, 1.2, 0.8],
-    [1.3, 0.18, 0.68],
-  ] as const;
   return Object.fromEntries(
-    ENVIRONMENT_CUBE_FACES.map((face, faceIndex) => {
-      const source = colors[faceIndex] ?? colors[0];
+    ENVIRONMENT_CUBE_FACES.map((face) => {
       const pixels = new Float32Array(size * size * 3);
-      for (let index = 0; index < size * size; index += 1) {
-        for (let channel = 0; channel < 3; channel += 1) {
-          const value = source[channel] ?? 0;
-          pixels[index * 3 + channel] = value * (1 - blur) + 0.32 * blur;
+      for (let row = 0; row < size; row += 1) {
+        for (let column = 0; column < size; column += 1) {
+          const u = ((column + 0.5) / size) * 2 - 1;
+          const v = ((row + 0.5) / size) * 2 - 1;
+          const radiance = studioRadiance(cubeDirection(face, u, v), blur);
+          const offset = (row * size + column) * 3;
+          pixels[offset] = radiance[0] ?? 0;
+          pixels[offset + 1] = radiance[1] ?? 0;
+          pixels[offset + 2] = radiance[2] ?? 0;
         }
       }
       return [face, pixels];
@@ -81,22 +123,34 @@ function cubeFaces(size: number, blur: number): EnvironmentCubeFaceData {
   ) as unknown as EnvironmentCubeFaceData;
 }
 
+function createBrdfLut(size: number): readonly number[] {
+  const pixels: number[] = [];
+  for (let row = 0; row < size; row += 1) {
+    const roughness = (row + 0.5) / size;
+    for (let column = 0; column < size; column += 1) {
+      const result = integrateGgxBrdfLut((column + 0.5) / size, roughness);
+      pixels.push(Math.min(1, result.scale), Math.min(1, result.bias));
+    }
+  }
+  return pixels;
+}
+
 function createGalleryEnvironment(): EnvironmentSource {
+  const specularSize = 32;
+  const specularMipCount = Math.log2(specularSize) + 1;
   return new EnvironmentSource({
     brdfLut: {
-      height: 2,
-      pixels: [0.92, 0.02, 0.78, 0.06, 0.68, 0.08, 0.54, 0.12],
-      width: 2,
+      height: 16,
+      pixels: createBrdfLut(16),
+      width: 16,
     },
-    diffuseIrradiance: { faces: cubeFaces(1, 0.72), size: 1 },
+    diffuseIrradiance: { faces: cubeFaces(4, 0.88), size: 4 },
     id: 'phase-03-fixed-studio',
     specularPrefilter: {
-      levels: [
-        { faces: cubeFaces(4, 0) },
-        { faces: cubeFaces(2, 0.48) },
-        { faces: cubeFaces(1, 0.82) },
-      ],
-      size: 4,
+      levels: Array.from({ length: specularMipCount }, (_, mipLevel) => ({
+        faces: cubeFaces(specularSize / 2 ** mipLevel, mipLevel / (specularMipCount - 1)),
+      })),
+      size: specularSize,
     },
     version: 'p3-10-v1',
   });
@@ -573,7 +627,7 @@ async function createRenderer(root: ParentNode, runtime: AcceptanceRuntime): Pro
         source: runtime.environment,
       },
       label: 'phase-03-material-gallery',
-      light: { color: [1, 0.94, 0.86], direction: [0.35, -1, -0.4], intensity: 2.4 },
+      light: { color: [1, 0.94, 0.86], direction: [0.35, 0.8, 0.48], intensity: 2.4 },
       orbit: { distance: 10.5, pitchRadians: 0.02, target: [0, 0, 0], yawRadians: 0 },
       output: { exposure: runtime.exposure, toneMapping: runtime.toneMapping },
       powerPreference: 'high-performance',
