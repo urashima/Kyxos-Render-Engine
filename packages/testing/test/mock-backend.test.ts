@@ -151,8 +151,21 @@ describe('MockBackend', () => {
       vertex: { entryPoint: 'main', module: shader },
     });
     const uniform = backend.createBuffer({ size: 64, usage: ['uniform'] });
+    const sampled = backend.createTexture({
+      format: 'rgba8unorm-srgb',
+      size: { height: 1, width: 1 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    backend.writeTexture(sampled, new Uint8Array([255, 255, 255, 255]), {
+      size: { height: 1, width: 1 },
+    });
+    const sampler = backend.createSampler({ magFilter: 'linear' });
     const bindGroup = backend.createBindGroup({
-      entries: [{ binding: 0, resource: { buffer: uniform } }],
+      entries: [
+        { binding: 0, resource: { buffer: uniform } },
+        { binding: 1, resource: { texture: sampled } },
+        { binding: 2, resource: { sampler } },
+      ],
       group: 0,
       pipeline,
     });
@@ -197,6 +210,23 @@ describe('MockBackend', () => {
       }),
     ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
     expect(backend.destroyResource(invalidEncoder)).toBe(true);
+
+    expect(backend.destroyResource(sampled)).toBe(true);
+    const staleEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: staleEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            depthAttachment: { texture: depth },
+            draws: [{ bindGroups: [{ bindGroup, group: 0 }], pipeline, vertexCount: 3 }],
+            surface,
+          },
+        ],
+      }),
+    ).toThrow('stale or incompatible');
+    expect(backend.destroyResource(staleEncoder)).toBe(true);
     backend.dispose();
   });
 

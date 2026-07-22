@@ -1,0 +1,26 @@
+{
+  "name": "@kyxos/render-environment",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Immutable HDR IBL environment identities and caller-owned source registry.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@kyxos/render-core": "workspace:*"
+  }
+}

@@ -1262,3 +1262,528 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Merge the green Phase 2 closure record in PR #4.
 - Create `agent/phase-03-pbr-ibl` from updated `main` and begin the first bounded Phase 3 PBR/IBL
   contract checkpoint without changing the accepted Phase 2 implementation or baselines.
+
+## 2026-07-21 20:50 PDT — P3-01 material contract and P3-02 BRDF parity passed
+
+### Completed
+
+- Resumed from merged Phase 2 commit `0a7fac4e50367610b74b501a3bcedc2b260ed455`, created the
+  Phase 3 workstream on `agent/phase-03-pbr-ibl`, and opened Draft PR #5 without changing accepted
+  Phase 2 sources or baselines.
+- Added independent `@kyxos/render-material-core` and `@kyxos/render-material-pbr` packages with
+  immutable linear/sRGB color contracts, glTF-aligned texture semantics, UV transforms,
+  deterministic feature/binding keys, validated metallic-roughness state, change events, and
+  disposal.
+- Exposed product-facing material state through the public SDK while preserving the dependency rule
+  that material packages depend only on Core and each other, not Renderer, Scene, Backend, DOM, or
+  Texture Lab.
+- Recorded clean-room Khronos glTF and W3C color sources plus explicit deferred scope for GPU
+  bindings, Renderer integration, IBL, and tone mapping.
+- Added the P3-02 CPU reference for GGX/Trowbridge-Reitz distribution, separable Smith visibility,
+  Schlick Fresnel, Lambert diffuse, dielectric F0, metallic energy allocation, roughness direction,
+  reciprocity, and rejected-hemisphere behavior.
+- Added an exact generated mirror of the Phase 3 WGSL reference and a Chromium/WebGPU compute gate
+  that executes the shader, reads back 12 float32 values, and compares them with the CPU result.
+- Extended CI artifact retention to include `test-results/phase-03/runtime/` after detecting that the
+  first successful P3-02 Run executed the test but did not retain its JSON evidence.
+
+### Validation
+
+- P3-01 commit `d229e413f0b031c9ff5fc2d85b8deba981716196`, Run `29888741892`, job
+  `88824744141`: PASS with the complete pre-existing Chromium/WebGPU gate.
+- P3-02 implementation commit `a6b26fee47bd68acddea2909d525c28d4127b13e`, Run `29889124901`:
+  PASS; the new WebGPU compute/readback test passed.
+- Evidence-retention commit `e6562af223d4d6e64a452e885e85d95bd0a418d2`, Run `29889333840`, job
+  `88826441104`: PASS; 35 unit files / 161 tests and 11 / 11 browser tests.
+- Artifact `8517693659`, digest
+  `sha256:419a6cb50ed889a5933390cf0580b2e9588a4319986b6cbbda9bd1eeb3b1567a`, contains
+  `test-results/phase-03/runtime/brdf-reference.json` with no WGSL compilation messages and PASS.
+- CPU/GPU absolute differences across the 12 retained BRDF values are below `7.3e-8`; no threshold,
+  accepted baseline, or prior test was disabled.
+- Local formatting, zero-warning Lint, strict typecheck, unit tests, dependency boundaries,
+  architecture checks, accepted Phase 0–2 schemas, Shader validation, build, Bundle budgets, and
+  isolated Pages artifacts passed. Local browser launch remains unavailable only because this
+  workspace has no cached Playwright Chromium executable; official CI supplied the fixed browser.
+
+### Next
+
+- Implement P3-03 material GPU layout, explicit resource/cache ownership, and direct-light
+  metallic-roughness integration in the WebGPU Renderer while retaining the P3-02 CPU/GPU oracle.
+
+## 2026-07-21 21:19 PDT — P3-03 direct-light PBR Renderer passed
+
+### Completed
+
+- Added the independent `PbrRenderFeature` without changing the Phase 2 `SceneRenderFeature`, its
+  accepted source path, or its visual baselines.
+- Added a public 304-byte, 76-Float32 per-object GPU layout covering model/MVP/normal matrices,
+  linear material factors, camera position, and directional-light state.
+- Added one canonical direct-light WGSL module with an exact runtime mirror, shared P3-02
+  GGX/Smith/Schlick BRDF, and separate Opaque, Mask, and Blend Fragment entry points.
+- Prewarmed six Pipeline variants for the three alpha modes across single- and double-sided state.
+  Continuous material changes keep the Pipeline and Bind Group; discrete state changes reuse the
+  prewarmed Pipeline and replace only the pipeline-specific Bind Group.
+- Added Mesh-identity Buffer sharing, Entity-owned Uniform/Bind Group caches, stale-resource
+  reconciliation, depth resize, fallback material resolution, Device Lost rebuild, and complete GPU
+  Handle disposal.
+- Added `PbrMaterialLibrary` with explicit ownership: registrations and caller-supplied fallbacks
+  remain caller-owned; an internal fallback is disposed only when the feature created it.
+- Exposed the Renderer/material-library/light/layout contract through the public SDK and updated the
+  dependency boundary so Renderer may depend directly on Material Core/PBR, without creating a
+  reverse dependency.
+- Kept unsupported sampling fail-closed: factor-only direct lighting is implemented, while any
+  non-null texture slot reports `UNSUPPORTED_CAPABILITY` until Backend Bind Groups support sampled
+  Texture/Sampler resources.
+- Added architecture/ownership documentation, CPU/Mock Backend lifecycle tests, exact layout tests,
+  cache-transition tests, and a real WebGPU RGBA8 render/readback gate.
+
+### Validation
+
+- Implementation commit `b3e531dd5e9e87ec76c6c661dfd1cd0e68a6d7c5`, PR-head Run
+  `29890593096`, job `88830092928`: PASS.
+- Complete local non-browser pipeline passed: formatting, zero-warning Lint, strict typecheck,
+  37 unit files / 168 tests, dependency boundaries and cycle fixture, architecture checks, accepted
+  Phase 0–2 Schemas, four exact-mirror Shaders, build, Bundle budgets, and isolated Pages artifacts.
+- The fixed CI environment ran 12 browser cases. Both Phase 3 cases passed on their first attempt:
+  the P3-02 float32 compute oracle remained within its established tolerance, and the new P3-03
+  direct-render pixel `[151, 73, 42, 255]` exactly matched the CPU expectation with no WGSL compiler
+  messages.
+- Artifact `8518126596`, digest
+  `sha256:5da52e143e803cee8bfa9596f1fed1e7dae443935d51d7ad41dada08d7f23fb9`, retains both
+  `brdf-reference.json` and `pbr-direct-renderer.json`; the latter records the exact 304-byte Uniform
+  layout and PASS result.
+- The accepted Phase 2 interaction/visual test showed one transient 106-pixel reference difference
+  and passed its unchanged built-in retry; no baseline, threshold, test, or retry policy was changed.
+- Local Playwright still cannot launch because this workspace has no cached Chromium executable;
+  the official CI installed pinned Chromium and executed the unchanged browser gate.
+
+### Next
+
+- Extend Backend Bind Group resources with sampled Texture and Sampler entries, then bind base-color
+  and metallic-roughness maps through `PbrRenderFeature` with their existing sRGB/linear and channel
+  semantics.
+
+## 2026-07-21 22:47 PDT — P3-04 sampled factor-map PBR passed
+
+### Completed
+
+- Extended the backend-neutral Bind Group resource contract from Buffer-only entries to a
+  runtime-validated union containing exactly one Buffer, sampled Texture, or Sampler Handle.
+- Added validated `writeTexture` uploads with `copy-dst`, color/single-sample, mip, origin, extent,
+  row-layout, byte-length, subresource-bound, stale-Handle, and foreign-Handle checks. Native
+  `GPUTexture`, `GPUTextureView`, and `GPUSampler` objects remain inside the WebGPU port.
+- Added immutable caller-owned `PbrTextureSource` data and `PbrTextureLibrary` registration, transfer
+  function validation, sampler normalization, change diagnostics, and explicit disposal ownership.
+- Extended `PbrRenderFeature` with a stable five-entry Bind Group, owned white sRGB/linear fallback
+  Textures, Base Color RGBA sampling, linear Metallic-Roughness G/B sampling, UV0 transforms, and a
+  352-byte per-object Uniform layout.
+- Preserved the six P3-03 Pipeline variants. Source replacement rebuilds only the affected GPU
+  Texture, Sampler, and Entity Bind Group while retaining Shader, Pipeline, Mesh Buffer, and Uniform
+  Buffer caches; Device Lost and disposal release every new resource.
+- Kept Normal, Occlusion, and Emissive maps fail-closed. Additional UV sets, mip generation, image
+  decoding, HDRI/IBL, tone mapping, and the Phase 3 gallery remain explicitly unclaimed.
+- Recorded the clean-room contract from Khronos glTF/KHR_texture_transform and W3C WebGPU/WGSL
+  specifications. No external renderer implementation or third-party Shader source was used.
+- Detected a 1,098-byte Phase 2 route Bundle regression during the full gate and removed duplicated
+  runtime error-construction code instead of raising the accepted budget. The final route is
+  129,866 / 131,072 raw bytes.
+
+### Validation
+
+- Remote implementation commit `efcec035b95745d0d1fb3462c259760fff95326e` has Git Tree
+  `3d625e83dd3fa2daaf97d5b79dde003a6d56320c`, identical to the locally verified implementation
+  commit. PR-head Run `29894590807`, job `88841955504`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 38 unit files / 171 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, four
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 13
+  Chromium/WebGPU browser cases.
+- Artifact `8519523154`, digest
+  `sha256:4c6d49b24831234bc6bed5efe0dc16405947899bdedb5c432952f5368a56454b`, contains all three Phase 3
+  runtime records, including `pbr-texture-renderer.json` for P3-04.
+- The P3-04 browser gate selected distinct Texels from a 2×2 sRGB Base Color map and a 2×2 linear
+  Metallic-Roughness map through separate UV offsets. WGSL compilation messages were empty, and the
+  GPU pixel `[175, 99, 84, 64]` exactly matched the CPU color-transfer and BRDF expectation.
+- The complete local non-browser pipeline passed. All 13 local browser cases stopped before test
+  execution only because this workspace lacks the Playwright Chromium executable; the fixed CI
+  environment installed pinned Chromium and ran the unmodified gate successfully.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Add the Mesh Tangent contract and deterministic Tangent generator, then bind tangent-space Normal
+  and Emission maps in `PbrRenderFeature`. Retain material AO for the later IBL indirect-light pass so
+  it cannot incorrectly darken direct lighting.
+
+## 2026-07-21 23:22 PDT — P3-05 tangent-space Normal and Emission passed
+
+### Completed
+
+- Extended immutable `MeshData` with optional validated vec4 Tangents. Supplied values are
+  orthogonalized and normalized, W is restricted to `-1` or `1`, and the public SDK exposes the
+  contract without a Renderer dependency.
+- Added a deterministic Geometry tangent generator from Position, Normal, UV0, and triangle
+  indices. It preserves authored Tangents, records mirrored-UV handedness, fails without UV0, and
+  produces a finite deterministic fallback for collapsed UV derivatives without claiming
+  MikkTSpace parity.
+- Expanded the PBR vertex stream to 48 bytes and the per-object Uniform to 400 bytes / 100 Float32
+  values. The single Group 0 Bind Group now contains Base Color, Metallic-Roughness, Normal, and
+  Emission Texture/Sampler pairs.
+- Prewarmed 12 bounded Pipeline variants for 3 alpha modes × 2 sidedness modes × 2 Normal-map modes
+  from one canonical Shader Module. Continuous factors and Texture metadata do not create
+  unbounded variants.
+- Implemented tangent-space Normal reconstruction with `tangent.w`, model orientation, Normal X/Y
+  scale, independent UV transforms, and an owned flat-Normal fallback.
+- Preserved accepted ADR-002 by storing Normal Y-up/Y-down correction on immutable
+  `PbrTextureSource` asset metadata rather than arbitrary Material state.
+- Implemented sRGB Emission sampling followed by linear `emissiveFactor * emissiveStrength`
+  multiplication. Emission remains independent of direct-light intensity and `N·L`.
+- Retained AO for the future IBL indirect-light pass; the direct-light Shader still does not darken
+  direct radiance with AO.
+- Recorded the clean-room Khronos glTF, KHR_materials_emissive_strength, W3C WGSL, tangent,
+  ownership, and cache contracts without changing the accepted Phase 2 implementation or evidence.
+
+### Validation
+
+- Remote implementation commit `ff8a4556093ad03b58a07f27d7702e5060bca6b7` has Git Tree
+  `6ebc4d2e4568dccae58bdc859638ee9976f7614c`, identical to the locally verified implementation
+  commit. PR-head Run `29896303680`, job `88847087925`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 39 unit files / 175 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, four
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 14
+  Chromium/WebGPU browser cases.
+- Artifact `8520146703`, digest
+  `sha256:27a22d55bfa331a750026a7d5f7073b444d048718faae8611a4f998ce38a9f8d`, contains all four Phase 3
+  runtime records. `pbr-normal-emission.json` reports no WGSL compilation messages and a 400-byte
+  Uniform.
+- The P3-05 browser gate exactly matched all three CPU expectations: Normal Y-up
+  `[41, 33, 25, 255]`, Normal Y-down `[0, 0, 0, 255]`, and zero-direct-light Emission
+  `[13, 28, 255, 255]`.
+- The complete local non-browser pipeline passed. The frozen Phase 2 route remains under its
+  unchanged raw JavaScript budget at 130,525 / 131,072 bytes.
+- All 14 local browser cases stopped before test execution only because this workspace lacks the
+  Playwright Chromium executable; the fixed CI environment installed pinned Chromium and ran the
+  unmodified gates successfully.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Build the P3-06 deterministic split-sum IBL CPU/WGSL oracle for diffuse irradiance, GGX specular
+  prefiltering, and the BRDF integration LUT before adding environment GPU resource and cache
+  ownership.
+
+## 2026-07-22 00:06 PDT — P3-06 deterministic split-sum IBL oracle passed
+
+### Completed
+
+- Added an exported CPU reference for unsigned Hammersley/Van der Corput sampling, cosine-weighted
+  physical Diffuse Irradiance plus `E/pi`, GGX half-vector Specular Prefiltering, and the two-channel
+  split-sum BRDF LUT using the exact P3-02 Smith visibility contract.
+- Fixed the canonical gate at 64 samples while validating public CPU requests from 1 through 4,096.
+  A deterministic asymmetric analytic environment isolates integration math from HDR decode,
+  Cubemap orientation, texture filtering, mip selection, and GPU resource ownership.
+- Added a canonical WGSL compute Shader and byte-exact generated TypeScript mirror. The public SDK
+  exposes the CPU oracle without introducing Renderer, Backend, Scene, DOM, or mutable-cache
+  dependencies into Material PBR.
+- Added repeatability, input-domain, bit-reversal, Hammersley, constant-environment, smooth-limit,
+  roughness-direction, and LUT-domain unit coverage plus a real Chromium/WebGPU gate that reads back
+  16 float32 values.
+- Recorded the independently implemented numerical contract from Khronos glTF IBL Sampler, Khronos
+  glTF Appendix B, the published split-sum formulation, and W3C WGSL. Environment Textures, runtime
+  preprocessing, Renderer binding, AO, exposure, and tone mapping remain explicitly deferred.
+- Diagnosed the first remote Run's sole failure as the raw 64-term float32 prefilter-weight sum
+  exceeding a shared `0.0005` threshold by `0.000264`. Kept every physical irradiance, normalized
+  radiance, and LUT output at `0.0005`; assigned only that unnormalized diagnostic sum a `0.001`
+  threshold and retained both thresholds per field in the Artifact.
+
+### Validation
+
+- P3-06 implementation commit `e0bef5872d92ea2ffb1414f8b009ca9a46698104` has Git Tree
+  `2f62e897595c413ef177ee2d06c229e33ffd7a46`, identical to the locally verified implementation
+  tree. Its Run `29898340207` passed every pre-existing browser case and exposed only the focused
+  diagnostic-tolerance mismatch above.
+- Current correction commit `6286604428cf8536be42fedaace1ab4c2e099e37` has Git Tree
+  `dcdc2fbca8c548d27c6be18d888a938d6d44ffe1`, identical to the local correction tree. PR-head Run
+  `29898755457`, job `88854548519`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 40 unit files / 183 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, five
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 15
+  Chromium/WebGPU browser cases.
+- Artifact `8521074469`, digest
+  `sha256:7829b7eb53abb18ead7d4004d0b8873a2e6f2f8a9496c9d538d97dd1ab4a5621`, contains
+  `test-results/phase-03/runtime/ibl-reference.json`. WGSL compilation messages are empty; all 16
+  fields pass; maximum threshold utilization is `0.7642643`.
+- The maximum CPU/GPU difference among physical irradiance, normalized Diffuse/Specular radiance,
+  BRDF LUT values, and retained inputs is approximately `0.000006641`, far below `0.0005`. The raw
+  Specular sample-weight difference is `0.0007642643` against its dedicated `0.001` threshold.
+- The complete local non-browser pipeline passed. Local Playwright still cannot launch because this
+  workspace lacks the pinned Chromium executable; official CI installed it and executed the
+  unmodified gate. The accepted Phase 2 route remains below its unchanged raw Bundle budget at
+  130,525 / 131,072 bytes.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-07 environment Cubemap/LUT resource identity, cache ownership, mip lifecycle, Device
+  Lost recovery, and complete disposal before binding indirect IBL into `PbrRenderFeature`.
+
+## 2026-07-22 03:25 PDT — P3-07 environment GPU resource lifecycle passed
+
+### Completed
+
+- Added independent `@kyxos/render-environment` ownership with immutable `EnvironmentSource`
+  identity, deterministic IEEE-754 binary16 encoding, fixed WebGPU cube-face ordering, a complete
+  GGX Specular Prefilter mip chain, Diffuse Irradiance, linear BRDF LUT data, and a caller-owned
+  `EnvironmentLibrary`.
+- Included Texture dimensions and mip structure alongside id, version, and payload checksum in the
+  cache identity so differently shaped resources cannot alias despite identical flattened values.
+- Extended Backend Texture formats with `rgba16float` and `rg16float`, format-aware mip storage and
+  writes, and backend-neutral `2d`, `2d-array`, and `cube` Texture View descriptors. Native WebGPU
+  Texture Views remain inside the WebGPU port.
+- Added reference-counted `EnvironmentGpuCache` ownership for exactly three Textures and two
+  Samplers per identity. Every Specular mip uploads all six faces; the last Lease destroys all five
+  Handles.
+- Preserved logical Leases across Device Lost while invalidating device Handles, then atomically
+  restored every retained environment after Backend reinitialization. Partial creation and restore
+  failures roll back their complete Handle sets, and disposal is idempotent.
+- Kept Renderer IBL Bind Groups, AO, environment rotation/intensity, HDR panorama decoding,
+  preprocessing, background rendering, exposure, and tone mapping outside this checkpoint.
+- Recorded the clean-room resource contract from the W3C WebGPU specification and Khronos glTF IBL
+  Sampler without changing accepted Phase 0–2 implementations, baselines, or budgets.
+
+### Validation
+
+- Remote implementation commit `91e68991a644b1494c2b40443d8eec6f1f317485` has Git Tree
+  `70444f7e895f8c4c7b15e7f44d89d525f082fc8e`, identical to the locally verified implementation
+  commit. PR-head Run `29911609878`, job `88895618109`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 42 unit files / 191 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, five
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 16
+  Chromium/WebGPU browser cases.
+- Artifact `8526165163`, digest
+  `sha256:4c7262a0f9802887ca83207da3e2c97c05a7dee8c774233eaa74220c27af644f`, contains
+  `test-results/phase-03/runtime/environment-resources.json`. WGSL compilation messages are empty;
+  explicit cube/2d Views sampled the complete HDR resource set and GPU pixel `[64, 112, 84, 255]`
+  exactly matched the expected value.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 16 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-08 Renderer indirect IBL binding with Diffuse Irradiance, prefiltered GGX Specular,
+  the BRDF LUT, indirect-only material AO, and explicit environment rotation/intensity controls.
+
+## 2026-07-22 03:51 PDT — P3-08 Renderer indirect IBL passed
+
+### Completed
+
+- Added a separate canonical PBR IBL Shader while retaining the prior direct-light Shader and its
+  P3-03 through P3-05 evidence unchanged.
+- Implemented physical Diffuse Irradiance as `E * diffuseColor / pi`, prefiltered GGX Specular as
+  `radiance * (F0 * scale + bias)`, BRDF LUT sampling at `N dot V / roughness`, and roughness-driven
+  selection across the complete Specular mip chain.
+- Added the matching public CPU runtime oracle and SDK-only consumer coverage so the Renderer pixel
+  equation does not rely only on Shader text.
+- Expanded the object Uniform contract to 448 bytes for Occlusion UV transform, environment
+  rotation, intensity, and maximum Specular LOD without changing the prior 48-byte vertex stream.
+- Bound the material Occlusion Texture/Sampler in Group 0 and applied
+  `mix(1, occlusion.r, strength)` only to indirect Diffuse plus Specular. Direct light and Emission
+  remain unoccluded.
+- Added Pipeline-specific Group 1 Bind Groups for Diffuse Cube, Specular Cube, shared Cube Sampler,
+  BRDF LUT, and LUT Sampler while keeping the existing 12 bounded alpha/sidedness/Normal variants.
+- Added a black environment fallback so an omitted environment preserves the prior direct-only
+  numerical result without another Pipeline variant.
+- Added atomic environment replacement and optional external cache sharing. Continuous
+  intensity/rotation changes update only Uniform data; source replacement creates the complete new
+  five-resource/12-Bind-Group set before releasing the previous one.
+- Preserved logical environment Leases across Device Lost and verified full reconstruction and
+  zero-Handle disposal.
+- Recorded the clean-room Khronos glTF/glTF IBL Sampler and W3C WebGPU/WGSL contract without
+  changing accepted Phase 0–2 implementations or budgets.
+
+### Validation
+
+- Remote implementation commit `2efafd6f827ef1140bc2cedb1436dbf4b5a24749` has Git Tree
+  `79d7932651792d7fd8706c8a995bc7d6c6c83f16`, identical to the locally verified implementation
+  commit. PR-head Run `29913267657`, job `88901018119`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 43 unit files / 195 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, six
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 17
+  Chromium/WebGPU browser cases.
+- Artifact `8526837761`, digest
+  `sha256:5b4133bc52d51a0320f1779903d3d5bca5f956451a887537416d9aedaed78e3b`, contains
+  `test-results/phase-03/runtime/pbr-ibl-renderer.json`. WGSL compilation messages are empty and the
+  448-byte Uniform is retained.
+- The browser gate uses a positive quarter-turn to select the negative-X Cube face, roughness one
+  to select the last Specular mip, nontrivial LUT/AO/intensity values, and nonzero direct light.
+  GPU pixel `[36, 31, 15, 255]` exactly matches the CPU result, proving AO applies only to the
+  indirect term.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 17 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-09 deterministic linear HDR Exposure, Filmic Tone Mapping, and sRGB output CPU/WGSL
+  parity before building the fixed Phase 3 material gallery.
+
+## 2026-07-22 04:14 PDT — P3-09 HDR output transform passed
+
+### Completed
+
+- Added a deterministic public CPU output oracle for nonnegative linear HDR input, -32 through +32
+  EV Exposure, Khronos PBR Neutral highlight compression/desaturation, explicit clipped mode, and
+  the IEC sRGB output transfer.
+- Fixed the Renderer output order as linear direct + indirect + Emission composition, `2^EV`
+  Exposure, one Tone Mapping operation, and one sRGB encoding operation. Alpha remains unchanged.
+- Reused the two reserved components in the existing 448-byte object Uniform for Exposure
+  multiplier and Tone Mapping mode; no Buffer size, Bind Group layout, resource count, or Pipeline
+  variant changed.
+- Added immutable output state, diagnostics, and `setOutputTransform` to `PbrRenderFeature`.
+  Exposure and mode changes remain Uniform-only and do not recreate GPU Handles.
+- Added a separate canonical tone-mapped PBR Shader and exact generated runtime mirror. The prior
+  direct-light and raw IBL Shaders remain byte-for-byte historical verification inputs.
+- Exported the output contract through the public SDK and added SDK-only consumer coverage.
+- Recorded the clean-room Khronos PBR Neutral, W3C sRGB, WebGPU, and WGSL contract, including the
+  current opaque-gallery boundary for per-fragment forward output.
+
+### Validation
+
+- Remote implementation commit `0bc623b9952c6997df706c687b323d02846e78a3` has Git Tree
+  `777a6ccf69aec0ebe8c4b07908233fdaf8731560`, identical to the locally verified implementation
+  tree. PR-head Run `29914664604`, job `88905588501`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 44 unit files / 198 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, seven
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 18
+  Chromium/WebGPU browser cases.
+- Artifact `8527414634`, digest
+  `sha256:a5acddcd524bbd78286fef573680649ccd5a6f981d39290929cf53f41690d075`, contains
+  `test-results/phase-03/runtime/pbr-tone-mapping.json`. WGSL compilation messages are empty and the
+  448-byte Uniform is retained.
+- The gate constructs linear HDR Emission `[4, 2, 1]`, applies +1 EV, PBR Neutral, and explicit
+  sRGB output into `rgba8unorm`. GPU pixel `[254, 224, 207, 255]` exactly matches the CPU oracle.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 18 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-10 public SDK PBR Canvas lifecycle plus the fixed interactive Phase 3 material
+  gallery and deterministic visual, performance, and resource-lifecycle gates.
+
+## 2026-07-22 04:58 PDT — P3-10 public PBR gallery lifecycle and frozen visuals passed
+
+### Completed
+
+- Added the public `createKyxosPbrRenderer` factory and `KyxosPbrCanvasRenderer` lifecycle wrapper
+  while keeping the concrete WebGPU implementation private behind the SDK. Scene, Camera, Orbit,
+  Mesh Renderer, Material, Texture, Environment, and PBR Feature containers expose automatic dirty
+  propagation, sleep/wake behavior, diagnostics, recovery, and idempotent disposal.
+- Verified that continuous Camera, Material, Texture, Exposure, HDRI rotation, AO, and Normal-Y
+  changes preserve stable Shader, Pipeline, Mesh, Uniform, Texture, Sampler, and Bind Group
+  ownership. Device Lost reconstructs the complete retained graph, and caller-owned registered
+  Materials remain caller-owned after Renderer disposal.
+- Added the independent `/acceptance/phase-03` Playground route using only the public SDK. Its fixed
+  20-sphere gallery covers Metallic and Roughness ramps, white Dielectric, Gold, Copper, Iron,
+  Normal Y, AO, Emission, sRGB Base Color, linear Metallic-Roughness, HDRI rotation, Exposure, and
+  Tone Mapping controls.
+- Replaced the first face-constant environment draft with a deterministic continuous HDR studio
+  environment: 32-pixel Specular Cubemap faces with six complete mips, 4-pixel Diffuse faces, and a
+  16x16 BRDF LUT. This removed visible cube-face boundaries and retained reproducible reflections.
+- Shared one immutable sphere Mesh across all 20 instances. Added public lifecycle controls,
+  responsive navigation, orbit/dolly/pan interaction, mobile overflow coverage, and independent
+  Phase 3 Bundle accounting without changing the frozen Phase 2 threshold.
+- Froze exact Chromium/SwiftShader baselines for the complete acceptance page and Gallery Canvas.
+  Both use `maxDiffPixels: 0`; the corrected reference source and final verification images are
+  byte-identical.
+
+### Validation
+
+- Initial lifecycle implementation commit `5a1a2e3ef4a4812262e7aa54736763092406c049`, Run
+  `29916418182`: PASS. Its face-constant environment was manually rejected as non-canonical because
+  the reflections exposed cube-face blocks; no weakened visual baseline was retained from it.
+- Corrected reference-source commit `4f0e812cf0382777d407edf27f5eae0e8b095e8e`, Run
+  `29916911020`, job `88912823746`: PASS. Artifact `8528332559`, digest
+  `sha256:a2753bc3dceb2b226c18ef4e87d10adad0b52a5e8d11dce0591d9a543e61a7c9`, is the canonical source
+  for the frozen visuals.
+- Current baseline commit `7e4abe7a625769cc830ee8db8d419fea8243c3ad` has Git Tree
+  `1cff0beb48e56b380b679966d485244dab4d023b`. Run `29917288982`, job `88914018637`: PASS. Artifact
+  `8528484011`, digest
+  `sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250`, proves 45 unit files /
+  201 tests and all 21 Chromium/WebGPU browser cases pass.
+- `visual-baselines/phase-03/reference.png` is 1440x1692, 392,300 bytes, SHA-256
+  `71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151`.
+  `visual-baselines/phase-03/gallery.png` is 1014x651, 142,603 bytes, SHA-256
+  `91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967`. Final Artifact images have
+  the same hashes, so both comparisons have exactly zero differing pixels.
+- The fixed scene renders 20 Draw Calls, 10,560 triangles, 20 Materials, and one GPU Mesh. DPR1
+  estimated active bytes are 2,743,112. Across ten samples CPU frame time is 1.9 ms median and
+  3.9 ms p95/max; Dirty-to-Sleep is 101.2 ms median and 168.1 ms p95/max under the 250 ms budget.
+- The DPR2 lifecycle gate records 88 active Handles and 8,988,312 estimated bytes before loss,
+  after recovery, and after recreation; Device Lost, Dispose, and final cleanup each record zero
+  active Handles and zero estimated bytes.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,474 / 131,072 bytes. Phase 3 has a separate 180,095 / 196,608-byte raw JavaScript route
+  budget. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Assemble P3-11 fail-closed technical and owner evidence, validate the canonical Gallery against
+  the complete Phase 3 rubric, and prepare the public deployment gate without marking Phase 3
+  Accepted.
+
+## 2026-07-22 05:18 PDT — P3-11 fail-closed acceptance evidence passed
+
+### Completed
+
+- Added the complete Phase 3 acceptance package: automated summary, dependency graph, Bundle
+  metrics, numerical/render metrics, lifecycle record, performance comparison, Technical QA,
+  autonomous Owner review, and canonical visual metadata.
+- Added explicit Full-page and Gallery Reference/Current/Difference triplets. Both Current images
+  were downloaded again from the authoritative GitHub Artifact; both pairs are byte-identical and
+  both absolute Difference images contain zero changed pixels.
+- Added `check-phase-03-acceptance.mjs` to the authoritative `pnpm verify` chain. The fail-closed
+  Schema verifies exact source/evidence CI provenance, 13 gate records, PBR/IBL/color/lifecycle
+  values, 27 required evidence files, six image hashes, deployment workflow safety, and contiguous
+  Phase 0–3 Pages candidate resolution.
+- Extended public Pages verification with the actual Phase 3 Owner sequence: 20-object diagnostics,
+  Metallic/Roughness, Exposure, HDRI rotation, Normal Y, AO, Tone Mapping, Orbit, Device Lost,
+  recovery, disposal, and recreation. Every continuous control must keep the resource baseline.
+- Kept Phase 3 at `Owner Acceptance Passed — Deployment Pending`. The evidence records cannot mark
+  the Phase Accepted before the final Head, merge, public deployment, online WebGPU sequence, and
+  immutable Tag succeed.
+
+### Validation
+
+- Evidence-pack commit `bc3faa5ffac5d04837ba04f2382cc43bc5819d38` has Git Tree
+  `081ea2173eef1fc56556d3513b317ec3edbde363`, identical to the locally verified tree. Run
+  `29918823067`, job `88918945110`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 45 unit files / 201 tests,
+  dependency and architecture gates, Phase 0–3 acceptance Schemas, seven exact Shader mirrors,
+  build, Bundle, isolated Pages, and all 21 Chromium/WebGPU browser cases.
+- Artifact `8529093758`, digest
+  `sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6`, contains all ten Phase 3
+  numerical/runtime JSON files and byte-identical Full-page and Gallery captures.
+- The evidence-pack Run independently measured CPU p95/max 4.3 ms and Dirty-to-Sleep p95/max
+  175.5 ms, below 16.7 ms and 250 ms. The canonical source Run remains 3.9 ms and 168.1 ms; both
+  Runs retain 88 Handles, exact loss/recovery/disposal, and zero visual differences.
+- Owner evidence makes the deployment candidate resolve to contiguous Phases 0, 1, 2, and 3 with
+  `latest` at Phase 3. No Accepted Tag is created on the branch.
+
+### Next
+
+- Seal the final provenance Head, merge PR #5 without Head drift, pass main CI and public Phase 3
+  Pages verification, then freeze immutable `phase-03-accepted`.

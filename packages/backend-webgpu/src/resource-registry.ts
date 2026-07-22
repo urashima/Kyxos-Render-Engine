@@ -96,6 +96,10 @@ export class WebGpuResourceRegistry {
     return record.native as NativeResource;
   }
 
+  has(handle: BackendResourceHandle): boolean {
+    return this.#resources.has(handle);
+  }
+
   destroy(handle: BackendResourceHandle): boolean {
     const record = this.#resources.get(handle);
     if (record === undefined) {

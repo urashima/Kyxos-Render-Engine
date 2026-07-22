@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "phase": "03",
+  "sourceCheckpoint": "7e4abe7a625769cc830ee8db8d419fea8243c3ad",
+  "generatedAt": "2026-07-22T04:58:00-07:00",
+  "localStatus": "PASS",
+  "remoteCiStatus": "PASS",
+  "remoteCi": {
+    "runId": 29917288982,
+    "jobId": 88914018637,
+    "sourceCommit": "7e4abe7a625769cc830ee8db8d419fea8243c3ad",
+    "conclusion": "success",
+    "artifactId": 8528484011,
+    "artifactDigest": "sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250"
+  },
+  "evidencePackCi": {
+    "runId": 29918823067,
+    "jobId": 88918945110,
+    "sourceCommit": "bc3faa5ffac5d04837ba04f2382cc43bc5819d38",
+    "conclusion": "success",
+    "artifactId": 8529093758,
+    "artifactDigest": "sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6"
+  },
+  "visualSource": {
+    "runId": 29916911020,
+    "jobId": 88912823746,
+    "sourceCommit": "4f0e812cf0382777d407edf27f5eae0e8b095e8e",
+    "conclusion": "success",
+    "artifactId": 8528332559,
+    "artifactDigest": "sha256:a2753bc3dceb2b226c18ef4e87d10adad0b52a5e8d11dce0591d9a543e61a7c9"
+  },
+  "gates": [
+    {
+      "id": "format",
+      "status": "PASS",
+      "command": "pnpm format:check"
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "command": "pnpm lint",
+      "warnings": 0
+    },
+    {
+      "id": "typecheck",
+      "status": "PASS",
+      "command": "pnpm typecheck"
+    },
+    {
+      "id": "unit",
+      "status": "PASS",
+      "command": "pnpm test:unit",
+      "testFiles": 45,
+      "tests": 201
+    },
+    {
+      "id": "boundaries",
+      "status": "PASS",
+      "command": "pnpm check:boundaries",
+      "cycles": 0,
+      "violations": 0,
+      "deliberateFixtureRejected": true
+    },
+    {
+      "id": "shaders",
+      "status": "PASS",
+      "command": "pnpm validate:shaders",
+      "canonicalWgslModules": 7,
+      "runtimeCompilerVerified": true
+    },
+    {
+      "id": "build",
+      "status": "PASS",
+      "command": "pnpm build",
+      "apps": 1,
+      "packages": 15
+    },
+    {
+      "id": "bundle",
+      "status": "PASS",
+      "command": "pnpm check:bundle",
+      "rawBytes": 299459,
+      "gzipBytes": 123673
+    },
+    {
+      "id": "pages-build",
+      "status": "PASS",
+      "command": "pnpm build:pages:verify && pnpm check:pages",
+      "routes": ["phase-0", "phase-1", "phase-2", "phase-3", "latest"]
+    },
+    {
+      "id": "browser",
+      "status": "PASS",
+      "command": "pnpm test:e2e",
+      "browser": "Chrome Headless Shell 149.0.7827.55",
+      "tests": 21,
+      "phase03Tests": 12,
+      "galleryTests": 3
+    },
+    {
+      "id": "visual",
+      "status": "PASS",
+      "actualDiffPixels": 0,
+      "maximumDiffPixels": 0,
+      "fullPageHash": "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151",
+      "galleryHash": "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967",
+      "snapshots": 2
+    },
+    {
+      "id": "performance",
+      "status": "PASS",
+      "cpuFrameBudgetMs": 16.7,
+      "cpuFrameP95Ms": 3.9,
+      "staticToSleepBudgetMs": 250,
+      "staticToSleepP95Ms": 168.1
+    },
+    {
+      "id": "resources",
+      "status": "PASS",
+      "readyResources": 88,
+      "readyEstimatedBytesAtDpr2": 8988312,
+      "afterLoss": 0,
+      "afterLossEstimatedBytes": 0,
+      "afterDispose": 0,
+      "afterDisposeEstimatedBytes": 0
+    }
+  ],
+  "deploymentGate": {
+    "status": "PENDING",
+    "workflow": "Deploy accepted Playgrounds",
+    "reason": "Phase 3 cannot be marked Accepted until the evidence head merges to main, Pages deploys, public Chromium/WebGPU interactions pass, and phase-03-accepted is frozen.",
+    "requiredRoutes": ["/latest/", "/phase-0/", "/phase-1/", "/phase-2/", "/phase-3/"]
+  },
+  "requiredFailures": [],
+  "notes": [
+    "Run 29917288982 passed the authoritative pipeline with all 21 browser cases, exact lifecycle memory, and both zero-pixel Phase 3 snapshots.",
+    "Run 29918823067 passed the complete evidence-pack head with the fail-closed Phase 3 schema enabled; its CPU and dirty-to-sleep p95 samples were 4.3 ms and 175.5 ms, both within budget.",
+    "Artifact 8528484011 was downloaded again from GitHub and its full-page and Gallery hashes match the committed references.",
+    "Run 29916911020 supplied the directly inspected corrected studio-light reference source; the initial face-constant draft was rejected before freezing.",
+    "GPU timestamp duration remains unavailable through the public diagnostics contract and is not synthesized.",
+    "GitHub Pages deployment, public online verification, and the immutable accepted tag remain mandatory."
+  ]
+}

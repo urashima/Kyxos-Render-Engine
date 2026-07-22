@@ -1,6 +1,7 @@
 import type {
   BackendBindGroupDescriptor,
   BackendBindGroupHandle,
+  BackendBindGroupResource,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -29,8 +30,10 @@ import type {
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureWriteDescriptor,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import {
@@ -51,6 +54,7 @@ import type {
   WebGpuPipelinePort,
   WebGpuPlatformPort,
   WebGpuPowerPreference,
+  WebGpuSamplerPort,
   WebGpuShaderModulePort,
   WebGpuSurfacePort,
   WebGpuTexturePort,
@@ -83,6 +87,7 @@ interface WebGpuBindGroupRecord {
   readonly bindGroup: WebGpuBindGroupPort;
   readonly group: number;
   readonly pipeline: BackendPipelineHandle;
+  readonly resourceHandles: readonly BackendResourceHandle[];
 }
 
 interface WebGpuCommandEncoderRecord {
@@ -104,15 +109,19 @@ export interface WebGpuBackendOptions {
   readonly requiredFeatures?: readonly BackendFeature[];
 }
 
+function invalidArgument(message: string): KyxosEngineError {
+  return new KyxosEngineError(message, {
+    code: 'INVALID_ARGUMENT',
+    module: 'backend',
+    recoverable: false,
+  });
+}
+
 function validateOptions(options: WebGpuBackendOptions): readonly BackendFeature[] {
   const requiredFeatures = [...new Set(options.requiredFeatures ?? [])];
   for (const feature of requiredFeatures) {
     if (!BACKEND_FEATURES.includes(feature)) {
-      throw new KyxosEngineError(`Unknown WebGPU backend feature: "${String(feature)}".`, {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument(`Unknown WebGPU backend feature: "${String(feature)}".`);
     }
   }
   return Object.freeze(requiredFeatures);
@@ -120,21 +129,13 @@ function validateOptions(options: WebGpuBackendOptions): readonly BackendFeature
 
 function requirePositiveSafeInteger(name: string, value: number): void {
   if (!Number.isSafeInteger(value) || value < 1) {
-    throw new KyxosEngineError(`${name} must be a positive safe integer.`, {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument(`${name} must be a positive safe integer.`);
   }
 }
 
 function requireNonEmpty(name: string, values: readonly unknown[]): void {
   if (values.length === 0) {
-    throw new KyxosEngineError(`${name} must contain at least one value.`, {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument(`${name} must contain at least one value.`);
   }
 }
 
@@ -169,13 +170,8 @@ function validateTextureDescriptor(
   const maximumMipLevels =
     Math.floor(Math.log2(Math.max(descriptor.size.width, descriptor.size.height))) + 1;
   if ((descriptor.mipLevelCount ?? 1) > maximumMipLevels) {
-    throw new KyxosEngineError(
+    throw invalidArgument(
       `Texture mipLevelCount exceeds the maximum ${maximumMipLevels} for its dimensions.`,
-      {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      },
     );
   }
 }
@@ -192,7 +188,7 @@ function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
     width = Math.max(1, Math.floor(width / 2));
     height = Math.max(1, Math.floor(height / 2));
   }
-  return texels * samples * 4;
+  return texels * samples * (descriptor.format === 'rgba16float' ? 8 : 4);
 }
 
 function validateSamplerDescriptor(descriptor: BackendSamplerDescriptor): void {
@@ -202,21 +198,27 @@ function validateSamplerDescriptor(descriptor: BackendSamplerDescriptor): void {
       descriptor.maxAnisotropy < 1 ||
       descriptor.maxAnisotropy > 16)
   ) {
-    throw new KyxosEngineError('Sampler maxAnisotropy must be an integer from 1 through 16.', {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument('Sampler maxAnisotropy must be an integer from 1 through 16.');
   }
+}
+
+function bindGroupResourceKind(
+  resource: BackendBindGroupResource,
+): 'buffer' | 'sampler' | 'texture' {
+  const kinds = [
+    Object.hasOwn(resource, 'buffer') ? 'buffer' : null,
+    Object.hasOwn(resource, 'sampler') ? 'sampler' : null,
+    Object.hasOwn(resource, 'texture') ? 'texture' : null,
+  ].filter((kind): kind is 'buffer' | 'sampler' | 'texture' => kind !== null);
+  if (kinds.length !== 1) {
+    throw invalidArgument('Bind Group resource needs exactly one Handle.');
+  }
+  return kinds[0] as 'buffer' | 'sampler' | 'texture';
 }
 
 function validateShaderDescriptor(descriptor: BackendShaderModuleDescriptor): void {
   if (descriptor.language !== 'wgsl' || descriptor.code.trim().length === 0) {
-    throw new KyxosEngineError('Shader Module must contain non-empty WGSL source.', {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument('Shader Module must contain non-empty WGSL source.');
   }
 }
 
@@ -232,11 +234,7 @@ function resourceAccounting(
 
 function requireNonNegativeSafeInteger(name: string, value: number): void {
   if (!Number.isSafeInteger(value) || value < 0) {
-    throw new KyxosEngineError(`${name} must be a non-negative safe integer.`, {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument(`${name} must be a non-negative safe integer.`);
   }
 }
 
@@ -565,49 +563,83 @@ export class WebGpuBackend implements GraphicsBackend {
       'pipeline',
     );
     const bindings = new Set<number>();
+    const resourceHandles: BackendResourceHandle[] = [];
+    let sampledTextureCount = 0;
     const entries = descriptor.entries.map((entry) => {
       requireNonNegativeSafeInteger('Bind Group binding', entry.binding);
       if (bindings.has(entry.binding)) {
-        throw new KyxosEngineError(
-          `Bind Group binding ${entry.binding} is provided more than once.`,
-          {
-            code: 'INVALID_ARGUMENT',
-            module: 'backend',
-            recoverable: false,
-          },
-        );
+        throw invalidArgument(`Bind Group binding ${entry.binding} is provided more than once.`);
       }
       bindings.add(entry.binding);
-      const buffer = this.#resources.resolve<'buffer', WebGpuBufferRecord>(
-        entry.resource.buffer,
-        'buffer',
-      );
-      if (
-        !buffer.descriptor.usage.includes('uniform') &&
-        !buffer.descriptor.usage.includes('storage')
-      ) {
-        throw new KyxosEngineError('Bind Group Buffer requires uniform or storage usage.', {
-          code: 'INVALID_ARGUMENT',
+      const resourceKind = bindGroupResourceKind(entry.resource);
+      if (resourceKind === 'buffer' && 'buffer' in entry.resource) {
+        const buffer = this.#resources.resolve<'buffer', WebGpuBufferRecord>(
+          entry.resource.buffer,
+          'buffer',
+        );
+        if (
+          !buffer.descriptor.usage.includes('uniform') &&
+          !buffer.descriptor.usage.includes('storage')
+        ) {
+          throw invalidArgument('Bind Group Buffer requires uniform or storage usage.');
+        }
+        const offset = entry.resource.offset ?? 0;
+        const size = entry.resource.size ?? buffer.descriptor.size - offset;
+        requireNonNegativeSafeInteger('Bind Group Buffer offset', offset);
+        requirePositiveSafeInteger('Bind Group Buffer size', size);
+        if (offset % 4 !== 0 || size % 4 !== 0 || offset + size > buffer.descriptor.size) {
+          throw invalidArgument('Bind Group Buffer range is invalid.');
+        }
+        resourceHandles.push(entry.resource.buffer);
+        return {
+          binding: entry.binding,
+          buffer: buffer.buffer,
+          kind: 'buffer' as const,
+          offset,
+          size,
+        };
+      }
+      if (resourceKind === 'sampler' && 'sampler' in entry.resource) {
+        const sampler = this.#resources.resolve<'sampler', WebGpuSamplerPort>(
+          entry.resource.sampler,
+          'sampler',
+        );
+        resourceHandles.push(entry.resource.sampler);
+        return { binding: entry.binding, kind: 'sampler' as const, sampler };
+      }
+      if (resourceKind === 'texture' && 'texture' in entry.resource) {
+        const texture = this.#resources.resolve<'texture', WebGpuTextureRecord>(
+          entry.resource.texture,
+          'texture',
+        );
+        if (
+          !texture.descriptor.usage.includes('sampled') ||
+          texture.descriptor.format === 'depth24plus' ||
+          texture.descriptor.format === 'depth32float' ||
+          (texture.descriptor.sampleCount ?? 1) !== 1
+        ) {
+          throw invalidArgument('Bind Group Texture must be sampled color data.');
+        }
+        sampledTextureCount += 1;
+        resourceHandles.push(entry.resource.texture);
+        return {
+          binding: entry.binding,
+          kind: 'texture' as const,
+          view: texture.texture.createView(entry.resource.view),
+        };
+      }
+      throw invalidArgument('Bind Group resource is invalid.');
+    });
+    if (sampledTextureCount > this.#capabilities.limits.maxSampledTexturesPerShaderStage) {
+      throw new KyxosEngineError(
+        `Bind Group sampled Texture count exceeds maxSampledTexturesPerShaderStage (${this.#capabilities.limits.maxSampledTexturesPerShaderStage}).`,
+        {
+          code: 'UNSUPPORTED_CAPABILITY',
           module: 'backend',
           recoverable: false,
-        });
-      }
-      const offset = entry.resource.offset ?? 0;
-      const size = entry.resource.size ?? buffer.descriptor.size - offset;
-      requireNonNegativeSafeInteger('Bind Group Buffer offset', offset);
-      requirePositiveSafeInteger('Bind Group Buffer size', size);
-      if (offset % 4 !== 0 || size % 4 !== 0 || offset + size > buffer.descriptor.size) {
-        throw new KyxosEngineError(
-          'Bind Group Buffer range must be 4-byte aligned and remain within its Buffer.',
-          {
-            code: 'INVALID_ARGUMENT',
-            module: 'backend',
-            recoverable: false,
-          },
-        );
-      }
-      return { binding: entry.binding, buffer: buffer.buffer, offset, size };
-    });
+        },
+      );
+    }
 
     try {
       const bindGroup = device.createBindGroup({
@@ -620,6 +652,7 @@ export class WebGpuBackend implements GraphicsBackend {
         bindGroup,
         group: descriptor.group,
         pipeline: descriptor.pipeline,
+        resourceHandles: Object.freeze([...resourceHandles]),
       } satisfies WebGpuBindGroupRecord);
     } catch (error) {
       throw this.#resourceCreationError('Bind Group', error);
@@ -745,6 +778,88 @@ export class WebGpuBackend implements GraphicsBackend {
       throw toKyxosEngineError(error, {
         code: 'RESOURCE_CREATION_FAILED',
         message: 'Failed to upload WebGPU Buffer data.',
+        module: 'backend',
+        recoverable: true,
+      });
+    }
+  }
+
+  writeTexture(
+    handle: BackendTextureHandle,
+    data: BackendTextureData,
+    descriptor: BackendTextureWriteDescriptor,
+  ): void {
+    const device = this.#requireDevice('write Texture data');
+    const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(handle, 'texture');
+    if (
+      !record.descriptor.usage.includes('copy-dst') ||
+      record.descriptor.format === 'depth24plus' ||
+      record.descriptor.format === 'depth32float' ||
+      (record.descriptor.sampleCount ?? 1) !== 1
+    ) {
+      throw invalidArgument('Texture write needs copy-dst single-sampled color data.');
+    }
+
+    const mipLevel = descriptor.mipLevel ?? 0;
+    requireNonNegativeSafeInteger('Texture write mipLevel', mipLevel);
+    if (mipLevel >= (record.descriptor.mipLevelCount ?? 1)) {
+      throw invalidArgument('Texture write mip is out of range.');
+    }
+    const origin = {
+      x: descriptor.origin?.x ?? 0,
+      y: descriptor.origin?.y ?? 0,
+      z: descriptor.origin?.z ?? 0,
+    };
+    requireNonNegativeSafeInteger('Texture write origin.x', origin.x);
+    requireNonNegativeSafeInteger('Texture write origin.y', origin.y);
+    requireNonNegativeSafeInteger('Texture write origin.z', origin.z);
+    const size = {
+      depthOrArrayLayers: descriptor.size.depthOrArrayLayers ?? 1,
+      height: descriptor.size.height,
+      width: descriptor.size.width,
+    };
+    requirePositiveSafeInteger('Texture write width', size.width);
+    requirePositiveSafeInteger('Texture write height', size.height);
+    requirePositiveSafeInteger('Texture write depthOrArrayLayers', size.depthOrArrayLayers);
+    const mipWidth = Math.max(1, Math.floor(record.descriptor.size.width / 2 ** mipLevel));
+    const mipHeight = Math.max(1, Math.floor(record.descriptor.size.height / 2 ** mipLevel));
+    const layers = record.descriptor.size.depthOrArrayLayers ?? 1;
+    if (
+      origin.x + size.width > mipWidth ||
+      origin.y + size.height > mipHeight ||
+      origin.z + size.depthOrArrayLayers > layers
+    ) {
+      throw invalidArgument('Texture write exceeds its subresource.');
+    }
+
+    const texelBytes = record.descriptor.format === 'rgba16float' ? 8 : 4;
+    const bytesPerRow = descriptor.bytesPerRow ?? size.width * texelBytes;
+    const rowsPerImage = descriptor.rowsPerImage ?? size.height;
+    requirePositiveSafeInteger('Texture write bytesPerRow', bytesPerRow);
+    requirePositiveSafeInteger('Texture write rowsPerImage', rowsPerImage);
+    if (
+      bytesPerRow % texelBytes !== 0 ||
+      bytesPerRow < size.width * texelBytes ||
+      rowsPerImage < size.height
+    ) {
+      throw invalidArgument('Texture write rows are invalid.');
+    }
+    const requiredBytes =
+      bytesPerRow * (rowsPerImage * (size.depthOrArrayLayers - 1) + Math.max(0, size.height - 1)) +
+      size.width * texelBytes;
+    if (!Number.isSafeInteger(requiredBytes) || data.byteLength < requiredBytes) {
+      throw invalidArgument('Texture write data is too small.');
+    }
+
+    try {
+      device.queue.writeTexture(
+        { bytesPerRow, mipLevel, origin, rowsPerImage, size, texture: record.texture },
+        data,
+      );
+    } catch (error) {
+      throw toKyxosEngineError(error, {
+        code: 'RESOURCE_CREATION_FAILED',
+        message: 'Failed to upload WebGPU Texture data.',
         module: 'backend',
         recoverable: true,
       });
@@ -1091,6 +1206,9 @@ export class WebGpuBackend implements GraphicsBackend {
             recoverable: false,
           },
         );
+      }
+      if (record.resourceHandles.some((handle) => !this.#resources.has(handle))) {
+        throw invalidArgument('Draw Bind Group references a stale GPU resource.');
       }
       return { bindGroup: record.bindGroup, group: binding.group };
     });

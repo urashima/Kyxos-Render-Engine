@@ -586,6 +586,111 @@ h2 {
   column-gap: 26px;
 }
 
+.phase-03-hero h1 {
+  max-width: 940px;
+}
+
+.phase-03-workspace {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.pbr-stage {
+  min-height: 650px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgb(109 146 152 / 12%), transparent 54%),
+    linear-gradient(rgb(255 255 255 / 1.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 1.5%) 1px, transparent 1px), #07090b;
+  background-size:
+    auto,
+    42px 42px,
+    42px 42px,
+    auto;
+}
+
+.pbr-overlay {
+  z-index: 1;
+}
+
+.gallery-key {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid #282e32;
+}
+
+.gallery-key span {
+  min-width: 0;
+  padding: 13px 15px;
+  overflow: hidden;
+  border-right: 1px solid #282e32;
+  color: #77858a;
+  font:
+    500 9px/1.35 ui-monospace,
+    monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-key span:last-child {
+  border-right: 0;
+}
+
+.gallery-key b {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  place-items: center;
+  border: 1px solid #3a4c4d;
+  border-radius: 50%;
+  color: #9eddd5;
+}
+
+.pbr-diagnostics .metric-list div {
+  min-height: 40px;
+}
+
+.pbr-diagnostics [data-testid='environment-identity'] {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-03-lower {
+  grid-template-columns: 1.3fr 0.7fr;
+}
+
+.pbr-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+  padding: 22px 20px;
+}
+
+.pbr-controls label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  color: #7d898e;
+  font-size: 11px;
+}
+
+.pbr-controls output {
+  color: #b9c7ca;
+  font:
+    500 10px/1 ui-monospace,
+    monospace;
+}
+
+.pbr-controls input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: #71d2c6;
+}
+
+.pbr-actions button {
+  padding-inline: 12px;
+}
+
 .mock-surface p {
   bottom: 48px;
   margin: 0;
@@ -784,6 +889,11 @@ footer code {
   .phase-02-workspace {
     grid-template-columns: 1fr;
   }
+
+  .phase-03-workspace,
+  .phase-03-lower {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
@@ -793,6 +903,21 @@ footer code {
 
   .phase-chip {
     display: none;
+  }
+
+  .phase-03-shell .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .phase-03-shell .phase-nav {
+    width: 100%;
+  }
+
+  .phase-03-shell .phase-nav a {
+    flex: 1;
+    text-align: center;
   }
 
   .hero {
@@ -831,6 +956,23 @@ footer code {
 
   .scene-stage {
     min-height: 420px;
+  }
+
+  .pbr-stage {
+    min-height: 540px;
+  }
+
+  .gallery-key,
+  .pbr-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gallery-key span:nth-child(2) {
+    border-right: 0;
+  }
+
+  .gallery-key span:nth-child(-n + 2) {
+    border-bottom: 1px solid #282e32;
   }
 
   .scene-contract {

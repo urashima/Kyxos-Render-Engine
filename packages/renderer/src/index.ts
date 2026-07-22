@@ -3,6 +3,12 @@ export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 
 export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
 export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
+export {
+  EnvironmentGpuCache,
+  EnvironmentGpuLease,
+  type EnvironmentGpuCacheDiagnostics,
+  type EnvironmentGpuResources,
+} from './environment-gpu-cache.js';
 export type {
   BasicGeometryData,
   BasicGeometryPrimitive,
@@ -35,6 +41,40 @@ export type {
   RendererRegistrationCounts,
 } from './renderer.js';
 export { KyxosRenderer } from './renderer.js';
+export {
+  PbrMaterialLibrary,
+  type PbrMaterialLibraryChangeEvent,
+  type PbrMaterialLibraryChangeKind,
+  type PbrMaterialLibraryDiagnostics,
+  type PbrMaterialLibraryEvents,
+  type PbrMaterialLibraryOptions,
+} from './pbr-material-library.js';
+export {
+  PBR_OBJECT_UNIFORM_LAYOUT,
+  createPbrDirectionalLight,
+  packPbrObjectUniforms,
+  type PackPbrObjectUniformsOptions,
+  type PbrDirectionalLight,
+  type PbrDirectionalLightDescriptor,
+  type PbrEnvironmentUniforms,
+} from './pbr-gpu-layout.js';
+export {
+  PBR_RENDER_FEATURE_ID,
+  PbrRenderFeature,
+  type PbrEnvironmentDescriptor,
+  type PbrEnvironmentState,
+  type PbrRenderFeatureDiagnostics,
+  type PbrRenderFeatureOptions,
+} from './pbr-render-feature.js';
+export {
+  PbrTextureLibrary,
+  PbrTextureSource,
+  type PbrTextureLibraryChangeEvent,
+  type PbrTextureLibraryDiagnostics,
+  type PbrTextureLibraryEvents,
+  type PbrNormalYDirection,
+  type PbrTextureSourceDescriptor,
+} from './pbr-texture-library.js';
 export {
   SCENE_RENDER_FEATURE_ID,
   SceneRenderFeature,

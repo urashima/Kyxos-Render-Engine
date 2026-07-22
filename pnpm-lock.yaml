@@ -81,6 +81,12 @@ importers:
 
   packages/core: {}
 
+  packages/environment:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/frame-scheduler:
     dependencies:
       '@kyxos/render-core':
@@ -92,6 +98,21 @@ importers:
       '@kyxos/render-math':
         specifier: workspace:*
         version: link:../math
+
+  packages/material-core:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/material-pbr:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
 
   packages/math: {}
 
@@ -106,12 +127,21 @@ importers:
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
+      '@kyxos/render-environment':
+        specifier: workspace:*
+        version: link:../environment
       '@kyxos/render-frame-scheduler':
         specifier: workspace:*
         version: link:../frame-scheduler
       '@kyxos/render-geometry':
         specifier: workspace:*
         version: link:../geometry
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
+      '@kyxos/render-material-pbr':
+        specifier: workspace:*
+        version: link:../material-pbr
       '@kyxos/render-math':
         specifier: workspace:*
         version: link:../math
@@ -149,12 +179,21 @@ importers:
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
+      '@kyxos/render-environment':
+        specifier: workspace:*
+        version: link:../environment
       '@kyxos/render-frame-scheduler':
         specifier: workspace:*
         version: link:../frame-scheduler
       '@kyxos/render-geometry':
         specifier: workspace:*
         version: link:../geometry
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
+      '@kyxos/render-material-pbr':
+        specifier: workspace:*
+        version: link:../material-pbr
       '@kyxos/render-math':
         specifier: workspace:*
         version: link:../math

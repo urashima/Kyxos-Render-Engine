@@ -9,6 +9,7 @@ export interface MeshDataDescriptor {
   readonly name?: string;
   readonly normals?: ArrayLike<number>;
   readonly positions: ArrayLike<number>;
+  readonly tangents?: ArrayLike<number>;
   readonly uv0?: ArrayLike<number>;
 }
 
@@ -21,6 +22,7 @@ export interface MeshData {
   readonly name: string;
   readonly normals: readonly number[];
   readonly positions: readonly number[];
+  readonly tangents: readonly number[] | null;
   readonly triangleCount: number;
   readonly uv0: readonly number[] | null;
   readonly vertexCount: number;
@@ -143,6 +145,44 @@ function normalizeNormals(values: readonly number[], vertexCount: number, name: 
   return result;
 }
 
+function normalizeTangents(
+  values: readonly number[],
+  normals: readonly number[],
+  vertexCount: number,
+): number[] {
+  const result = new Array<number>(vertexCount * 4);
+  for (let vertexIndex = 0; vertexIndex < vertexCount; vertexIndex += 1) {
+    const tangentOffset = vertexIndex * 4;
+    const normalOffset = vertexIndex * 3;
+    const handedness = values[tangentOffset + 3] as number;
+    if (handedness !== -1 && handedness !== 1) {
+      throw new RangeError(`tangents[${tangentOffset + 3}] must be -1 or 1.`);
+    }
+    const normalX = normals[normalOffset] as number;
+    const normalY = normals[normalOffset + 1] as number;
+    const normalZ = normals[normalOffset + 2] as number;
+    const x = values[tangentOffset] as number;
+    const y = values[tangentOffset + 1] as number;
+    const z = values[tangentOffset + 2] as number;
+    const projection = x * normalX + y * normalY + z * normalZ;
+    const orthogonalX = x - normalX * projection;
+    const orthogonalY = y - normalY * projection;
+    const orthogonalZ = z - normalZ * projection;
+    const length = Math.hypot(orthogonalX, orthogonalY, orthogonalZ);
+    if (!Number.isFinite(length) || length <= VECTOR_EPSILON) {
+      throw new RangeError(`tangents contains no usable direction at vertex ${vertexIndex}.`);
+    }
+    const normalizedX = orthogonalX / length;
+    const normalizedY = orthogonalY / length;
+    const normalizedZ = orthogonalZ / length;
+    result[tangentOffset] = normalizedX === 0 ? 0 : normalizedX;
+    result[tangentOffset + 1] = normalizedY === 0 ? 0 : normalizedY;
+    result[tangentOffset + 2] = normalizedZ === 0 ? 0 : normalizedZ;
+    result[tangentOffset + 3] = handedness;
+  }
+  return result;
+}
+
 function calculateBounds(positions: readonly number[]): Aabb {
   let minX = positions[0] as number;
   let minY = positions[1] as number;
@@ -195,6 +235,15 @@ export function createMeshData(descriptor: MeshDataDescriptor): MeshData {
     }
   }
 
+  let tangents: number[] | null = null;
+  if (descriptor.tangents !== undefined) {
+    const copiedTangents = copyFiniteValues(descriptor.tangents, 'tangents');
+    if (copiedTangents.length !== vertexCount * 4) {
+      throw new RangeError(`tangents must contain exactly ${vertexCount * 4} values.`);
+    }
+    tangents = normalizeTangents(copiedTangents, normals, vertexCount);
+  }
+
   let maximumIndex = 0;
   for (const index of indices) maximumIndex = Math.max(maximumIndex, index);
   const bounds = calculateBounds(positions);
@@ -210,6 +259,7 @@ export function createMeshData(descriptor: MeshDataDescriptor): MeshData {
     name,
     normals: Object.freeze(normals),
     positions: Object.freeze(positions),
+    tangents: tangents === null ? null : Object.freeze(tangents),
     triangleCount: indices.length / 3,
     uv0: uv0 === null ? null : Object.freeze(uv0),
     vertexCount,

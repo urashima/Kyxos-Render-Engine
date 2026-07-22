@@ -95,6 +95,67 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('layer-culled-count')).toHaveText('0');
     await expect(page.getByTestId('draw-calls')).toHaveText('8');
   }
+  if (phase === 3) {
+    await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+    await expect(page.getByTestId('draw-calls')).toHaveText('20');
+    await expect(page.getByTestId('triangles')).toHaveText('10560');
+    await expect(page.getByTestId('visible-count')).toHaveText('20');
+    await expect(page.getByTestId('gpu-mesh-count')).toHaveText('1');
+    await expect(page.getByTestId('object-binding-count')).toHaveText('20');
+    await expect(page.getByTestId('pipeline-count')).toHaveText('12');
+    await expect(page.getByTestId('material-count')).toHaveText('20');
+    await expect(page.getByTestId('texture-count')).toHaveText('6');
+    await expect(page.getByTestId('environment-identity')).toHaveText('fixed-studio');
+
+    const resourceBaseline = Number(await page.getByTestId('resource-count').textContent());
+    expect(resourceBaseline).toBeGreaterThan(0);
+    const frameIndex = page.getByTestId('frame-index');
+    const changeRange = async (control: string, value: string) => {
+      const previousFrame = await frameIndex.textContent();
+      await page.locator(`[data-control="${control}"]`).fill(value);
+      await expect(frameIndex).not.toHaveText(previousFrame ?? '');
+      await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+      await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    };
+    await changeRange('metallic', '0.85');
+    await changeRange('roughness', '0.2');
+    await changeRange('exposure', '1');
+    await expect(page.getByTestId('exposure-value')).toHaveText('1.00');
+    await changeRange('rotation', '90');
+    await expect(page.getByTestId('rotation-value')).toHaveText('90°');
+
+    for (const [action, testId, value] of [
+      ['normal', 'normal-direction', 'Y-down'],
+      ['ao', 'ao-state', 'off'],
+      ['tone-map', 'tone-map-mode', 'clamp'],
+    ] as const) {
+      const previousFrame = await frameIndex.textContent();
+      await page.locator(`[data-action="${action}"]`).click();
+      await expect(page.getByTestId(testId)).toHaveText(value);
+      await expect(frameIndex).not.toHaveText(previousFrame ?? '');
+      await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    }
+
+    for (const action of ['orbit-left', 'orbit-right']) {
+      const previousFrame = await frameIndex.textContent();
+      await page.locator(`[data-action="${action}"]`).click();
+      await expect(frameIndex).not.toHaveText(previousFrame ?? '');
+      await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+    }
+
+    await page.locator('[data-action="lose"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('lost');
+    await expect(page.getByTestId('resource-count')).toHaveText('0');
+    await page.locator('[data-action="recover"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('ready');
+    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    await page.locator('[data-action="dispose"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('disposed');
+    await expect(page.getByTestId('resource-count')).toHaveText('0');
+    await page.locator('[data-action="recreate"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('ready');
+    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+  }
   expect(runtimeErrors).toEqual([]);
 }
 

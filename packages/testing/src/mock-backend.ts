@@ -1,6 +1,7 @@
 import type {
   BackendBindGroupDescriptor,
   BackendBindGroupHandle,
+  BackendBindGroupResource,
   BackendBufferData,
   BackendBufferDescriptor,
   BackendBufferHandle,
@@ -29,8 +30,11 @@ import type {
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureViewDescriptor,
+  BackendTextureWriteDescriptor,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import {
@@ -72,14 +76,76 @@ function createAllocators(): ReadonlyMap<
   );
 }
 
+function invalidArgument(message: string): KyxosEngineError {
+  return new KyxosEngineError(message, {
+    code: 'INVALID_ARGUMENT',
+    module: 'backend',
+    recoverable: false,
+  });
+}
+
 function validateEstimatedBytes(estimatedBytes: number): void {
   if (!Number.isSafeInteger(estimatedBytes) || estimatedBytes < 0) {
-    throw new KyxosEngineError('Resource estimatedBytes must be a non-negative safe integer.', {
-      code: 'INVALID_ARGUMENT',
-      module: 'backend',
-      recoverable: false,
-    });
+    throw invalidArgument('Resource estimatedBytes must be a non-negative safe integer.');
   }
+}
+
+function bindGroupResourceKind(
+  resource: BackendBindGroupResource,
+): 'buffer' | 'sampler' | 'texture' {
+  const kinds = [
+    Object.hasOwn(resource, 'buffer') ? 'buffer' : null,
+    Object.hasOwn(resource, 'sampler') ? 'sampler' : null,
+    Object.hasOwn(resource, 'texture') ? 'texture' : null,
+  ].filter((kind): kind is 'buffer' | 'sampler' | 'texture' => kind !== null);
+  if (kinds.length !== 1) {
+    throw invalidArgument('Mock Bind Group resource is invalid.');
+  }
+  return kinds[0] as 'buffer' | 'sampler' | 'texture';
+}
+
+function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
+  const layers = descriptor.size.depthOrArrayLayers ?? 1;
+  const samples = descriptor.sampleCount ?? 1;
+  const mipLevels = descriptor.mipLevelCount ?? 1;
+  let width = descriptor.size.width;
+  let height = descriptor.size.height;
+  let texels = 0;
+  for (let mip = 0; mip < mipLevels; mip += 1) {
+    texels += width * height * layers;
+    width = Math.max(1, Math.floor(width / 2));
+    height = Math.max(1, Math.floor(height / 2));
+  }
+  return texels * samples * (descriptor.format === 'rgba16float' ? 8 : 4);
+}
+
+function validateTextureView(
+  view: BackendTextureViewDescriptor | undefined,
+  texture: BackendTextureDescriptor,
+): boolean {
+  const textureMips = texture.mipLevelCount ?? 1;
+  const textureLayers = texture.size.depthOrArrayLayers ?? 1;
+  const baseMipLevel = view?.baseMipLevel ?? 0;
+  const baseArrayLayer = view?.baseArrayLayer ?? 0;
+  const mipLevelCount = view?.mipLevelCount ?? textureMips - baseMipLevel;
+  const dimension = view?.dimension ?? (textureLayers - baseArrayLayer === 1 ? '2d' : '2d-array');
+  const arrayLayerCount =
+    view?.arrayLayerCount ??
+    (dimension === '2d' ? 1 : dimension === 'cube' ? 6 : textureLayers - baseArrayLayer);
+  return (
+    Number.isSafeInteger(baseMipLevel) &&
+    baseMipLevel >= 0 &&
+    Number.isSafeInteger(baseArrayLayer) &&
+    baseArrayLayer >= 0 &&
+    Number.isSafeInteger(mipLevelCount) &&
+    mipLevelCount >= 1 &&
+    baseMipLevel + mipLevelCount <= textureMips &&
+    Number.isSafeInteger(arrayLayerCount) &&
+    arrayLayerCount >= 1 &&
+    baseArrayLayer + arrayLayerCount <= textureLayers &&
+    (dimension !== '2d' || arrayLayerCount === 1) &&
+    (dimension !== 'cube' || (arrayLayerCount === 6 && texture.size.width === texture.size.height))
+  );
 }
 
 export class MockBackend implements GraphicsBackend {
@@ -89,6 +155,7 @@ export class MockBackend implements GraphicsBackend {
   readonly #commandEncoders = new Set<BackendCommandEncoderHandle>();
   readonly #events = new TypedEventEmitter<BackendEvents>();
   readonly #resources = new Map<BackendResourceHandle, MockResourceRecord>();
+  readonly #samplers = new Map<BackendSamplerHandle, BackendSamplerDescriptor>();
   readonly #pipelines = new Map<BackendPipelineHandle, BackendRenderPipelineDescriptor>();
   readonly #shaderInfo = new Map<BackendShaderModuleHandle, BackendShaderCompilationInfo>();
   readonly #surfaces = new Map<BackendSurfaceHandle, MockSurfaceRecord>();
@@ -160,11 +227,7 @@ export class MockBackend implements GraphicsBackend {
 
   createBuffer(descriptor: BackendBufferDescriptor): BackendBufferHandle {
     if (!Number.isSafeInteger(descriptor.size) || descriptor.size < 1) {
-      throw new KyxosEngineError('Mock Buffer size must be a positive safe integer.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument('Mock Buffer size must be a positive safe integer.');
     }
     const handle = this.createResource('buffer', {
       estimatedBytes: descriptor.size,
@@ -178,9 +241,7 @@ export class MockBackend implements GraphicsBackend {
   }
 
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
-    const layers = descriptor.size.depthOrArrayLayers ?? 1;
-    const estimatedBytes =
-      descriptor.size.width * descriptor.size.height * layers * (descriptor.sampleCount ?? 1) * 4;
+    const estimatedBytes = estimateTextureBytes(descriptor);
     const handle = this.createResource('texture', {
       estimatedBytes,
       ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
@@ -204,37 +265,44 @@ export class MockBackend implements GraphicsBackend {
       descriptor.group >= this.capabilities.limits.maxBindGroups ||
       descriptor.entries.length === 0 ||
       !this.#pipelines.has(descriptor.pipeline)
-    ) {
-      throw new KyxosEngineError('Mock Bind Group descriptor is invalid.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
-    }
+    )
+      throw invalidArgument('Mock Bind Group descriptor is invalid.');
     const bindings = new Set<number>();
     for (const entry of descriptor.entries) {
-      const buffer = this.#buffers.get(entry.resource.buffer);
-      const offset = entry.resource.offset ?? 0;
-      const size = entry.resource.size ?? (buffer?.size ?? 0) - offset;
-      if (
-        !Number.isSafeInteger(entry.binding) ||
-        entry.binding < 0 ||
-        bindings.has(entry.binding) ||
-        buffer === undefined ||
-        (!buffer.usage.includes('uniform') && !buffer.usage.includes('storage')) ||
-        !Number.isSafeInteger(offset) ||
-        offset < 0 ||
-        offset % 4 !== 0 ||
-        !Number.isSafeInteger(size) ||
-        size < 1 ||
-        size % 4 !== 0 ||
-        offset + size > buffer.size
-      ) {
-        throw new KyxosEngineError('Mock Bind Group entry is invalid.', {
-          code: 'INVALID_ARGUMENT',
-          module: 'backend',
-          recoverable: false,
-        });
+      if (!Number.isSafeInteger(entry.binding) || entry.binding < 0 || bindings.has(entry.binding))
+        throw invalidArgument('Mock Bind Group entry is invalid.');
+      const resourceKind = bindGroupResourceKind(entry.resource);
+      if (resourceKind === 'buffer' && 'buffer' in entry.resource) {
+        const buffer = this.#buffers.get(entry.resource.buffer);
+        const offset = entry.resource.offset ?? 0;
+        const size = entry.resource.size ?? (buffer?.size ?? 0) - offset;
+        if (
+          buffer === undefined ||
+          (!buffer.usage.includes('uniform') && !buffer.usage.includes('storage')) ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0 ||
+          offset % 4 !== 0 ||
+          !Number.isSafeInteger(size) ||
+          size < 1 ||
+          size % 4 !== 0 ||
+          offset + size > buffer.size
+        )
+          throw invalidArgument('Mock Bind Group Buffer entry is invalid.');
+      } else if (resourceKind === 'sampler' && 'sampler' in entry.resource) {
+        if (!this.#samplers.has(entry.resource.sampler)) {
+          throw invalidArgument('Mock Bind Group Sampler entry is invalid.');
+        }
+      } else if (resourceKind === 'texture' && 'texture' in entry.resource) {
+        const texture = this.#textures.get(entry.resource.texture);
+        if (
+          texture === undefined ||
+          !texture.usage.includes('sampled') ||
+          texture.format === 'depth24plus' ||
+          texture.format === 'depth32float' ||
+          (texture.sampleCount ?? 1) !== 1 ||
+          !validateTextureView(entry.resource.view, texture)
+        )
+          throw invalidArgument('Mock Bind Group Texture entry is invalid.');
       }
       bindings.add(entry.binding);
     }
@@ -247,19 +315,17 @@ export class MockBackend implements GraphicsBackend {
   }
 
   createSampler(descriptor: BackendSamplerDescriptor = {}): BackendSamplerHandle {
-    return this.createResource(
+    const handle = this.createResource(
       'sampler',
       descriptor.label === undefined ? {} : { label: descriptor.label },
     );
+    this.#samplers.set(handle, Object.freeze({ ...descriptor }));
+    return handle;
   }
 
   createShaderModule(descriptor: BackendShaderModuleDescriptor): BackendShaderModuleHandle {
     if (descriptor.code.trim().length === 0) {
-      throw new KyxosEngineError('Mock Shader Module source must not be empty.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument('Mock Shader Module source must not be empty.');
     }
     const handle = this.createResource('shader-module', {
       estimatedBytes: new TextEncoder().encode(descriptor.code).byteLength,
@@ -274,11 +340,7 @@ export class MockBackend implements GraphicsBackend {
   ): Promise<BackendShaderCompilationInfo> {
     const info = this.#shaderInfo.get(handle);
     if (info === undefined) {
-      throw new KyxosEngineError('Mock Shader Module handle is stale or foreign.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument('Mock Shader Module handle is stale or foreign.');
     }
     return info;
   }
@@ -319,11 +381,7 @@ export class MockBackend implements GraphicsBackend {
 
     const allocator = this.#allocators.get(kind);
     if (allocator === undefined) {
-      throw new KyxosEngineError(`Unsupported mock resource kind: "${kind}".`, {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument(`Unsupported mock resource kind: "${kind}".`);
     }
 
     const handle = allocator.create() as BackendResourceHandle<Kind>;
@@ -382,6 +440,9 @@ export class MockBackend implements GraphicsBackend {
     if (handle.kind === backendResourceHandleKind('texture')) {
       this.#textures.delete(handle as BackendTextureHandle);
     }
+    if (handle.kind === backendResourceHandleKind('sampler')) {
+      this.#samplers.delete(handle as BackendSamplerHandle);
+    }
     this.#destroyedTotal += 1;
     return true;
   }
@@ -389,11 +450,7 @@ export class MockBackend implements GraphicsBackend {
   getSurfaceInfo(handle: BackendSurfaceHandle): BackendSurfaceInfo {
     const record = this.#surfaces.get(handle);
     if (record === undefined) {
-      throw new KyxosEngineError('Mock surface handle is stale or foreign.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument('Mock surface handle is stale or foreign.');
     }
     return record.info;
   }
@@ -436,23 +493,67 @@ export class MockBackend implements GraphicsBackend {
       !Number.isSafeInteger(offset) ||
       offset < 0 ||
       offset + data.byteLength > descriptor.size
-    ) {
-      throw new KyxosEngineError('Mock Buffer write is invalid or uses a foreign Handle.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
-    }
+    )
+      throw invalidArgument('Mock Buffer write is invalid or uses a foreign Handle.');
+  }
+
+  writeTexture(
+    handle: BackendTextureHandle,
+    data: BackendTextureData,
+    descriptor: BackendTextureWriteDescriptor,
+  ): void {
+    this.#assertReady('write Texture data');
+    const texture = this.#textures.get(handle);
+    const mipLevel = descriptor.mipLevel ?? 0;
+    const origin = {
+      x: descriptor.origin?.x ?? 0,
+      y: descriptor.origin?.y ?? 0,
+      z: descriptor.origin?.z ?? 0,
+    };
+    const depthOrArrayLayers = descriptor.size.depthOrArrayLayers ?? 1;
+    const texelBytes = texture === undefined ? 0 : texture.format === 'rgba16float' ? 8 : 4;
+    const bytesPerRow = descriptor.bytesPerRow ?? descriptor.size.width * texelBytes;
+    const rowsPerImage = descriptor.rowsPerImage ?? descriptor.size.height;
+    const mipWidth = Math.max(1, Math.floor((texture?.size.width ?? 0) / 2 ** mipLevel));
+    const mipHeight = Math.max(1, Math.floor((texture?.size.height ?? 0) / 2 ** mipLevel));
+    const requiredBytes =
+      bytesPerRow *
+        (rowsPerImage * (depthOrArrayLayers - 1) + Math.max(0, descriptor.size.height - 1)) +
+      descriptor.size.width * texelBytes;
+    if (
+      texture === undefined ||
+      !texture.usage.includes('copy-dst') ||
+      texture.format === 'depth24plus' ||
+      texture.format === 'depth32float' ||
+      (texture.sampleCount ?? 1) !== 1 ||
+      !Number.isSafeInteger(mipLevel) ||
+      mipLevel < 0 ||
+      mipLevel >= (texture.mipLevelCount ?? 1) ||
+      Object.values(origin).some((value) => !Number.isSafeInteger(value) || value < 0) ||
+      !Number.isSafeInteger(descriptor.size.width) ||
+      descriptor.size.width < 1 ||
+      !Number.isSafeInteger(descriptor.size.height) ||
+      descriptor.size.height < 1 ||
+      !Number.isSafeInteger(depthOrArrayLayers) ||
+      depthOrArrayLayers < 1 ||
+      origin.x + descriptor.size.width > mipWidth ||
+      origin.y + descriptor.size.height > mipHeight ||
+      origin.z + depthOrArrayLayers > (texture.size.depthOrArrayLayers ?? 1) ||
+      !Number.isSafeInteger(bytesPerRow) ||
+      bytesPerRow < descriptor.size.width * texelBytes ||
+      bytesPerRow % texelBytes !== 0 ||
+      !Number.isSafeInteger(rowsPerImage) ||
+      rowsPerImage < descriptor.size.height ||
+      !Number.isSafeInteger(requiredBytes) ||
+      data.byteLength < requiredBytes
+    )
+      throw invalidArgument('Mock Texture write is invalid or uses a foreign Handle.');
   }
 
   executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
     this.#assertReady('execute a frame');
     if (!this.#commandEncoders.has(submission.commandEncoder)) {
-      throw new KyxosEngineError('Mock Command Encoder Handle is stale or foreign.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'backend',
-        recoverable: false,
-      });
+      throw invalidArgument('Mock Command Encoder Handle is stale or foreign.');
     }
     let drawCalls = 0;
     let instances = 0;
@@ -478,66 +579,53 @@ export class MockBackend implements GraphicsBackend {
           (depthTexture.format !== 'depth24plus' && depthTexture.format !== 'depth32float') ||
           depthTexture.size.width !== surface.size.physicalWidth ||
           depthTexture.size.height !== surface.size.physicalHeight)
-      ) {
-        throw new KyxosEngineError('Mock depth attachment is invalid.', {
-          code: 'INVALID_ARGUMENT',
-          module: 'backend',
-          recoverable: false,
-        });
-      }
+      )
+        throw invalidArgument('Mock depth attachment is invalid.');
       for (const draw of renderPass.draws ?? []) {
         const pipeline = this.#pipelines.get(draw.pipeline);
         if (pipeline === undefined) {
-          throw new KyxosEngineError('Mock Pipeline Handle is stale or foreign.', {
-            code: 'INVALID_ARGUMENT',
-            module: 'backend',
-            recoverable: false,
-          });
+          throw invalidArgument('Mock Pipeline Handle is stale or foreign.');
         }
         if (
           (pipeline.depthStencil !== undefined && depthTexture === undefined) ||
           (pipeline.depthStencil !== undefined &&
             depthTexture !== undefined &&
             pipeline.depthStencil.format !== depthTexture.format)
-        ) {
-          throw new KyxosEngineError('Mock Pipeline depth attachment is missing or incompatible.', {
-            code: 'INVALID_ARGUMENT',
-            module: 'backend',
-            recoverable: false,
-          });
-        }
+        )
+          throw invalidArgument('Mock Pipeline depth attachment is missing or incompatible.');
         const groups = new Set<number>();
         for (const binding of draw.bindGroups ?? []) {
           const bindGroup = this.#bindGroups.get(binding.bindGroup);
+          const resourcesActive = bindGroup?.entries.every((entry) => {
+            const kind = bindGroupResourceKind(entry.resource);
+            if (kind === 'buffer' && 'buffer' in entry.resource) {
+              return this.#buffers.has(entry.resource.buffer);
+            }
+            if (kind === 'sampler' && 'sampler' in entry.resource) {
+              return this.#samplers.has(entry.resource.sampler);
+            }
+            if (kind === 'texture' && 'texture' in entry.resource) {
+              return this.#textures.has(entry.resource.texture);
+            }
+            return false;
+          });
           if (
             bindGroup === undefined ||
+            resourcesActive !== true ||
             groups.has(binding.group) ||
             bindGroup.group !== binding.group ||
             bindGroup.pipeline !== draw.pipeline
-          ) {
-            throw new KyxosEngineError('Mock Draw Bind Group is stale or incompatible.', {
-              code: 'INVALID_ARGUMENT',
-              module: 'backend',
-              recoverable: false,
-            });
-          }
+          )
+            throw invalidArgument('Mock Draw Bind Group is stale or incompatible.');
           groups.add(binding.group);
         }
         for (const binding of draw.vertexBuffers ?? []) {
           if (!this.#buffers.has(binding.buffer)) {
-            throw new KyxosEngineError('Mock Vertex Buffer Handle is stale or foreign.', {
-              code: 'INVALID_ARGUMENT',
-              module: 'backend',
-              recoverable: false,
-            });
+            throw invalidArgument('Mock Vertex Buffer Handle is stale or foreign.');
           }
         }
         if (draw.indexBuffer !== undefined && !this.#buffers.has(draw.indexBuffer.buffer)) {
-          throw new KyxosEngineError('Mock Index Buffer Handle is stale or foreign.', {
-            code: 'INVALID_ARGUMENT',
-            module: 'backend',
-            recoverable: false,
-          });
+          throw invalidArgument('Mock Index Buffer Handle is stale or foreign.');
         }
         const count = draw.indexCount ?? draw.vertexCount ?? 0;
         const drawInstances = draw.instanceCount ?? 1;
@@ -616,6 +704,7 @@ export class MockBackend implements GraphicsBackend {
     this.#buffers.clear();
     this.#commandEncoders.clear();
     this.#pipelines.clear();
+    this.#samplers.clear();
     this.#shaderInfo.clear();
     this.#surfaces.clear();
     this.#textures.clear();

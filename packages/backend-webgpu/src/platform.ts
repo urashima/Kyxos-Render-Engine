@@ -17,7 +17,11 @@ import type {
   BackendSurfaceFormat,
   BackendSurfaceSize,
   BackendSurfaceTarget,
+  BackendTextureData,
   BackendTextureDescriptor,
+  BackendTextureOrigin,
+  BackendTextureSize,
+  BackendTextureViewDescriptor,
   BackendVertexBufferLayout,
 } from '@kyxos/render-backend-api';
 
@@ -37,6 +41,7 @@ export interface WebGpuQueuePort {
   onSubmittedWorkDone(): Promise<void>;
   submit(commandBuffers: readonly WebGpuCommandBufferPort[]): void;
   writeBuffer(buffer: WebGpuBufferPort, offset: number, data: BackendBufferData): void;
+  writeTexture(request: WebGpuTextureWriteRequest, data: BackendTextureData): void;
 }
 
 export interface WebGpuSurfaceRequest {
@@ -61,7 +66,7 @@ export interface WebGpuCommandBufferPort {
 }
 
 export interface WebGpuTexturePort {
-  createView(): WebGpuTextureViewPort;
+  createView(descriptor?: BackendTextureViewDescriptor): WebGpuTextureViewPort;
   destroy(): void;
 }
 
@@ -85,18 +90,45 @@ export interface WebGpuBindGroupPort {
   readonly kind: 'bind-group';
 }
 
-export interface WebGpuBindGroupEntryRequest {
+export interface WebGpuBindGroupBufferEntryRequest {
   readonly binding: number;
+  readonly kind: 'buffer';
   readonly buffer: WebGpuBufferPort;
   readonly offset: number;
   readonly size: number;
 }
+
+export interface WebGpuBindGroupSamplerEntryRequest {
+  readonly binding: number;
+  readonly kind: 'sampler';
+  readonly sampler: WebGpuSamplerPort;
+}
+
+export interface WebGpuBindGroupTextureEntryRequest {
+  readonly binding: number;
+  readonly kind: 'texture';
+  readonly view: WebGpuTextureViewPort;
+}
+
+export type WebGpuBindGroupEntryRequest =
+  | WebGpuBindGroupBufferEntryRequest
+  | WebGpuBindGroupSamplerEntryRequest
+  | WebGpuBindGroupTextureEntryRequest;
 
 export interface WebGpuBindGroupRequest {
   readonly entries: readonly WebGpuBindGroupEntryRequest[];
   readonly group: number;
   readonly label: string | undefined;
   readonly pipeline: WebGpuPipelinePort;
+}
+
+export interface WebGpuTextureWriteRequest {
+  readonly bytesPerRow: number;
+  readonly mipLevel: number;
+  readonly origin: Required<BackendTextureOrigin>;
+  readonly rowsPerImage: number;
+  readonly size: Required<BackendTextureSize>;
+  readonly texture: WebGpuTexturePort;
 }
 
 export interface WebGpuCommandEncoderPort {

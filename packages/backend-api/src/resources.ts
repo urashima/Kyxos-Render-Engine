@@ -61,6 +61,8 @@ export type BackendTextureFormat =
   | 'bgra8unorm-srgb'
   | 'depth24plus'
   | 'depth32float'
+  | 'rg16float'
+  | 'rgba16float'
   | 'rgba8unorm'
   | 'rgba8unorm-srgb';
 
@@ -80,6 +82,22 @@ export interface BackendTextureDescriptor {
 }
 
 export type BackendTextureHandle = BackendResourceHandle<'texture'>;
+
+export type BackendTextureData = ArrayBuffer | ArrayBufferView;
+
+export interface BackendTextureOrigin {
+  readonly x?: number;
+  readonly y?: number;
+  readonly z?: number;
+}
+
+export interface BackendTextureWriteDescriptor {
+  readonly bytesPerRow?: number;
+  readonly mipLevel?: number;
+  readonly origin?: BackendTextureOrigin;
+  readonly rowsPerImage?: number;
+  readonly size: BackendTextureSize;
+}
 
 export type BackendAddressMode = 'clamp-to-edge' | 'mirror-repeat' | 'repeat';
 export type BackendFilterMode = 'linear' | 'nearest';
@@ -214,9 +232,31 @@ export interface BackendBindGroupBufferBinding {
   readonly size?: number;
 }
 
+export interface BackendBindGroupSamplerBinding {
+  readonly sampler: BackendSamplerHandle;
+}
+
+export interface BackendBindGroupTextureBinding {
+  readonly texture: BackendTextureHandle;
+  readonly view?: BackendTextureViewDescriptor;
+}
+
+export type BackendTextureViewDimension = '2d' | '2d-array' | 'cube';
+
+export interface BackendTextureViewDescriptor {
+  readonly arrayLayerCount?: number;
+  readonly baseArrayLayer?: number;
+  readonly baseMipLevel?: number;
+  readonly dimension?: BackendTextureViewDimension;
+  readonly mipLevelCount?: number;
+}
+
+export type BackendBindGroupResource =
+  BackendBindGroupBufferBinding | BackendBindGroupSamplerBinding | BackendBindGroupTextureBinding;
+
 export interface BackendBindGroupEntry {
   readonly binding: number;
-  readonly resource: BackendBindGroupBufferBinding;
+  readonly resource: BackendBindGroupResource;
 }
 
 export interface BackendBindGroupDescriptor {

@@ -14,6 +14,9 @@
       "path": "../core"
     },
     {
+      "path": "../environment"
+    },
+    {
       "path": "../backend-api"
     },
     {
@@ -24,6 +27,12 @@
     },
     {
       "path": "../geometry"
+    },
+    {
+      "path": "../material-core"
+    },
+    {
+      "path": "../material-pbr"
     },
     {
       "path": "../math"

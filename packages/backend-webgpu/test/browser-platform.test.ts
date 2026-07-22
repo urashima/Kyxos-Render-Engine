@@ -29,6 +29,7 @@ describe('browser WebGPU platform port', () => {
       onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
       submit: vi.fn(),
       writeBuffer: vi.fn(),
+      writeTexture: vi.fn(),
     };
     const nativeBuffer = { destroy: vi.fn() };
     const nativeTexture = {
@@ -57,6 +58,7 @@ describe('browser WebGPU platform port', () => {
       beginRenderPass: vi.fn(() => nativeRenderPass),
       finish: vi.fn(() => nativeCommandBuffer),
     };
+    const nativeSampler = {};
     const nativeDevice = {
       createBindGroup: vi.fn(() => nativeBindGroup as GPUBindGroup),
       createBuffer: vi.fn(() => nativeBuffer as unknown as GPUBuffer),
@@ -64,7 +66,7 @@ describe('browser WebGPU platform port', () => {
       createRenderPipelineAsync: vi.fn(() =>
         Promise.resolve(nativePipeline as unknown as GPURenderPipeline),
       ),
-      createSampler: vi.fn(() => ({}) as GPUSampler),
+      createSampler: vi.fn(() => nativeSampler as GPUSampler),
       createShaderModule: vi.fn(() => nativeShader as unknown as GPUShaderModule),
       createTexture: vi.fn(() => nativeTexture as unknown as GPUTexture),
       destroy: vi.fn(),
@@ -113,7 +115,7 @@ describe('browser WebGPU platform port', () => {
     const texture = device.createTexture({
       format: 'rgba8unorm',
       size: { height: 4, width: 8 },
-      usage: ['render-attachment', 'sampled'],
+      usage: ['copy-dst', 'render-attachment', 'sampled'],
     });
     expect(nativeDevice.createTexture).toHaveBeenCalledExactlyOnceWith({
       dimension: '2d',
@@ -121,9 +123,50 @@ describe('browser WebGPU platform port', () => {
       mipLevelCount: 1,
       sampleCount: 1,
       size: { depthOrArrayLayers: 1, height: 4, width: 8 },
-      usage: 0x14,
+      usage: 0x16,
     });
-    device.createSampler({ magFilter: 'linear' });
+    const cubeTexture = device.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    expect(nativeDevice.createTexture).toHaveBeenNthCalledWith(2, {
+      dimension: '2d',
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      sampleCount: 1,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+      usage: 0x06,
+    });
+    cubeTexture.createView({
+      arrayLayerCount: 6,
+      dimension: 'cube',
+      mipLevelCount: 2,
+    });
+    expect(nativeTexture.createView).toHaveBeenLastCalledWith({
+      arrayLayerCount: 6,
+      dimension: 'cube',
+      mipLevelCount: 2,
+    });
+    device.queue.writeTexture(
+      {
+        bytesPerRow: 32,
+        mipLevel: 0,
+        origin: { x: 0, y: 0, z: 0 },
+        rowsPerImage: 4,
+        size: { depthOrArrayLayers: 1, height: 4, width: 8 },
+        texture,
+      },
+      new Uint8Array(128),
+    );
+    expect(queue.writeTexture).toHaveBeenCalledExactlyOnceWith(
+      { mipLevel: 0, origin: { x: 0, y: 0, z: 0 }, texture: nativeTexture },
+      expect.any(Uint8Array),
+      { bytesPerRow: 32, rowsPerImage: 4 },
+      { depthOrArrayLayers: 1, height: 4, width: 8 },
+    );
+    const sampler = device.createSampler({ magFilter: 'linear' });
     expect(nativeDevice.createSampler).toHaveBeenCalledExactlyOnceWith({ magFilter: 'linear' });
     const shader = device.createShaderModule({ code: '@vertex fn main() {}', language: 'wgsl' });
     expect(await shader.getCompilationInfo()).toEqual({ messages: [], valid: true });
@@ -163,13 +206,21 @@ describe('browser WebGPU platform port', () => {
       }),
     );
     const bindGroup = device.createBindGroup({
-      entries: [{ binding: 0, buffer, offset: 0, size: 64 }],
+      entries: [
+        { binding: 0, buffer, kind: 'buffer', offset: 0, size: 64 },
+        { binding: 1, kind: 'texture', view: texture.createView() },
+        { binding: 2, kind: 'sampler', sampler },
+      ],
       group: 0,
       label: 'object-bindings',
       pipeline,
     });
     expect(nativeDevice.createBindGroup).toHaveBeenCalledExactlyOnceWith({
-      entries: [{ binding: 0, resource: { buffer: nativeBuffer, offset: 0, size: 64 } }],
+      entries: [
+        { binding: 0, resource: { buffer: nativeBuffer, offset: 0, size: 64 } },
+        { binding: 1, resource: nativeDepthTextureView },
+        { binding: 2, resource: nativeSampler },
+      ],
       label: 'object-bindings',
       layout: nativeBindGroupLayout,
     });

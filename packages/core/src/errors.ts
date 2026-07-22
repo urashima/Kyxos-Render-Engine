@@ -17,6 +17,7 @@ export type EngineModule =
   | 'backend'
   | 'camera'
   | 'core'
+  | 'environment'
   | 'geometry'
   | 'material'
   | 'renderer'

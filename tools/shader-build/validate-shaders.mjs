@@ -19,6 +19,41 @@ const generatedMirrors = new Map([
       path: 'packages/renderer/src/generated/phase-02-scene.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-03-brdf-reference.wgsl',
+    {
+      exportName: 'PHASE_03_BRDF_REFERENCE_WGSL',
+      path: 'packages/material-pbr/src/generated/phase-03-brdf-reference.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-03-ibl-reference.wgsl',
+    {
+      exportName: 'PHASE_03_IBL_REFERENCE_WGSL',
+      path: 'packages/material-pbr/src/generated/phase-03-ibl-reference.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-03-pbr-direct.wgsl',
+    {
+      exportName: 'PHASE_03_PBR_DIRECT_WGSL',
+      path: 'packages/renderer/src/generated/phase-03-pbr-direct.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-03-pbr-ibl.wgsl',
+    {
+      exportName: 'PHASE_03_PBR_IBL_WGSL',
+      path: 'packages/renderer/src/generated/phase-03-pbr-ibl.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-03-pbr-tonemapped.wgsl',
+    {
+      exportName: 'PHASE_03_PBR_TONEMAPPED_WGSL',
+      path: 'packages/renderer/src/generated/phase-03-pbr-tonemapped.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {
@@ -106,7 +141,8 @@ try {
     process.stdout.write(
       `${JSON.stringify(
         {
-          browserCompilerGate: 'tests/webgpu/phase-01',
+          browserCompilerGate:
+            'tests/e2e/phase-01.spec.ts and phase-03-* specs (BRDF/IBL compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT sampling)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',

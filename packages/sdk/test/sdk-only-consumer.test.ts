@@ -2,8 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BACKEND_RESOURCE_KINDS,
+  EnvironmentGpuCache,
+  EnvironmentLibrary,
+  EnvironmentSource,
+  PbrMaterial,
+  PbrTextureLibrary,
+  PbrTextureSource,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
+  evaluateDeterministicIblReference,
+  evaluatePbrOutputTransform,
+  evaluateSplitSumIbl,
+  float32ToFloat16Bits,
+  srgbToLinearRgba,
 } from '../src/index.js';
 import type {
   BackendBindGroupDescriptor,
@@ -32,8 +43,10 @@ import type {
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureWriteDescriptor,
   FrameRequestDriver,
   GraphicsBackend,
 } from '../src/index.js';
@@ -108,6 +121,17 @@ class SdkOnlyBackend implements GraphicsBackend {
     void data;
     void offset;
     throw new Error('The SDK-only foundation fixture does not allocate buffers.');
+  }
+
+  writeTexture(
+    handle: BackendTextureHandle,
+    data: BackendTextureData,
+    descriptor: BackendTextureWriteDescriptor,
+  ): void {
+    void handle;
+    void data;
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate textures.');
   }
 
   executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
@@ -191,6 +215,10 @@ class SdkOnlyFrameDriver implements FrameRequestDriver {
 
 describe('SDK-only consumer', () => {
   it('creates and controls a renderer using only the public SDK entry point', async () => {
+    expect(EnvironmentGpuCache).toBeTypeOf('function');
+    expect(EnvironmentLibrary).toBeTypeOf('function');
+    expect(EnvironmentSource).toBeTypeOf('function');
+    expect(float32ToFloat16Bits(1)).toBe(0x3c00);
     const frameDriver = new SdkOnlyFrameDriver();
     const renderer = await createKyxosRendererFromBackend({
       backend: new SdkOnlyBackend(),
@@ -207,5 +235,73 @@ describe('SDK-only consumer', () => {
     });
     renderer.dispose();
     expect(renderer.disposed).toBe(true);
+  });
+
+  it('creates PBR material state using only the public SDK entry point', () => {
+    const material = new PbrMaterial({
+      baseColorFactor: srgbToLinearRgba([0.5, 0.25, 0.75, 1]),
+      metallicFactor: 0.8,
+      roughnessFactor: 0.3,
+    });
+
+    expect(material.snapshot()).toMatchObject({
+      alphaMode: 'opaque',
+      metallicFactor: 0.8,
+      revision: 0,
+      roughnessFactor: 0.3,
+    });
+    material.dispose();
+  });
+
+  it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {
+    const reference = evaluateDeterministicIblReference();
+
+    expect(reference).toMatchObject({
+      brdfLut: { nDotV: 0.67, roughness: 0.38, sampleCount: 64 },
+      diffuse: { sampleCount: 64 },
+      specular: { roughness: 0.43, sampleCount: 64 },
+    });
+  });
+
+  it('evaluates runtime split-sum IBL using only the public SDK entry point', () => {
+    const result = evaluateSplitSumIbl({
+      ambientOcclusion: 0.5,
+      baseColor: [0.8, 0.4, 0.2],
+      brdfLut: [0.6, 0.1],
+      diffuseIrradiance: [1, 1, 1],
+      intensity: 2,
+      metallic: 0.25,
+      prefilteredSpecular: [0.2, 0.3, 0.4],
+    });
+
+    expect(result.total.every((channel) => channel > 0)).toBe(true);
+  });
+
+  it('evaluates the HDR display transform using only the public SDK entry point', () => {
+    const result = evaluatePbrOutputTransform([4, 2, 1], { exposure: 1 });
+
+    expect(result.exposed).toEqual([8, 4, 2]);
+    expect(result.transform.toneMapping).toBe('khronos-pbr-neutral');
+    expect(result.srgb.every((channel) => channel >= 0 && channel <= 1)).toBe(true);
+  });
+
+  it('registers immutable PBR Texture sources using only the public SDK entry point', () => {
+    const source = new PbrTextureSource({
+      height: 1,
+      id: 'sdk-base-color',
+      pixels: new Uint8Array([255, 255, 255, 255]),
+      transferFunction: 'srgb',
+      width: 1,
+    });
+    const library = new PbrTextureLibrary();
+    library.set(source);
+
+    expect(library.diagnostics()).toEqual({
+      revision: 1,
+      textureCount: 1,
+      textureIds: ['sdk-base-color'],
+    });
+    library.dispose();
+    expect([...source.copyPixels()]).toEqual([255, 255, 255, 255]);
   });
 });
