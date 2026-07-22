@@ -2170,3 +2170,46 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Add an opt-in PBR temporal offscreen mode that writes linear-HDR Current Color plus encoded Normal
   MRT with `depth32float` into a prepared `DynamicTaaGpuFrame`, while preserving the accepted surface
   path; defer final Present, Static Accumulation, and Phase 4 route/acceptance integration.
+
+## 2026-07-22 10:39 PDT — P4-08 PBR temporal offscreen output passed
+
+### Completed
+
+- Added an explicit `PbrDynamicTaaOutput` contract whose `acquireFrame()` returns one caller-prepared
+  `DynamicTaaGpuFrame`. The PBR Feature validates physical extent and non-empty Owner identity but
+  never commits, cancels, swaps, resizes, or disposes caller-owned History resources.
+- Preserved the accepted Phase 3 direct Surface path without changing its tone-mapped Shader,
+  `rgba8unorm` target, owned `depth24plus` Texture, Pipeline variants, or default SDK behavior.
+- Added a separate temporal PBR Shader and twelve Pipeline variants that write linear-HDR
+  `rgba16float` Current Color plus encoded world-space Normal MRT and use the History-owned
+  `depth32float` write attachment. Output transform is intentionally deferred to final Present.
+- Added SDK composition and public type exports, diagnostics for output target and temporal Owner,
+  strict mismatch/fail-closed behavior, unit coverage, exact Shader mirror validation, and a native
+  WebGPU cube submission gate.
+- Removed all temporary repository patch tooling after the verified implementation commit and
+  restored standard CI to read-only `contents: read` permissions.
+
+### Validation
+
+- Implementation commit `9579f6da965fb3d16996e613eb38929ed422a4a7` contains the P4-08 runtime,
+  Shader, SDK, tests, and research contract. Cleaned checkpoint Head
+  `8656e8d3be0c8082c9f50eafcdbd9297333721d1` contains no temporary patch workflow or script.
+- Run `29942780536`, job `89000570625`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  53 unit files / 250 tests, package and architecture gates, frozen Phase 0–3 Schemas, eleven exact
+  Shader mirrors, build, Bundle, Pages, and all 26 pinned Chromium/WebGPU cases passed.
+- Artifact `8538971728`, digest
+  `sha256:10adf2f25e8174cc74f9e1c0edfd1cc96122e00357c741fd91d6a893d5794334`, contains
+  `test-results/phase-04/runtime/pbr-temporal-output.json` bound to the cleaned checkpoint Head.
+- Native evidence records one cube Draw, 36 Vertices, 12 Triangles, twelve temporal PBR Pipelines,
+  thirteen active Textures before cleanup, exact 48 created / 48 destroyed resources, and zero
+  active Texture, Buffer, Sampler, Bind Group, Pipeline, Shader, Surface, or Encoder resources after
+  PBR Feature, History, and Backend disposal.
+- Phase 0–3 public routes and acceptance evidence remain frozen. Phase 4 still has no public route,
+  owner acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-09 as a dedicated final Present pass that samples resolved linear-HDR Dynamic TAA
+  Color, applies exposure, Khronos PBR Neutral tone mapping, and linear-to-sRGB exactly once, and
+  writes to the Canvas Surface without taking ownership of History. Preserve direct Surface mode as
+  the default and defer Static Accumulation plus Phase 4 route/acceptance integration.
