@@ -3,6 +3,12 @@ import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
+import { PHASE_04_CAMERA_REPROJECTION_REFERENCE_WGSL } from '../../packages/camera/src/generated/phase-04-camera-reprojection-reference.wgsl.js';
+import {
+  CAMERA_REPROJECTION_REFERENCE_CASES,
+  CAMERA_REPROJECTION_REFERENCE_OUTPUT_FIELDS,
+  evaluateDeterministicCameraReprojectionReference,
+} from '../../packages/camera/src/index.js';
 import { PHASE_04_TAA_REFERENCE_WGSL } from '../../packages/temporal/src/generated/phase-04-taa-reference.wgsl.js';
 import {
   TEMPORAL_TAA_DEFAULT_OPTIONS,
@@ -12,6 +18,7 @@ import {
 } from '../../packages/temporal/src/index.js';
 
 const absoluteTolerance = 0.000001;
+const cameraReprojectionAbsoluteTolerance = 0.00001;
 const backendModuleUrl = `/@fs${path.resolve('packages/backend-webgpu/src/index.ts')}`;
 const rendererModuleUrl = `/@fs${path.resolve('packages/renderer/src/index.ts')}`;
 
@@ -137,6 +144,157 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           absoluteTolerance,
           maximumToleranceRatio: Math.max(
             ...absoluteDifferences.map((difference) => difference / absoluteTolerance),
+          ),
+          compilationMessages: gpuResult.compilationMessages,
+          status: 'PASS',
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  });
+
+  test('matches deterministic Camera-motion reprojection through WebGPU readback', async ({
+    page,
+  }) => {
+    await page.goto('/acceptance/phase-01');
+    const encodedInputs = CAMERA_REPROJECTION_REFERENCE_CASES.flatMap(({ input }) => [
+      ...input.currentInverseViewProjection,
+      ...input.previousViewProjection,
+      ...input.currentUv,
+      input.currentDepth,
+      0,
+    ]);
+    const gpuResult = await page.evaluate(
+      async ({ caseCount, inputs, source }) => {
+        const adapter = await navigator.gpu?.requestAdapter();
+        if (adapter === null || adapter === undefined)
+          throw new Error('WebGPU adapter unavailable.');
+        const device = await adapter.requestDevice();
+        const module = device.createShaderModule({
+          code: source,
+          label: 'Phase 4 Camera reprojection reference',
+        });
+        const compilation = await module.getCompilationInfo();
+        const compilationMessages = compilation.messages.map((message) => ({
+          line: message.lineNum,
+          message: message.message,
+          type: message.type,
+        }));
+        const errors = compilationMessages.filter((message) => message.type === 'error');
+        if (errors.length > 0) throw new Error(JSON.stringify(errors));
+
+        const bufferUsage = {
+          copyDestination: 0x0008,
+          copySource: 0x0004,
+          mapRead: 0x0001,
+          storage: 0x0080,
+        } as const;
+        const outputValueCount = caseCount * 16;
+        const outputByteLength = outputValueCount * Float32Array.BYTES_PER_ELEMENT;
+        const inputValues = new Float32Array(inputs);
+        const input = device.createBuffer({
+          label: 'Phase 4 Camera reprojection input',
+          size: inputValues.byteLength,
+          usage: bufferUsage.copyDestination | bufferUsage.storage,
+        });
+        const output = device.createBuffer({
+          label: 'Phase 4 Camera reprojection output',
+          size: outputByteLength,
+          usage: bufferUsage.copySource | bufferUsage.storage,
+        });
+        const readback = device.createBuffer({
+          label: 'Phase 4 Camera reprojection readback',
+          size: outputByteLength,
+          usage: bufferUsage.copyDestination | bufferUsage.mapRead,
+        });
+
+        try {
+          device.queue.writeBuffer(input, 0, inputValues);
+          const pipeline = await device.createComputePipelineAsync({
+            compute: { entryPoint: 'computeMain', module },
+            label: 'Phase 4 Camera reprojection reference pipeline',
+            layout: 'auto',
+          });
+          const bindGroup = device.createBindGroup({
+            entries: [
+              { binding: 0, resource: { buffer: input } },
+              { binding: 1, resource: { buffer: output } },
+            ],
+            layout: pipeline.getBindGroupLayout(0),
+          });
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginComputePass();
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.dispatchWorkgroups(caseCount);
+          pass.end();
+          encoder.copyBufferToBuffer(output, 0, readback, 0, outputByteLength);
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(bufferUsage.mapRead);
+          const values = Array.from(new Float32Array(readback.getMappedRange()).slice());
+          readback.unmap();
+          return { compilationMessages, values };
+        } finally {
+          input.destroy();
+          output.destroy();
+          readback.destroy();
+          device.destroy();
+        }
+      },
+      {
+        caseCount: CAMERA_REPROJECTION_REFERENCE_CASES.length,
+        inputs: encodedInputs,
+        source: PHASE_04_CAMERA_REPROJECTION_REFERENCE_WGSL,
+      },
+    );
+
+    const reference = evaluateDeterministicCameraReprojectionReference();
+    const expected = Array.from(reference.values);
+    const outputLabels = CAMERA_REPROJECTION_REFERENCE_CASES.flatMap(({ id }) =>
+      CAMERA_REPROJECTION_REFERENCE_OUTPUT_FIELDS.map((field) => `${id}:${field}`),
+    );
+    expect(gpuResult.compilationMessages.filter((message) => message.type === 'error')).toEqual([]);
+    expect(gpuResult.values).toHaveLength(expected.length);
+    const absoluteDifferences = gpuResult.values.map((value, index) =>
+      Math.abs(value - (expected[index] as number)),
+    );
+    absoluteDifferences.forEach((difference, index) => {
+      expect(
+        difference,
+        `${outputLabels[index]}: CPU ${expected[index]}, GPU ${gpuResult.values[index]}`,
+      ).toBeLessThanOrEqual(cameraReprojectionAbsoluteTolerance);
+    });
+
+    const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'camera-reprojection.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          phase: '04',
+          checkpoint: 'P4-05',
+          algorithm: {
+            clipDepth: 'WebGPU zero through one',
+            historyCoordinate: 'top-left raster UV from Previous jittered View-Projection',
+            motionDirection: 'Current UV minus History UV',
+            reconstruction: 'Current Depth through inverse Current jittered View-Projection',
+            validity:
+              'background, homogeneous W, previous clip W/depth, and History UV fail closed',
+          },
+          cases: CAMERA_REPROJECTION_REFERENCE_CASES.map(({ id }) => id),
+          outputFields: CAMERA_REPROJECTION_REFERENCE_OUTPUT_FIELDS,
+          outputLabels,
+          cpu: expected,
+          gpu: gpuResult.values,
+          absoluteDifferences,
+          maximumAbsoluteDifference: Math.max(...absoluteDifferences),
+          absoluteTolerance: cameraReprojectionAbsoluteTolerance,
+          maximumToleranceRatio: Math.max(
+            ...absoluteDifferences.map(
+              (difference) => difference / cameraReprojectionAbsoluteTolerance,
+            ),
           ),
           compilationMessages: gpuResult.compilationMessages,
           status: 'PASS',

@@ -1,6 +1,6 @@
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable } from '@kyxos/render-core';
-import { multiplyMat4 } from '@kyxos/render-math';
+import { inverseMat4, multiplyMat4 } from '@kyxos/render-math';
 import type { Mat4 } from '@kyxos/render-math';
 import { temporalJitterToNdc } from '@kyxos/render-temporal';
 import type {
@@ -29,6 +29,7 @@ export interface TemporalCameraFrameOptions {
 export interface TemporalCameraFrameMatrices {
   readonly cameraRevision: number;
   readonly currentViewProjection: Mat4;
+  readonly currentInverseViewProjection: Mat4;
   readonly historyGeneration: number;
   readonly historyReset: boolean;
   readonly historyResetReason: TemporalCameraResetReason | null;
@@ -150,6 +151,7 @@ export class TemporalCameraMatrixTracker implements Disposable {
       jitteredProjection === unjitteredProjection
         ? unjitteredViewProjection
         : multiplyMat4(jitteredProjection, view);
+    const currentInverseViewProjection = inverseMat4(currentViewProjection);
     const reason = resetReason(
       this.#previous,
       options.historyGeneration,
@@ -172,6 +174,7 @@ export class TemporalCameraMatrixTracker implements Disposable {
 
     return Object.freeze({
       cameraRevision: cameraDiagnostics.revision,
+      currentInverseViewProjection,
       currentViewProjection,
       historyGeneration: options.historyGeneration,
       historyReset: reason !== null,

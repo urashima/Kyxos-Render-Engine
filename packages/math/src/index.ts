@@ -22,6 +22,7 @@ export {
   composeTrsMat4,
   extractTranslationMat4,
   identityMat4,
+  inverseMat4,
   lookAtMat4,
   maxScaleOnAxisMat4,
   multiplyMat4,

@@ -15,6 +15,7 @@ import {
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   createTemporalJitterSample,
+  evaluateDeterministicCameraReprojectionReference,
   evaluateDeterministicIblReference,
   evaluateDeterministicTemporalTaaReference,
   evaluatePbrOutputTransform,
@@ -307,6 +308,18 @@ describe('SDK-only consumer', () => {
       ['normal-rejected', 'normal'],
     ]);
     expect(reference.values).toHaveLength(60);
+  });
+
+  it('evaluates deterministic Camera reprojection from the public SDK', () => {
+    const reference = evaluateDeterministicCameraReprojectionReference();
+
+    expect(reference.cases.map(({ id, result }) => [id, result.invalidReason])).toEqual([
+      ['stationary', null],
+      ['camera-motion', null],
+      ['uv-rejected', 'previous-uv-out-of-bounds'],
+      ['background-depth', 'background-depth'],
+    ]);
+    expect(reference.values).toHaveLength(64);
   });
 
   it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {

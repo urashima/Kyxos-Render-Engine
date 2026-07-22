@@ -113,6 +113,39 @@ The two Textures consume exactly `width × height × 8 × 2` estimated bytes. No
 Bind Group, resolve Pipeline, Renderer frame submission, or Render Graph resource is added by
 P4-04.
 
+## Camera-motion reprojection contract
+
+P4-05 adds a deterministic Camera-layer reprojection reference without connecting the TAA resolve
+to a Renderer pass. `TemporalCameraMatrixTracker` now returns the inverse of the Current jittered
+View-Projection together with the retained Previous jittered View-Projection. The general inverse
+is provided by the dependency-free Math package and is rejected for singular matrices.
+
+For a top-left Raster coordinate `currentUv` and canonical WebGPU Depth `currentDepth`, CPU and WGSL
+perform the same float32 sequence:
+
+```text
+currentNdc = (2 × currentUv.x - 1, 1 - 2 × currentUv.y, currentDepth)
+world = inverseCurrentViewProjection × (currentNdc, 1)
+previousClip = previousViewProjection × (world.xyz / world.w, 1)
+historyUv = ((previousClip.x / previousClip.w + 1) / 2,
+             (1 - previousClip.y / previousClip.w) / 2)
+motionUv = currentUv - historyUv
+```
+
+The Motion direction is therefore frozen so `historyUv = currentUv - motionUv`. This includes both
+Camera movement and the difference between Current and Previous Projection Jitter. History validity
+fails closed for a Current UV outside the unit square, clear/background Depth `1`, a zero or invalid
+Current homogeneous W, a Previous clip W at or behind the Camera, Previous Depth outside `[0, 1]`,
+or a Previous History UV outside the unit square. Skinned/Morph Motion Vectors, History sampling,
+Depth/Normal validation, resolve composition, and Renderer submission remain outside P4-05.
+
+The coordinate and depth mapping follow Accepted ADR-002 and the W3C [WebGPU coordinate-system
+definition](https://www.w3.org/TR/webgpu/#coordinate-systems). Matrix/vector multiplication,
+float32 behavior, storage layout, and finite-value guards follow the W3C [WGSL
+specification](https://www.w3.org/TR/WGSL/). Four frozen branches cover stationary, moving Camera
+plus Jitter, Previous UV rejection, and background rejection. The pinned WebGPU gate reads back 64
+float32 fields and compares them with the CPU reference under a `0.00001` absolute tolerance.
+
 ## Renderer boundary
 
 `KyxosRenderer` continues to construct the dirty-only scheduler unless a caller explicitly injects a
@@ -137,7 +170,9 @@ SDK → public engine packages
 ```
 
 Unit tests cover Backend target/view/format validation, native port translation, ping-pong roles,
-signature mismatch, atomic Resize, partial-allocation rollback, Device Lost recovery, and complete
-release. The pinned Chromium/SwiftShader gate dynamically loads the public WebGPU Backend and
+signature mismatch, atomic Resize, partial-allocation rollback, Device Lost recovery, complete
+release, general matrix inversion, Camera reprojection direction, and every fail-closed projection
+branch. The pinned Chromium/SwiftShader gate dynamically loads the public WebGPU Backend and
 Renderer modules, submits real `rgba16float` offscreen passes through both initial and resized
-History resources, and records the owner/resource diagnostics in the Phase 4 Artifact.
+History resources, and records those owner/resource diagnostics plus the deterministic Camera
+reprojection float32 readback in the Phase 4 Artifact.

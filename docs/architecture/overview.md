@@ -32,7 +32,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-material-core`   | Color, texture semantics, UV transforms, and feature identities         | Core                                                                                    |
 | `@kyxos/render-material-pbr`    | Metallic-roughness state plus direct, reference, and runtime IBL math   | Core, Material Core                                                                     |
 | `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds   | Core, Math                                                                              |
-| `@kyxos/render-camera`          | Perspective, Jittered Previous/Current matrices, framing, and orbit     | Core, Math, Scene, Temporal                                                             |
+| `@kyxos/render-camera`          | Perspective, Jittered matrices, deterministic reprojection, framing     | Core, Math, Scene, Temporal                                                             |
 | `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting        | Camera, Core, Geometry, Math, Scene                                                     |
 | `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics       | Core                                                                                    |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                                       |
