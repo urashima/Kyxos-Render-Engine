@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                              |
-| Current Branch      | `agent/phase-04-temporal`                                                                                                                             |
-| Current Commit      | `8760566cb92fb935b13ba2a7380b3a4dab29b7f6` (P4-01 verified implementation)                                                                            |
-| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoint P4-01 complete                                                                                             |
-| Current Task        | P4-02 — Deterministic Jitter and Current/Previous Camera matrix contract                                                                              |
-| Last Completed Task | P4-01 — Owner-scoped History/Convergence state, four-mode Temporal Scheduler, Renderer injection, and SDK boundary                                    |
-| Next Action         | Implement deterministic Halton Jitter, pixel/NDC projection offsets, and Current/Previous camera matrices without creating GPU History or TAA Shaders |
-| CI Status           | Run 29922302477 / job 88930549175 PASS; 215 unit tests + 21 Chromium/WebGPU cases; Artifact 8530517987                                                |
-| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                            |
-| Known Blockers      | None                                                                                                                                                  |
-| Last Updated        | 2026-07-22 06:09 PDT                                                                                                                                  |
+| Field               | Value                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                                                                    |
+| Current Branch      | `agent/phase-04-temporal`                                                                                                                                                                   |
+| Current Commit      | `04beab4ff66885973b5ddaed95cb9d79442db98d` (P4-02 verified implementation)                                                                                                                  |
+| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-02 complete                                                                                                                    |
+| Current Task        | P4-03 — Deterministic Dynamic TAA resolve CPU/WGSL contract                                                                                                                                 |
+| Last Completed Task | P4-02 — Halton 2/3 Jitter, raster/NDC conversion, immutable jittered Projection, and fail-closed Current/Previous Camera matrices                                                           |
+| Next Action         | Implement deterministic depth/normal rejection, neighborhood clamp, responsive history weighting, and CPU/WGSL resolve parity without creating GPU History Textures or Renderer integration |
+| CI Status           | Run 29923625893 / job 88935055961 PASS; 223 unit tests + 21 Chromium/WebGPU cases; Artifact 8531067149                                                                                      |
+| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                                                                  |
+| Known Blockers      | None                                                                                                                                                                                        |
+| Last Updated        | 2026-07-22 06:27 PDT                                                                                                                                                                        |
 
 ## Phase Progress
 

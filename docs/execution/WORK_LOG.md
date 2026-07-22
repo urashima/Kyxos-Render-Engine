@@ -1869,3 +1869,44 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 
 - Implement P4-02 deterministic Halton Jitter, pixel-to-NDC projection offsets, and explicit
   Current/Previous Camera matrices without creating GPU History or TAA Shaders.
+
+## 2026-07-22 06:27 PDT — P4-02 deterministic Jitter and Camera matrix contract passed
+
+### Completed
+
+- Added the frozen one-based Halton base-2/base-3 sequence for all supported 1–256 samples. Each
+  immutable sample retains its unit-square point and centered top-left Raster offset.
+- Added exact Raster-pixel to canonical +Y-up NDC conversion with positive safe-integer Viewport
+  validation and fail-closed rejection of inconsistent caller-provided samples.
+- Added an immutable Projection Jitter operation that preserves the Camera's canonical unjittered
+  Projection and Frustum while producing the exact clip-space offset required by the selected
+  sample.
+- Added `TemporalCameraMatrixTracker` for Current/Previous jittered View-Projection matrices,
+  unjittered matrices, Viewport, Camera revisions, current/previous Jitter, and History Generation.
+  First use plus Generation, Projection, Viewport, and explicit resets set Previous equal to Current;
+  Camera pose movement in one Generation retains the true previous frame.
+- Kept ownership explicit: the tracker owns no caller Camera and no GPU resource. P4-02 creates no
+  History Texture, TAA Shader, Motion Vector, Render Feature, or Phase 4 visual acceptance claim.
+- Extended Camera/Temporal architecture boundaries and exposed the complete contract through the
+  public SDK without changing accepted Phase 0–3 route behavior.
+
+### Validation
+
+- Implementation commit `04beab4ff66885973b5ddaed95cb9d79442db98d` has Git Tree
+  `3d1732cb50e8df0181f1ebdac70493e2f27dbc29`, identical to the complete locally verified Tree.
+- Run `29923625893`, job `88935055961`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  48 unit files / 223 tests, package/architecture gates, Phase 0–3 frozen Schemas, seven Shader
+  mirrors, build, Bundle, Pages, and all 21 pinned Chromium/WebGPU cases passed.
+- Artifact `8531067149`, digest
+  `sha256:bb430c33c7a0ec1107bb847e4b81dfd3851208ac6e5d6607d93c717bb23ac5b8`, is bound to the exact
+  implementation Head and retains the complete historical browser diagnostics.
+- The Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,745 / 131,072 bytes. Pages still contain only contiguous accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no GPU History, Owner Acceptance, public route,
+  deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-03 deterministic Dynamic TAA resolve parity for depth/normal rejection,
+  neighborhood clamp, responsive history weighting, and CPU/WGSL float32 outputs before creating
+  GPU History Textures or integrating a Temporal Render Feature.
