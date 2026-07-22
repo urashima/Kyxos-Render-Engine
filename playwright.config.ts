@@ -55,7 +55,7 @@ export default defineConfig({
     {
       name: 'chromium-temporal',
       snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-04/{arg}{ext}',
-      testMatch: /phase-04-(?:present|temporal)\.spec\.ts/,
+      testMatch: /phase-04-(?:present|static-accumulation|temporal)\.spec\.ts/,
       use: chromiumUse,
     },
   ],
