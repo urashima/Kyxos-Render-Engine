@@ -23,6 +23,7 @@
   "dependencies": {
     "@kyxos/render-core": "workspace:*",
     "@kyxos/render-math": "workspace:*",
-    "@kyxos/render-scene": "workspace:*"
+    "@kyxos/render-scene": "workspace:*",
+    "@kyxos/render-temporal": "workspace:*"
   }
 }

@@ -309,3 +309,42 @@
 - **Reason:** A shared root bundle can silently change historical routes, while a local or downloadable artifact does not prove that a reviewer can open and operate the milestone from another device. The acceptance tag must represent code, CI, deployment, public reachability, and browser interaction together rather than code alone.
 - **Impact:** `/phase-0/` through the latest accepted `/phase-N/` remain explicit regression surfaces, `/latest/` never selects an in-development phase, and each directory owns its hashed assets under the repository Pages base path. The deployment workflow has only `contents: read`, `pages: write`, and `id-token: write`; the separate post-deployment freeze workflow alone receives `contents: write`. A repository must have GitHub Pages configured to use GitHub Actions before the deployment can pass.
 - **ADR required:** No; this governs acceptance delivery and release automation without changing engine runtime architecture or public APIs.
+
+## ED-036 — Keep temporal PBR output opt-in, offscreen, and caller-owned
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** Add a separate opt-in forward PBR Shader/Pipeline family that writes linear-HDR Color,
+  encoded world-space Normal, and Depth into a caller-prepared `DynamicTaaGpuFrame`. Keep the accepted
+  direct Surface Pipeline as the default and leave History commit, resize, recovery, and disposal with
+  the temporal owner.
+- **Candidates:** Replace the direct Surface path globally; make PBR own Dynamic TAA History; add an
+  explicit offscreen output contract with separate Pipelines and caller ownership.
+- **Reason:** Replacing the accepted path would create an unnecessary regression surface, while PBR
+  ownership would entangle scene rendering with temporal scheduling and prevent independent Resolve,
+  Present, accumulation, and future Render Graph composition. An explicit opt-in seam preserves public
+  behavior and makes resource roles mechanically testable.
+- **Impact:** WebGPU uses `rgba16float` Color/Normal MRT plus `depth32float` only when temporal output is
+  supplied. The default Pipeline and resource budget are unchanged. WebGL2 may later advertise a
+  downgraded compatible format set behind the same owner-neutral contract. Final output transform must
+  occur in Present exactly once.
+- **ADR required:** No; this is an internal composition decision within the existing backend-neutral,
+  owner-scoped temporal architecture.
+
+## ED-037 — Present reads the open resolved write target before History commit
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** The final Present pass reads `DynamicTaaGpuFrame.writeColorTexture` while the frame is
+  open, performs the only display output transform, submits to its independently owned Surface, and
+  leaves History commit/cancel and Backend lifetime to the caller.
+- **Candidates:** Present after commit from the newly swapped History read target; let Resolve write
+  directly to the Surface; read the open resolved write target before commit through a dedicated pass.
+- **Reason:** Direct Surface Resolve would mix linear temporal state with display encoding and make
+  accumulation reuse impossible. Presenting only after commit would expose History role-swapping to
+  the display pass and complicate failure recovery. Reading the open write target preserves the clear
+  order `prepare → scene MRT → resolve → present → commit` and permits cancel on any failed stage.
+- **Impact:** WebGPU gains one full-screen Triangle, one small Uniform, one Pipeline, and one Bind Group
+  in temporal mode. The accepted direct Surface PBR path remains unchanged. WebGL2 can implement the
+  same owner-neutral contract with its supported HDR format and output Surface.
+- **ADR required:** No; this refines the existing temporal transaction and resource-ownership contract.

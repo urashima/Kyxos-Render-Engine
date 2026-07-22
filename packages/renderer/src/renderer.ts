@@ -10,6 +10,8 @@ import { FrameScheduler } from '@kyxos/render-frame-scheduler';
 import type {
   DirtyFlag,
   FrameRequestDriver,
+  FrameSchedulerController,
+  FrameSchedulerDiagnostics,
   RenderMode,
   ScheduledFrame,
 } from '@kyxos/render-frame-scheduler';
@@ -63,14 +65,26 @@ export interface RendererDiagnostics {
   readonly lastFrameStatistics: BackendRenderPassStatistics;
   readonly registrations: RendererRegistrationCounts;
   readonly renderMode: RenderMode;
+  readonly scheduler: FrameSchedulerDiagnostics;
   readonly state: RendererLifecycleState;
 }
 
-export interface KyxosRendererOptions {
+interface KyxosRendererSharedOptions {
   readonly backend: GraphicsBackend;
-  readonly frameDriver: FrameRequestDriver;
   readonly now?: () => number;
 }
+
+export type KyxosRendererOptions = KyxosRendererSharedOptions &
+  (
+    | {
+        readonly frameDriver: FrameRequestDriver;
+        readonly frameScheduler?: never;
+      }
+    | {
+        readonly frameDriver?: never;
+        readonly frameScheduler: FrameSchedulerController;
+      }
+  );
 
 const EMPTY_FRAME_STATISTICS: BackendRenderPassStatistics = Object.freeze({
   drawCalls: 0,
@@ -103,7 +117,7 @@ export class KyxosRenderer implements Disposable {
   readonly #assetDecoders = new ExtensionRegistry<AssetDecoder>('asset-decoder');
   readonly #backend: GraphicsBackend;
   readonly #events = new TypedEventEmitter<RendererEvents>();
-  readonly #frameScheduler: FrameScheduler;
+  readonly #frameScheduler: FrameSchedulerController;
   readonly #materialExtensions = new ExtensionRegistry<MaterialExtension>('material-extension');
   readonly #now: () => number;
   readonly #owned = new DisposeBag();
@@ -117,12 +131,14 @@ export class KyxosRenderer implements Disposable {
   constructor(options: KyxosRendererOptions) {
     this.#backend = options.backend;
     this.#now = options.now ?? (() => performance.now());
-    this.#frameScheduler = new FrameScheduler({
-      driver: options.frameDriver,
-      onFrame: (frame) => this.#onFrame(frame),
-    });
+    this.#frameScheduler =
+      options.frameScheduler ??
+      new FrameScheduler({
+        driver: options.frameDriver,
+      });
 
     this.#owned.add(this.#backend.on('lost', (loss) => this.#onBackendLost(loss)));
+    this.#owned.add(this.#frameScheduler.on('frame', (frame) => this.#onFrame(frame)));
     this.#owned.add(this.#frameScheduler.on('wake', (event) => this.#events.emit('wake', event)));
     this.#owned.add(this.#frameScheduler.on('sleep', () => this.#events.emit('sleep', undefined)));
   }
@@ -225,6 +241,7 @@ export class KyxosRenderer implements Disposable {
         renderFeatures: this.#renderFeatures.size,
       }),
       renderMode: this.#frameScheduler.mode,
+      scheduler: this.#frameScheduler.getDiagnostics(),
       state: this.#state,
     });
   }
@@ -303,6 +320,7 @@ export class KyxosRenderer implements Disposable {
           backend: this.#backend,
           dirtyFlags: frame.dirtyFlags,
           frameIndex,
+          ...(frame.temporal === undefined ? {} : { temporal: frame.temporal }),
           timestamp: frame.timestamp,
         });
         if (result !== undefined) {
@@ -331,6 +349,7 @@ export class KyxosRenderer implements Disposable {
         dirtyFlags: frame.dirtyFlags,
         frameIndex,
         statistics,
+        ...(frame.temporal === undefined ? {} : { temporal: frame.temporal }),
         timestamp: frame.timestamp,
       }),
     );

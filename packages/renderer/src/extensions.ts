@@ -3,7 +3,7 @@ import type {
   BackendRenderPassStatistics,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
-import type { DirtyFlag } from '@kyxos/render-frame-scheduler';
+import type { DirtyFlag, TemporalFrameMetadata } from '@kyxos/render-frame-scheduler';
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 
@@ -19,6 +19,7 @@ export interface RenderFeatureInitializationContext {
 export interface RenderFeatureFrameContext extends RenderFeatureInitializationContext {
   readonly dirtyFlags: readonly DirtyFlag[];
   readonly frameIndex: number;
+  readonly temporal?: TemporalFrameMetadata;
   readonly timestamp: number;
 }
 

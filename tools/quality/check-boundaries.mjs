@@ -17,7 +17,12 @@ const allowedDependencies = new Map([
   ['@kyxos/render-scene', new Set(['@kyxos/render-core', '@kyxos/render-math'])],
   [
     '@kyxos/render-camera',
-    new Set(['@kyxos/render-core', '@kyxos/render-math', '@kyxos/render-scene']),
+    new Set([
+      '@kyxos/render-core',
+      '@kyxos/render-math',
+      '@kyxos/render-scene',
+      '@kyxos/render-temporal',
+    ]),
   ],
   [
     '@kyxos/render-visibility',
@@ -31,7 +36,8 @@ const allowedDependencies = new Map([
   ],
   ['@kyxos/render-backend-api', new Set(['@kyxos/render-core'])],
   ['@kyxos/render-backend-webgpu', new Set(['@kyxos/render-backend-api', '@kyxos/render-core'])],
-  ['@kyxos/render-frame-scheduler', new Set(['@kyxos/render-core'])],
+  ['@kyxos/render-temporal', new Set(['@kyxos/render-core'])],
+  ['@kyxos/render-frame-scheduler', new Set(['@kyxos/render-core', '@kyxos/render-temporal'])],
   [
     '@kyxos/render-renderer',
     new Set([
@@ -45,6 +51,7 @@ const allowedDependencies = new Map([
       '@kyxos/render-material-pbr',
       '@kyxos/render-math',
       '@kyxos/render-scene',
+      '@kyxos/render-temporal',
       '@kyxos/render-visibility',
     ]),
   ],
@@ -63,6 +70,7 @@ const allowedDependencies = new Map([
       '@kyxos/render-math',
       '@kyxos/render-renderer',
       '@kyxos/render-scene',
+      '@kyxos/render-temporal',
       '@kyxos/render-visibility',
     ]),
   ],

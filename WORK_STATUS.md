@@ -1,18 +1,16 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 Accepted — Phase 4 handoff                                                                                                     |
-| Current Branch      | `agent/phase-03-pages-enablement`                                                                                                      |
-| Current Commit      | `6b3331251fd1a20257aeebab26a72c2f26103f0a` (deployed and immutable accepted source)                                                    |
-| Overall Progress    | 4 / 15 phases accepted; Phase 4 is unblocked                                                                                           |
-| Current Task        | P3-12 — Record successful public Pages verification and immutable Phase 3 freeze                                                       |
-| Last Completed Task | PR #5 merged; public Phase 0–3/Latest Chromium-WebGPU verification passed; `phase-03-accepted` targets the merge source                |
-| Next Action         | Merge the green Phase 3 closure record, create `agent/phase-04-temporal` from updated `main`, and begin P4-01 scheduler state contract |
-| CI Status           | Final PR Run 29919316277 PASS; main/deploy/public/freeze workflow chain PASS; accepted Tag targets `6b333125`                          |
-| Acceptance Status   | Phase 0, Phase 1, Phase 2, and Phase 3 Accepted                                                                                        |
-| Known Blockers      | None                                                                                                                                   |
-| Last Updated        | 2026-07-22 05:35 PDT                                                                                                                   |
+- **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
+- **Current Branch:** `agent/phase-04-temporal`
+- **Current Commit:** `ca8ae24667eb183754fe969ff5347b0f4c7524ba` (P4-09 final Present verified)
+- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-09 complete
+- **Current Task:** P4-10 — Static accumulation, convergence, and sample-limit state
+- **Last Completed Task:** P4-09 — Final Dynamic TAA Present Surface pass with exactly-once exposure, Khronos PBR Neutral tone mapping, and linear-to-sRGB output
+- **Next Action:** Define and implement owner-scoped static accumulation state and deterministic CPU/WGSL accumulation parity, including sample reset, convergence/sample limit, Resize and Device Lost recovery, and zero-resource disposal
+- **CI Status:** Run 29945593058 / job 89010040816 PASS; 53 unit files / 253 tests; 12 exact Shader mirrors; 28 / 28 Chromium/WebGPU cases; Artifact 8540088727
+- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development
+- **Known Blockers:** None
+- **Last Updated:** 2026-07-22 11:18 PDT
 
 ## Phase Progress
 
@@ -22,7 +20,7 @@
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
 |    02 | Phase Accepted | `agent/phase-02-scene-camera`        | #3  | PASS | Phase Accepted | `phase-02-accepted` |
 |    03 | Phase Accepted | `agent/phase-03-pbr-ibl`             | #5  | PASS | Phase Accepted | `phase-03-accepted` |
-|    04 | Planned        | `agent/phase-04-temporal`            | —   | —    | Planned        | —                   |
+|    04 | In Development | `agent/phase-04-temporal`            | #7  | PASS | In Development | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —    | Planned        | —                   |
 |    06 | Planned        | `agent/phase-06-assets`              | —   | —    | Planned        | —                   |
 |    07 | Planned        | `agent/phase-07-animation`           | —   | —    | Planned        | —                   |

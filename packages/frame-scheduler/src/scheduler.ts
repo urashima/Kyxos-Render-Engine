@@ -1,5 +1,6 @@
 import { KyxosEngineError, TypedEventEmitter } from '@kyxos/render-core';
 import type { Disposable, EventListener, Unsubscribe } from '@kyxos/render-core';
+import type { TemporalConvergenceSnapshot } from '@kyxos/render-temporal';
 
 export const DIRTY_FLAGS = [
   'accumulation',
@@ -19,6 +20,7 @@ export const DIRTY_FLAGS = [
 export type DirtyFlag = (typeof DIRTY_FLAGS)[number];
 export type RenderMode = 'accumulating' | 'interactive' | 'sleeping' | 'stabilizing';
 export type FrameRequestId = number;
+export type FrameSchedulingStrategy = 'dirty-only' | 'temporal';
 
 export interface FrameRequestDriver {
   cancelFrame(requestId: FrameRequestId): void;
@@ -27,13 +29,58 @@ export interface FrameRequestDriver {
 
 export interface ScheduledFrame {
   readonly dirtyFlags: readonly DirtyFlag[];
+  readonly temporal?: TemporalFrameMetadata;
   readonly timestamp: number;
 }
 
+export interface TemporalFrameMetadata {
+  readonly historyGeneration: number;
+  readonly historyReset: boolean;
+  readonly mode: Exclude<RenderMode, 'sleeping'>;
+  readonly sampleIndex: number;
+  readonly targetSamples: number;
+}
+
+export interface TemporalScheduledFrame extends ScheduledFrame {
+  readonly temporal: TemporalFrameMetadata;
+}
+
+export interface FrameSchedulerModeChangeEvent {
+  readonly current: RenderMode;
+  readonly previous: RenderMode;
+}
+
+export interface FrameSchedulerHistoryResetEvent {
+  readonly dirtyFlag: DirtyFlag;
+  readonly generation: number;
+}
+
 export interface FrameSchedulerEvents {
+  readonly converged: TemporalConvergenceSnapshot;
   readonly frame: ScheduledFrame;
+  readonly 'history-reset': FrameSchedulerHistoryResetEvent;
+  readonly 'mode-change': FrameSchedulerModeChangeEvent;
   readonly sleep: undefined;
   readonly wake: { readonly dirtyFlag: DirtyFlag };
+}
+
+export interface FrameSchedulerDiagnostics {
+  readonly mode: RenderMode;
+  readonly pending: boolean;
+  readonly strategy: FrameSchedulingStrategy;
+}
+
+export interface FrameSchedulerController extends Disposable {
+  readonly disposed: boolean;
+  readonly mode: RenderMode;
+  readonly pending: boolean;
+  getDiagnostics(): FrameSchedulerDiagnostics;
+  invalidate(dirtyFlag: DirtyFlag): void;
+  on<EventName extends keyof FrameSchedulerEvents>(
+    eventName: EventName,
+    listener: EventListener<FrameSchedulerEvents[EventName]>,
+  ): Unsubscribe;
+  suspend(): void;
 }
 
 export interface FrameSchedulerOptions {
@@ -48,7 +95,7 @@ export interface FrameSchedulerOptions {
  * no new invalidation was raised during that frame. Stabilization and temporal
  * accumulation policies are intentionally deferred to Phase 4.
  */
-export class FrameScheduler implements Disposable {
+export class FrameScheduler implements FrameSchedulerController {
   readonly #dirtyFlags = new Set<DirtyFlag>();
   readonly #driver: FrameRequestDriver;
   readonly #events = new TypedEventEmitter<FrameSchedulerEvents>();
@@ -72,6 +119,14 @@ export class FrameScheduler implements Disposable {
 
   get pending(): boolean {
     return this.#pendingRequest !== undefined;
+  }
+
+  getDiagnostics(): FrameSchedulerDiagnostics {
+    return Object.freeze({
+      mode: this.#mode,
+      pending: this.pending,
+      strategy: 'dirty-only',
+    });
   }
 
   on<EventName extends keyof FrameSchedulerEvents>(

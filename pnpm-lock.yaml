@@ -78,6 +78,9 @@ importers:
       '@kyxos/render-scene':
         specifier: workspace:*
         version: link:../scene
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
 
   packages/core: {}
 
@@ -92,6 +95,9 @@ importers:
       '@kyxos/render-core':
         specifier: workspace:*
         version: link:../core
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
 
   packages/geometry:
     dependencies:
@@ -148,6 +154,9 @@ importers:
       '@kyxos/render-scene':
         specifier: workspace:*
         version: link:../scene
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
       '@kyxos/render-visibility':
         specifier: workspace:*
         version: link:../visibility
@@ -203,6 +212,9 @@ importers:
       '@kyxos/render-scene':
         specifier: workspace:*
         version: link:../scene
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
       '@kyxos/render-visibility':
         specifier: workspace:*
         version: link:../visibility
@@ -210,6 +222,12 @@ importers:
       '@kyxos/render-testing':
         specifier: workspace:*
         version: link:../testing
+
+  packages/temporal:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/testing:
     dependencies:
