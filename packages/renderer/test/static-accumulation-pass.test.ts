@@ -128,10 +128,7 @@ describe('StaticAccumulationPass', () => {
     const second = history.prepareFrame(signature);
     pass.execute({ currentColorTexture: current, frame: second });
     expect(Array.from(writeBuffer.mock.calls.at(-1)?.[1] as Float32Array)).toEqual([
-      0.5,
-      0.5,
-      1,
-      1,
+      0.5, 0.5, 1, 1,
     ]);
     expect(createBindGroup).toHaveBeenCalledTimes(2);
     history.cancelFrame();
@@ -160,9 +157,9 @@ describe('StaticAccumulationPass', () => {
     history.dispose();
     backend.destroyResource(resizedCurrent);
     expect(backend.getResourceStatistics().activeCount).toBe(0);
-    expect(() => pass.execute({ currentColorTexture: resizedCurrent, frame: resized })).toThrowError(
-      expect.objectContaining({ code: 'ALREADY_DISPOSED' }),
-    );
+    expect(() =>
+      pass.execute({ currentColorTexture: resizedCurrent, frame: resized }),
+    ).toThrowError(expect.objectContaining({ code: 'ALREADY_DISPOSED' }));
     backend.dispose();
   });
 
