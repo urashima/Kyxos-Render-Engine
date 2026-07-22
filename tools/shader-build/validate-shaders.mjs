@@ -55,6 +55,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-pbr-temporal-output.wgsl',
+    {
+      exportName: 'PHASE_04_PBR_TEMPORAL_OUTPUT_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-pbr-temporal-output.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-camera-reprojection-reference.wgsl',
     {
       exportName: 'PHASE_04_CAMERA_REPROJECTION_REFERENCE_WGSL',

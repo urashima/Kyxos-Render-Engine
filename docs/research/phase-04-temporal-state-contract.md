@@ -232,3 +232,25 @@ resized History resources, and records the resource diagnostics. A separate nati
 reads three `rgba16float` output pixels for accepted, Depth-rejected, and Normal-rejected History
 using render-produced Current and History Depth, compares them with the half-float-aware CPU oracle,
 and stores the result with the deterministic Camera reprojection reference in the Phase 4 Artifact.
+
+## PBR temporal offscreen output
+
+P4-08 adds an opt-in output mode to the existing forward PBR Render Feature. The default accepted
+Phase 3 Surface path retains its original tone-mapped sRGB Shader, one Color target, `depth24plus`
+Depth owner, Pipeline variants, and public behavior. Supplying `dynamicTaaOutput.acquireFrame` selects
+a separate Shader and Pipeline family that writes linear-HDR `rgba16float` Color at location 0,
+world-space Normal encoded from `[-1, 1]` into `[0, 1]` in `rgba16float` at location 1, and canonical
+WebGPU Depth into the caller-prepared `depth32float` write target.
+
+The Render Feature validates that the immutable frame extent exactly matches the physical Surface
+extent and records the non-empty temporal Owner ID. It acquires one frame per submission but never
+commits, cancels, resizes, swaps, or disposes caller-owned History resources. The caller order remains
+`prepare frame → PBR scene MRT → Dynamic TAA resolve → commit frame`. Resize therefore updates only
+the Surface/Camera contract in temporal mode; the next render fails closed until the caller has resized
+History to the same physical extent. Device Lost clears only cached Feature resources and diagnostic
+Owner identity; existing History recovery remains independently owned.
+
+Opaque and Mask materials write unit Alpha to Current Color; Blend preserves the material Alpha and
+uses the existing Color blend contract while the encoded Normal attachment remains unblended. Final
+Present, Output Transform, Static Accumulation, Motion Vectors for deforming geometry, Render Graph
+scheduling, the Phase 4 route, and acceptance remain subsequent checkpoints.

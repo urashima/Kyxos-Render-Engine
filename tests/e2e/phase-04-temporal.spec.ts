@@ -29,6 +29,7 @@ const cameraReprojectionAbsoluteTolerance = 0.00001;
 const sampledResolveAbsoluteTolerance = 0.001;
 const backendModuleUrl = `/@fs${path.resolve('packages/backend-webgpu/src/index.ts')}`;
 const rendererModuleUrl = `/@fs${path.resolve('packages/renderer/src/index.ts')}`;
+const sdkModuleUrl = `/@fs${path.resolve('packages/sdk/src/index.ts')}`;
 
 const historySignature = {
   camera: 1,
@@ -985,6 +986,124 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
     await writeFile(
       path.join(runtimeDirectory, 'taa-history-gpu.json'),
       `${JSON.stringify({ schemaVersion: 1, phase: '04', ...result }, null, 2)}\n`,
+    );
+  });
+  test('submits the real PBR linear-HDR and Normal MRT path into Dynamic TAA targets', async ({
+    page,
+  }) => {
+    const runtimeErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') runtimeErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
+    await page.goto('/acceptance/phase-01');
+
+    const result = await page.evaluate(
+      async ({ backendUrl, sdkUrl, signature }) => {
+        const { createWebGpuBackend } = (await import(
+          /* @vite-ignore */ backendUrl
+        )) as typeof import('../../packages/backend-webgpu/src/index.js');
+        const {
+          DynamicTaaGpuHistory,
+          MeshRendererStore,
+          PbrRenderFeature,
+          PerspectiveCamera,
+          Scene,
+          createCubeGeometry,
+        } = (await import(
+          /* @vite-ignore */ sdkUrl
+        )) as typeof import('../../packages/sdk/src/index.js');
+        const backend = createWebGpuBackend({ label: 'phase-04-pbr-temporal-gate' });
+        const scene = new Scene();
+        const camera = new PerspectiveCamera();
+        const meshRenderers = new MeshRendererStore(scene);
+        const entity = scene.createEntity();
+        meshRenderers.attach(entity, { mesh: createCubeGeometry() });
+        const history = new DynamicTaaGpuHistory({
+          height: 2,
+          ownerId: 'phase-04-pbr-temporal-gate',
+          width: 3,
+        });
+        const target = document.createElement('canvas');
+        target.height = 2;
+        target.width = 3;
+        let frame: ReturnType<typeof history.prepareFrame> | undefined;
+        const feature = new PbrRenderFeature({
+          camera,
+          dynamicTaaOutput: {
+            acquireFrame: () => {
+              if (frame === undefined) throw new Error('PBR temporal frame is not prepared.');
+              return frame;
+            },
+          },
+          frustumCulling: false,
+          meshRenderers,
+          scene,
+          surface: { cssHeight: 2, cssWidth: 3, devicePixelRatio: 1, target },
+        });
+        try {
+          await backend.initialize();
+          history.initialize(backend);
+          frame = history.prepareFrame(signature);
+          await feature.initialize({ backend });
+          const statistics = feature.render({
+            backend,
+            dirtyFlags: ['geometry'],
+            frameIndex: 1,
+            timestamp: 0,
+          });
+          await backend.waitForIdle();
+          const diagnostics = feature.getDiagnostics();
+          const resourcesBeforeDispose = backend.getResourceStatistics();
+          feature.dispose();
+          history.cancelFrame();
+          history.dispose();
+          const resourcesAfterDispose = backend.getResourceStatistics();
+          return {
+            checkpoint: 'P4-08',
+            diagnostics,
+            resourcesAfterDispose,
+            resourcesBeforeDispose,
+            statistics,
+            status: 'PASS',
+          };
+        } finally {
+          feature.dispose();
+          history.dispose();
+          meshRenderers.dispose();
+          camera.dispose();
+          scene.dispose();
+          backend.dispose();
+        }
+      },
+      { backendUrl: backendModuleUrl, sdkUrl: sdkModuleUrl, signature: historySignature },
+    );
+
+    expect(result.statistics).toEqual({
+      drawCalls: 1,
+      instances: 1,
+      triangles: 12,
+      vertices: 36,
+    });
+    expect(result.diagnostics).toMatchObject({
+      outputTarget: 'dynamic-taa',
+      pipelineCount: 12,
+      temporalOwnerId: 'phase-04-pbr-temporal-gate',
+      visibility: { visibleCount: 1 },
+    });
+    expect(result.resourcesBeforeDispose.byKind).toMatchObject({
+      pipeline: { activeCount: 12 },
+      surface: { activeCount: 1 },
+      texture: { activeCount: 13 },
+    });
+    expect(result.resourcesAfterDispose.activeCount).toBe(0);
+    expect(runtimeErrors).toEqual([]);
+
+    const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'pbr-temporal-output.json'),
+      JSON.stringify({ schemaVersion: 1, phase: '04', ...result }, null, 2) + '\n',
     );
   });
 });

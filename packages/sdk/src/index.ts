@@ -291,6 +291,7 @@ export type {
   PackPbrObjectUniformsOptions,
   PbrDirectionalLight,
   PbrDirectionalLightDescriptor,
+  PbrDynamicTaaOutput,
   PbrEnvironmentDescriptor,
   PbrEnvironmentState,
   PbrEnvironmentUniforms,

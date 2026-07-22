@@ -76,6 +76,7 @@ export {
 export {
   PBR_RENDER_FEATURE_ID,
   PbrRenderFeature,
+  type PbrDynamicTaaOutput,
   type PbrEnvironmentDescriptor,
   type PbrEnvironmentState,
   type PbrRenderFeatureDiagnostics,

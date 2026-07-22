@@ -15,6 +15,7 @@ import type { PbrOutputTransformDescriptor } from '@kyxos/render-material-pbr';
 import { PbrMaterialLibrary, PbrRenderFeature, PbrTextureLibrary } from '@kyxos/render-renderer';
 import type {
   PbrDirectionalLightDescriptor,
+  PbrDynamicTaaOutput,
   PbrEnvironmentDescriptor,
 } from '@kyxos/render-renderer';
 import { Scene } from '@kyxos/render-scene';
@@ -35,6 +36,7 @@ export interface CreateKyxosPbrRendererOptions {
   readonly cssHeight?: number;
   readonly cssWidth?: number;
   readonly devicePixelRatio?: number;
+  readonly dynamicTaaOutput?: PbrDynamicTaaOutput;
   readonly environment?: PbrEnvironmentDescriptor;
   readonly forceFallbackAdapter?: boolean;
   readonly frameDriver?: FrameRequestDriver;
@@ -92,6 +94,9 @@ function composePbrRenderer(options: CreateKyxosPbrRendererOptions): KyxosPbrCan
     camera,
     ...(options.cameraLayerMask === undefined ? {} : { cameraLayerMask: options.cameraLayerMask }),
     ...(options.clearColor === undefined ? {} : { clearColor: options.clearColor }),
+    ...(options.dynamicTaaOutput === undefined
+      ? {}
+      : { dynamicTaaOutput: options.dynamicTaaOutput }),
     ...(options.environment === undefined ? {} : { environment: options.environment }),
     ...(options.frustumCulling === undefined ? {} : { frustumCulling: options.frustumCulling }),
     ...(options.light === undefined ? {} : { light: options.light }),

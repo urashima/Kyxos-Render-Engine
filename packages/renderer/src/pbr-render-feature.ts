@@ -4,6 +4,7 @@ import type {
   BackendClearColor,
   BackendDrawCommand,
   BackendPipelineHandle,
+  BackendRenderPassDescriptor,
   BackendRenderPassStatistics,
   BackendResourceHandle,
   BackendSamplerHandle,
@@ -40,6 +41,7 @@ import type {
   VisibilityDiagnostics,
 } from '@kyxos/render-visibility';
 
+import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
 import type {
   RenderFeature,
   RenderFeatureFrameContext,
@@ -47,6 +49,7 @@ import type {
 } from './extensions.js';
 import { EnvironmentGpuCache, EnvironmentGpuLease } from './environment-gpu-cache.js';
 import { PHASE_03_PBR_TONEMAPPED_WGSL } from './generated/phase-03-pbr-tonemapped.wgsl.js';
+import { PHASE_04_PBR_TEMPORAL_OUTPUT_WGSL } from './generated/phase-04-pbr-temporal-output.wgsl.js';
 import {
   PBR_OBJECT_UNIFORM_LAYOUT,
   createPbrDirectionalLight,
@@ -58,7 +61,16 @@ import { PbrTextureLibrary, PbrTextureSource } from './pbr-texture-library.js';
 
 export const PBR_RENDER_FEATURE_ID = 'kyxos.pbr-direct' as const;
 
-const DEPTH_FORMAT = 'depth24plus' as const;
+const SURFACE_DEPTH_FORMAT = 'depth24plus' as const;
+const TEMPORAL_DEPTH_FORMAT = 'depth32float' as const;
+const TEMPORAL_COLOR_FORMAT = 'rgba16float' as const;
+const TEMPORAL_NORMAL_FORMAT = 'rgba16float' as const;
+const TEMPORAL_NORMAL_CLEAR_COLOR: BackendClearColor = Object.freeze({
+  a: 1,
+  b: 1,
+  g: 0.5,
+  r: 0.5,
+});
 const PBR_VERTEX_STRIDE = 12 * Float32Array.BYTES_PER_ELEMENT;
 const PBR_ALPHA_MODES = ['opaque', 'mask', 'blend'] as const;
 const PBR_NORMAL_MAPS = [false, true] as const;
@@ -135,9 +147,16 @@ export interface PbrEnvironmentState {
   readonly source: EnvironmentSource | null;
 }
 
+export interface PbrDynamicTaaOutput {
+  /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */
+  readonly acquireFrame: () => DynamicTaaGpuFrame;
+}
+
 export interface PbrRenderFeatureOptions extends BuildRenderQueuesOptions {
   readonly camera: PerspectiveCamera;
   readonly clearColor?: BackendClearColor;
+  /** Opt-in linear-HDR Color + encoded Normal MRT output into caller-owned Dynamic TAA targets. */
+  readonly dynamicTaaOutput?: PbrDynamicTaaOutput;
   readonly environment?: PbrEnvironmentDescriptor;
   /** An omitted cache is created and owned by this Render Feature. */
   readonly environmentCache?: EnvironmentGpuCache;
@@ -167,6 +186,8 @@ export interface PbrRenderFeatureDiagnostics {
   readonly gpuTextureSourceCount: number;
   readonly materialCount: number;
   readonly objectBindingCount: number;
+  readonly outputTarget: 'dynamic-taa' | 'surface';
+  readonly temporalOwnerId: string | null;
   readonly outputExposure: number;
   readonly outputExposureMultiplier: number;
   readonly outputToneMapping: PbrOutputTransform['toneMapping'];
@@ -251,8 +272,8 @@ function shaderFailureMessage(
   messages: Awaited<ReturnType<GraphicsBackend['getShaderCompilationInfo']>>['messages'],
 ): string {
   const errors = messages.filter((message) => message.type === 'error');
-  if (errors.length === 0) return 'The Phase 3 PBR IBL WGSL module failed validation.';
-  return `The Phase 3 PBR IBL WGSL module failed validation: ${errors
+  if (errors.length === 0) return 'The PBR WGSL module failed validation.';
+  return `The PBR WGSL module failed validation: ${errors
     .map((message) => `${message.lineNumber}:${message.linePosition} ${message.message}`)
     .join('; ')}`;
 }
@@ -276,6 +297,7 @@ function fragmentEntryPoint(alphaMode: PbrAlphaMode): string {
  */
 export class PbrRenderFeature implements RenderFeature {
   readonly #camera: PerspectiveCamera;
+  readonly #dynamicTaaOutput: PbrDynamicTaaOutput | undefined;
   readonly #environmentCache: EnvironmentGpuCache;
   readonly #fallbackEnvironment = createBlackEnvironment();
   readonly #materials: PbrMaterialLibrary;
@@ -299,6 +321,7 @@ export class PbrRenderFeature implements RenderFeature {
   #environmentLease: EnvironmentGpuLease | undefined;
   #frustumCulling: boolean | undefined;
   #lastFallbackDrawCount = 0;
+  #lastTemporalOwnerId: string | null = null;
   #lastVisibility: VisibilityDiagnostics | null = null;
   #light: PbrDirectionalLight;
   #output: PbrOutputTransform;
@@ -319,8 +342,19 @@ export class PbrRenderFeature implements RenderFeature {
         recoverable: false,
       });
     }
+    if (
+      options.dynamicTaaOutput !== undefined &&
+      typeof options.dynamicTaaOutput.acquireFrame !== 'function'
+    ) {
+      throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {
+        code: 'INVALID_ARGUMENT',
+        module: 'renderer',
+        recoverable: false,
+      });
+    }
     this.#scene = options.scene;
     this.#camera = options.camera;
+    this.#dynamicTaaOutput = options.dynamicTaaOutput;
     this.#meshRenderers = options.meshRenderers;
     this.#visibility = options.visibility ?? new VisibilitySystem();
     this.#surfaceDescriptor = { ...options.surface };
@@ -381,9 +415,10 @@ export class PbrRenderFeature implements RenderFeature {
       created.push(surface);
       const surfaceInfo = backend.getSurfaceInfo(surface);
       this.#updateCameraAspect(surfaceInfo);
+      const dynamicTaa = this.#dynamicTaaOutput !== undefined;
       const shader = backend.createShaderModule({
-        code: PHASE_03_PBR_TONEMAPPED_WGSL,
-        label: 'phase-03-pbr-tonemapped',
+        code: dynamicTaa ? PHASE_04_PBR_TEMPORAL_OUTPUT_WGSL : PHASE_03_PBR_TONEMAPPED_WGSL,
+        label: dynamicTaa ? 'phase-04-pbr-temporal-output' : 'phase-03-pbr-tonemapped',
         language: 'wgsl',
       });
       created.push(shader);
@@ -408,6 +443,7 @@ export class PbrRenderFeature implements RenderFeature {
               alphaMode,
               doubleSided,
               normalMap,
+              dynamicTaa,
             );
             created.push(pipeline);
             pipelines.set(key, pipeline);
@@ -445,7 +481,7 @@ export class PbrRenderFeature implements RenderFeature {
         [128, 128, 255, 255],
       );
       created.push(fallbackNormalTexture);
-      const depthTexture = this.#createDepthTexture(backend, surfaceInfo);
+      const depthTexture = dynamicTaa ? undefined : this.#createDepthTexture(backend, surfaceInfo);
       if (depthTexture !== undefined) created.push(depthTexture);
 
       this.#environmentCache.initialize(backend);
@@ -505,7 +541,8 @@ export class PbrRenderFeature implements RenderFeature {
     this.#lastVisibility = queues.diagnostics;
     const surfaceInfo = context.backend.getSurfaceInfo(resources.surface);
     if (surfaceInfo.size.suspended) return EMPTY_STATISTICS;
-    if (resources.depthTexture === undefined) {
+    const surfaceDepthTexture = resources.depthTexture;
+    if (this.#dynamicTaaOutput === undefined && surfaceDepthTexture === undefined) {
       throw this.#error('PBR depth Texture is unavailable for a visible Surface.', 'INVALID_STATE');
     }
 
@@ -522,22 +559,21 @@ export class PbrRenderFeature implements RenderFeature {
       this.#reconcileTextureResources(context.backend);
     }
     this.#lastFallbackDrawCount = fallbackDrawCount;
-    const commandEncoder = context.backend.createCommandEncoder({
-      label: `phase-03-pbr-frame-${context.frameIndex}`,
-    });
-    try {
-      return context.backend.executeFrame({
-        commandEncoder,
-        renderPasses: [
-          {
+    const renderPass: BackendRenderPassDescriptor =
+      this.#dynamicTaaOutput === undefined
+        ? {
             clearColor: this.#clearColor,
-            depthAttachment: { texture: resources.depthTexture },
+            depthAttachment: { texture: surfaceDepthTexture as BackendTextureHandle },
             draws,
             label: 'phase-03-pbr-pass',
             surface: resources.surface,
-          },
-        ],
-      });
+          }
+        : this.#createDynamicTaaRenderPass(surfaceInfo, draws);
+    const commandEncoder = context.backend.createCommandEncoder({
+      label: `${this.#dynamicTaaOutput === undefined ? 'phase-03-pbr' : 'phase-04-pbr-temporal'}-frame-${context.frameIndex}`,
+    });
+    try {
+      return context.backend.executeFrame({ commandEncoder, renderPasses: [renderPass] });
     } catch (error) {
       context.backend.destroyResource(commandEncoder);
       throw error;
@@ -573,6 +609,8 @@ export class PbrRenderFeature implements RenderFeature {
       gpuTextureSourceCount: this.#textureResources.size,
       materialCount: this.#materials.size,
       objectBindingCount: this.#objectResources.size,
+      outputTarget: this.#dynamicTaaOutput === undefined ? 'surface' : 'dynamic-taa',
+      temporalOwnerId: this.#lastTemporalOwnerId,
       outputExposure: this.#output.exposure,
       outputExposureMultiplier: this.#output.exposureMultiplier,
       outputToneMapping: this.#output.toneMapping,
@@ -594,7 +632,10 @@ export class PbrRenderFeature implements RenderFeature {
     }
     const surfaceInfo = backend.resizeSurface(resources.surface, resize);
     this.#updateCameraAspect(surfaceInfo);
-    const nextDepthTexture = this.#createDepthTexture(backend, surfaceInfo);
+    const nextDepthTexture =
+      this.#dynamicTaaOutput === undefined
+        ? this.#createDepthTexture(backend, surfaceInfo)
+        : undefined;
     const previousDepthTexture = resources.depthTexture;
     resources.depthTexture = nextDepthTexture;
     if (previousDepthTexture !== undefined) backend.destroyResource(previousDepthTexture);
@@ -644,6 +685,7 @@ export class PbrRenderFeature implements RenderFeature {
     this.#objectResources.clear();
     this.#textureResources.clear();
     this.#lastFallbackDrawCount = 0;
+    this.#lastTemporalOwnerId = null;
     this.#visibility.clearCache();
   }
 
@@ -718,6 +760,40 @@ export class PbrRenderFeature implements RenderFeature {
     }
   }
 
+  #createDynamicTaaRenderPass(
+    surfaceInfo: BackendSurfaceInfo,
+    draws: readonly BackendDrawCommand[],
+  ): BackendRenderPassDescriptor {
+    const output = this.#dynamicTaaOutput;
+    if (output === undefined) {
+      throw this.#error('PBR Dynamic TAA output is not configured.', 'INVALID_STATE');
+    }
+    const frame = output.acquireFrame();
+    if (frame.ownerId.trim().length === 0) {
+      throw this.#error('PBR Dynamic TAA frame Owner ID must not be empty.', 'INVALID_ARGUMENT');
+    }
+    if (
+      frame.size.width !== surfaceInfo.size.physicalWidth ||
+      frame.size.height !== surfaceInfo.size.physicalHeight
+    ) {
+      throw this.#error(
+        `PBR Dynamic TAA frame ${frame.size.width}x${frame.size.height} does not match Surface ${surfaceInfo.size.physicalWidth}x${surfaceInfo.size.physicalHeight}.`,
+        'INVALID_ARGUMENT',
+      );
+    }
+    this.#lastTemporalOwnerId = frame.ownerId;
+    return {
+      clearColor: this.#clearColor,
+      colorAttachments: [
+        { clearColor: this.#clearColor, texture: frame.currentColorTexture },
+        { clearColor: TEMPORAL_NORMAL_CLEAR_COLOR, texture: frame.writeNormalTexture },
+      ],
+      depthAttachment: { clearValue: 1, texture: frame.writeDepthTexture },
+      draws,
+      label: 'phase-04-pbr-temporal-mrt-pass',
+    };
+  }
+
   async #createPipeline(
     backend: GraphicsBackend,
     shader: BackendShaderModuleHandle,
@@ -725,32 +801,48 @@ export class PbrRenderFeature implements RenderFeature {
     alphaMode: PbrAlphaMode,
     doubleSided: boolean,
     normalMap: boolean,
+    dynamicTaa: boolean,
   ): Promise<BackendPipelineHandle> {
     const transparent = alphaMode === 'blend';
     return backend.createRenderPipeline({
       depthStencil: {
         depthCompare: 'less',
         depthWriteEnabled: !transparent,
-        format: DEPTH_FORMAT,
+        format: dynamicTaa ? TEMPORAL_DEPTH_FORMAT : SURFACE_DEPTH_FORMAT,
       },
       fragment: {
         entryPoint: fragmentEntryPoint(alphaMode),
         module: shader,
-        targets: [
-          {
-            ...(transparent
-              ? {
-                  blend: {
-                    alpha: { dstFactor: 'one-minus-src-alpha', srcFactor: 'one' },
-                    color: { dstFactor: 'one-minus-src-alpha', srcFactor: 'src-alpha' },
-                  },
-                }
-              : {}),
-            format: surfaceInfo.format,
-          },
-        ],
+        targets: dynamicTaa
+          ? [
+              {
+                ...(transparent
+                  ? {
+                      blend: {
+                        alpha: { dstFactor: 'one-minus-src-alpha', srcFactor: 'one' },
+                        color: { dstFactor: 'one-minus-src-alpha', srcFactor: 'src-alpha' },
+                      },
+                    }
+                  : {}),
+                format: TEMPORAL_COLOR_FORMAT,
+              },
+              { format: TEMPORAL_NORMAL_FORMAT },
+            ]
+          : [
+              {
+                ...(transparent
+                  ? {
+                      blend: {
+                        alpha: { dstFactor: 'one-minus-src-alpha', srcFactor: 'one' },
+                        color: { dstFactor: 'one-minus-src-alpha', srcFactor: 'src-alpha' },
+                      },
+                    }
+                  : {}),
+                format: surfaceInfo.format,
+              },
+            ],
       },
-      label: `phase-03-pbr-${alphaMode}-${doubleSided ? 'double' : 'single'}-${normalMap ? 'normal' : 'geometric'}`,
+      label: `${dynamicTaa ? 'phase-04-pbr-temporal' : 'phase-03-pbr'}-${alphaMode}-${doubleSided ? 'double' : 'single'}-${normalMap ? 'normal' : 'geometric'}`,
       primitive: {
         cullMode: doubleSided ? 'none' : 'back',
         frontFace: 'ccw',
@@ -803,7 +895,7 @@ export class PbrRenderFeature implements RenderFeature {
   ): BackendTextureHandle | undefined {
     if (surfaceInfo.size.suspended) return undefined;
     return backend.createTexture({
-      format: DEPTH_FORMAT,
+      format: SURFACE_DEPTH_FORMAT,
       label: 'phase-03-pbr-depth',
       size: {
         height: surfaceInfo.size.physicalHeight,
