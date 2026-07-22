@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                                                                    |
-| Current Branch      | `agent/phase-04-temporal`                                                                                                                                                                   |
-| Current Commit      | `04beab4ff66885973b5ddaed95cb9d79442db98d` (P4-02 verified implementation)                                                                                                                  |
-| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-02 complete                                                                                                                    |
-| Current Task        | P4-03 — Deterministic Dynamic TAA resolve CPU/WGSL contract                                                                                                                                 |
-| Last Completed Task | P4-02 — Halton 2/3 Jitter, raster/NDC conversion, immutable jittered Projection, and fail-closed Current/Previous Camera matrices                                                           |
-| Next Action         | Implement deterministic depth/normal rejection, neighborhood clamp, responsive history weighting, and CPU/WGSL resolve parity without creating GPU History Textures or Renderer integration |
-| CI Status           | Run 29923625893 / job 88935055961 PASS; 223 unit tests + 21 Chromium/WebGPU cases; Artifact 8531067149                                                                                      |
-| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                                                                  |
-| Known Blockers      | None                                                                                                                                                                                        |
-| Last Updated        | 2026-07-22 06:27 PDT                                                                                                                                                                        |
+| Field               | Value                                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                                                                         |
+| Current Branch      | `agent/phase-04-temporal`                                                                                                                                                                        |
+| Current Commit      | `1c472c2dffcc1d664bf885fbe96decccc352a7c8` (P4-03 verified implementation)                                                                                                                       |
+| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-03 complete                                                                                                                         |
+| Current Task        | P4-04 — Offscreen Color Attachment and Dynamic TAA GPU History ownership                                                                                                                         |
+| Last Completed Task | P4-03 — Linear-HDR Dynamic TAA resolve with neighborhood clamp, Depth/Normal rejection, responsive weighting, and CPU/WGSL float32 parity                                                        |
+| Next Action         | Extend Backend Render Passes with validated offscreen Texture Color Attachments and build owner-scoped rgba16float TAA ping-pong History lifecycle without integrating the Renderer resolve pass |
+| CI Status           | Run 29925092901 / job 88940086798 PASS; 230 unit tests + 22 Chromium/WebGPU cases; Artifact 8531662609                                                                                           |
+| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                                                                       |
+| Known Blockers      | None                                                                                                                                                                                             |
+| Last Updated        | 2026-07-22 06:46 PDT                                                                                                                                                                             |
 
 ## Phase Progress
 

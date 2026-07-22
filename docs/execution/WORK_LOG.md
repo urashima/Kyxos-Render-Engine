@@ -1910,3 +1910,46 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-03 deterministic Dynamic TAA resolve parity for depth/normal rejection,
   neighborhood clamp, responsive history weighting, and CPU/WGSL float32 outputs before creating
   GPU History Textures or integrating a Temporal Render Feature.
+
+## 2026-07-22 06:46 PDT — P4-03 deterministic Dynamic TAA resolve parity passed
+
+### Completed
+
+- Added a backend-neutral Dynamic TAA resolve contract for a current linear-HDR pixel and History
+  Color, Depth, and Normal already sampled at a caller-provided reprojected coordinate.
+- Added exact component-wise 3×3 current-neighborhood bounds and clamps History RGB before blending;
+  current-frame Alpha is retained rather than accumulated.
+- Added fail-closed History validity, absolute/relative Depth disocclusion, normalized Normal cosine,
+  and explicit rejection reasons. Accepted History uses a frozen base weight reduced monotonically
+  by a unit-range responsive mask.
+- Added three immutable deterministic cases covering accepted/clamped History, Depth rejection, and
+  Normal rejection, plus a 60-field diagnostic encoding shared by CPU and WebGPU evidence.
+- Added the Phase 4 WGSL reference and exact generated mirror, a dedicated `chromium-temporal`
+  Playwright project, and CI upload coverage for Phase 4 runtime diagnostics.
+- Preserved the checkpoint boundary: P4-03 creates no Motion Vector, reprojection coordinate,
+  History Texture, Bind Group, Render Feature, or Renderer integration.
+- Recorded the clean-room inputs from published Karis and Playdead TAA materials and W3C WGSL.
+
+### Validation
+
+- Implementation commit `1c472c2dffcc1d664bf885fbe96decccc352a7c8` has Git Tree
+  `222b7b16765b2411161c1bff12ba4c41caebbe94`, identical to the complete locally verified Tree.
+- Run `29925092901`, job `88940086798`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  49 unit files / 230 tests, package/architecture gates, Phase 0–3 frozen Schemas, eight Shader
+  mirrors, build, Bundle, Pages, and all 22 pinned Chromium/WebGPU cases passed.
+- Artifact `8531662609`, digest
+  `sha256:f0d16aac64e07079b2359da33d25d66c40d1a6d1d3048658f8643b76a45f2935`, contains
+  `test-results/phase-04/runtime/taa-resolve-reference.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages, all 60 CPU/GPU fields passing, maximum
+  absolute difference `2.384185793236071e-8` against the `0.000001` threshold, and maximum tolerance
+  occupancy `0.02384185793236071`.
+- The Phase 2 and Phase 3 route sizes remain unchanged at 130,745 / 131,072 and
+  180,509 / 196,608 raw JavaScript bytes. Pages still contain only accepted Phases 0–3.
+- Draft PR #7 remains In Development. Phase 4 has no GPU History integration, Owner Acceptance,
+  public route, deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-04 validated offscreen Texture Color Attachments in the Backend and owner-scoped
+  rgba16float Dynamic TAA ping-pong History allocation, resize/signature invalidation, Device Lost
+  recovery, and disposal without integrating the Renderer resolve pass.
