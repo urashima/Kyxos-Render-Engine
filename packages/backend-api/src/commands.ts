@@ -46,6 +46,8 @@ export interface BackendDepthAttachment {
 }
 
 export interface BackendColorAttachment {
+  /** Overrides the Render Pass clear color for this ordered attachment. */
+  readonly clearColor?: BackendClearColor;
   readonly loadOp?: 'clear' | 'load';
   readonly storeOp?: 'discard' | 'store';
   readonly texture: BackendTextureHandle;
@@ -74,12 +76,12 @@ interface BackendRenderPassBase {
 }
 
 export interface BackendSurfaceRenderPassDescriptor extends BackendRenderPassBase {
-  readonly colorAttachment?: never;
+  readonly colorAttachments?: never;
   readonly surface: BackendSurfaceHandle;
 }
 
 export interface BackendTextureRenderPassDescriptor extends BackendRenderPassBase {
-  readonly colorAttachment: BackendColorAttachment;
+  readonly colorAttachments: readonly BackendColorAttachment[];
   readonly surface?: never;
 }
 

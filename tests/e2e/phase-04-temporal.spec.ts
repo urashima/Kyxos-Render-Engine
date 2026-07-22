@@ -305,9 +305,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
     );
   });
 
-  test('submits Backend offscreen passes through owner-scoped rgba16float History resources', async ({
-    page,
-  }) => {
+  test('submits ordered MRT passes through owner-scoped TAA target sets', async ({ page }) => {
     const runtimeErrors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') runtimeErrors.push(message.text());
@@ -346,9 +344,17 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
                 return vec4f(positions[vertexIndex], 0.0, 1.0);
               }
 
+              struct FragmentOutput {
+                @location(0) color: vec4f,
+                @location(1) normal: vec4f,
+              }
+
               @fragment
-              fn fragmentMain() -> @location(0) vec4f {
-                return vec4f(0.25, 0.5, 1.0, 1.0);
+              fn fragmentMain() -> FragmentOutput {
+                var output: FragmentOutput;
+                output.color = vec4f(0.25, 0.5, 1.0, 1.0);
+                output.normal = vec4f(0.5, 0.5, 1.0, 1.0);
+                return output;
               }
             `,
             label: 'phase-04-offscreen-shader',
@@ -357,10 +363,15 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           const compilation = await backend.getShaderCompilationInfo(shader);
           if (!compilation.valid) throw new Error(JSON.stringify(compilation.messages));
           pipeline = await backend.createRenderPipeline({
+            depthStencil: {
+              depthCompare: 'always',
+              depthWriteEnabled: true,
+              format: 'depth32float',
+            },
             fragment: {
               entryPoint: 'fragmentMain',
               module: shader,
-              targets: [{ format: 'rgba16float' }],
+              targets: [{ format: 'rgba16float' }, { format: 'rgba16float' }],
             },
             label: 'phase-04-offscreen-pipeline',
             vertex: { entryPoint: 'vertexMain', module: shader },
@@ -372,10 +383,24 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             renderPasses: [
               {
                 clearColor: { a: 1, b: 0, g: 0, r: 0 },
-                colorAttachment: {
+                colorAttachments: [
+                  {
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                    texture: first.currentColorTexture,
+                  },
+                  {
+                    clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                    texture: first.writeNormalTexture,
+                  },
+                ],
+                depthAttachment: {
+                  clearValue: 1,
                   loadOp: 'clear',
                   storeOp: 'store',
-                  texture: first.writeTexture,
+                  texture: first.writeDepthTexture,
                 },
                 draws: [{ pipeline, vertexCount: 3 }],
                 label: 'phase-04-offscreen-first',
@@ -394,7 +419,14 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             renderPasses: [
               {
                 clearColor: { a: 1, b: 0.25, g: 0.5, r: 1 },
-                colorAttachment: { texture: third.writeTexture },
+                colorAttachments: [
+                  { texture: third.currentColorTexture },
+                  {
+                    clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+                    texture: third.writeNormalTexture,
+                  },
+                ],
+                depthAttachment: { texture: third.writeDepthTexture },
                 draws: [{ pipeline, vertexCount: 3 }],
                 label: 'phase-04-offscreen-resized',
               },
@@ -407,7 +439,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           const resourcesAfterHistoryDispose = backend.getResourceStatistics();
 
           return {
-            checkpoint: 'P4-04',
+            checkpoint: 'P4-06',
             compilationMessages: compilation.messages,
             first: {
               historyValid: first.historyValid,
@@ -415,14 +447,27 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             },
             firstCommit: committed,
             second: {
+              currentStable: second.currentColorTexture === first.currentColorTexture,
               historyValid: second.historyValid,
               swapped:
-                second.readTexture === first.writeTexture &&
-                second.writeTexture === first.readTexture,
+                second.readColorTexture === first.writeColorTexture &&
+                second.readDepthTexture === first.writeDepthTexture &&
+                second.readNormalTexture === first.writeNormalTexture &&
+                second.writeColorTexture === first.readColorTexture &&
+                second.writeDepthTexture === first.readDepthTexture &&
+                second.writeNormalTexture === first.readNormalTexture,
             },
             resize: {
               committed: resizedCommitted,
               preparedHistoryValid: third.historyValid,
+              resourcesReplaced:
+                third.currentColorTexture !== first.currentColorTexture &&
+                third.readColorTexture !== first.readColorTexture &&
+                third.readDepthTexture !== first.readDepthTexture &&
+                third.readNormalTexture !== first.readNormalTexture &&
+                third.writeColorTexture !== first.writeColorTexture &&
+                third.writeDepthTexture !== first.writeDepthTexture &&
+                third.writeNormalTexture !== first.writeNormalTexture,
               state: resized,
               statistics: resizedStats,
             },
@@ -446,19 +491,20 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
       statistics: { drawCalls: 1, instances: 1, triangles: 1, vertices: 3 },
     });
     expect(result.firstCommit).toMatchObject({
-      estimatedGpuBytes: 96,
+      estimatedGpuBytes: 288,
       history: { sampleCount: 1, valid: true },
       resourceGeneration: 1,
       state: 'ready',
     });
-    expect(result.second).toEqual({ historyValid: true, swapped: true });
+    expect(result.second).toEqual({ currentStable: true, historyValid: true, swapped: true });
     expect(result.resize).toMatchObject({
       committed: {
-        estimatedGpuBytes: 320,
+        estimatedGpuBytes: 960,
         history: { sampleCount: 1, valid: true },
         resourceGeneration: 2,
       },
       preparedHistoryValid: false,
+      resourcesReplaced: true,
       state: {
         history: { lastInvalidation: 'viewport', sampleCount: 0, valid: false },
         size: { height: 4, width: 5 },
@@ -466,17 +512,21 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
       statistics: { drawCalls: 1, instances: 1, triangles: 1, vertices: 3 },
     });
     expect(result.resourcesBeforeHistoryDispose).toMatchObject({
-      activeCount: 5,
+      activeCount: 10,
       byKind: {
         pipeline: { activeCount: 1 },
         sampler: { activeCount: 1 },
         'shader-module': { activeCount: 1 },
-        texture: { activeCount: 2, activeEstimatedBytes: 320 },
+        texture: { activeCount: 7, activeEstimatedBytes: 960 },
       },
+      createdTotal: 20,
+      destroyedTotal: 10,
     });
     expect(result.resourcesAfterHistoryDispose).toMatchObject({
       activeCount: 2,
       byKind: { sampler: { activeCount: 0 }, texture: { activeCount: 0 } },
+      createdTotal: 20,
+      destroyedTotal: 18,
     });
     expect(runtimeErrors).toEqual([]);
 

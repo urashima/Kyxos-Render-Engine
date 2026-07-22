@@ -230,7 +230,7 @@ describe('MockBackend', () => {
     backend.dispose();
   });
 
-  it('validates offscreen color attachments and Pipeline target formats', async () => {
+  it('validates ordered offscreen MRT attachments and Pipeline target formats', async () => {
     const backend = new MockBackend();
     await backend.initialize();
     const shader = backend.createShaderModule({
@@ -241,11 +241,17 @@ describe('MockBackend', () => {
       fragment: {
         entryPoint: 'fragmentMain',
         module: shader,
-        targets: [{ format: 'rgba16float' }],
+        targets: [{ format: 'rgba16float' }, { format: 'rgba16float' }],
       },
       vertex: { entryPoint: 'main', module: shader },
     });
     const target = backend.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    const normalTarget = backend.createTexture({
       format: 'rgba16float',
       mipLevelCount: 2,
       size: { height: 4, width: 8 },
@@ -258,12 +264,19 @@ describe('MockBackend', () => {
         renderPasses: [
           {
             clearColor: { a: 0, b: 0, g: 0, r: 0 },
-            colorAttachment: {
-              loadOp: 'load',
-              storeOp: 'discard',
-              texture: target,
-              view: { baseMipLevel: 1 },
-            },
+            colorAttachments: [
+              {
+                loadOp: 'load',
+                storeOp: 'discard',
+                texture: target,
+                view: { baseMipLevel: 1 },
+              },
+              {
+                clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+                texture: normalTarget,
+                view: { baseMipLevel: 1 },
+              },
+            ],
             draws: [{ pipeline, vertexCount: 3 }],
           },
         ],
@@ -285,7 +298,7 @@ describe('MockBackend', () => {
         renderPasses: [
           {
             clearColor: { a: 1, b: 0, g: 0, r: 0 },
-            colorAttachment: { texture: target },
+            colorAttachments: [{ texture: target }],
             draws: [{ pipeline: incompatible, vertexCount: 3 }],
           },
         ],
@@ -300,15 +313,71 @@ describe('MockBackend', () => {
         renderPasses: [
           {
             clearColor: { a: 1, b: 0, g: 0, r: 0 },
-            colorAttachment: {
-              texture: target,
-              view: { dimension: 'cube' },
-            },
+            colorAttachments: [
+              {
+                texture: target,
+                view: { dimension: 'cube' },
+              },
+            ],
           },
         ],
       }),
     ).toThrow('color attachment is invalid');
     expect(backend.destroyResource(invalidViewEncoder)).toBe(true);
+
+    const duplicateEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: duplicateEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [{ texture: target }, { texture: target }],
+          },
+        ],
+      }),
+    ).toThrow('must use distinct Textures');
+    expect(backend.destroyResource(duplicateEncoder)).toBe(true);
+
+    const limitEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: limitEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: Array.from({ length: 5 }, () => ({ texture: target })),
+          },
+        ],
+      }),
+    ).toThrow('color attachment count is invalid');
+    expect(backend.destroyResource(limitEncoder)).toBe(true);
+    await expect(
+      backend.createRenderPipeline({
+        fragment: {
+          entryPoint: 'fragmentMain',
+          module: shader,
+          targets: Array.from({ length: 5 }, () => ({ format: 'rgba16float' as const })),
+        },
+        vertex: { entryPoint: 'main', module: shader },
+      }),
+    ).rejects.toThrow('color target count is invalid');
+
+    const clearEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: clearEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [
+              { clearColor: { a: 1, b: 0, g: 0, r: Number.NaN }, texture: target },
+            ],
+          },
+        ],
+      }),
+    ).toThrow('clear color channels must be finite');
+    expect(backend.destroyResource(clearEncoder)).toBe(true);
     backend.dispose();
   });
 

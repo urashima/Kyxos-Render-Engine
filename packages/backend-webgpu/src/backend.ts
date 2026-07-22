@@ -525,6 +525,9 @@ export class WebGpuBackend implements GraphicsBackend {
         });
       }
       requireNonEmpty('Render Pipeline color targets', descriptor.fragment.targets);
+      if (descriptor.fragment.targets.length > this.#capabilities.limits.maxColorAttachments) {
+        throw invalidArgument('Render Pipeline color target count exceeds the Backend limit.');
+      }
       if (
         descriptor.fragment.targets.some(
           (target) => target.format === 'depth24plus' || target.format === 'depth32float',
@@ -923,31 +926,32 @@ export class WebGpuBackend implements GraphicsBackend {
     let vertices = 0;
     const renderPasses = submission.renderPasses.map((renderPass) => {
       requireFiniteClearColor(renderPass.clearColor);
-      if ((renderPass.colorAttachment === undefined) === (renderPass.surface === undefined)) {
+      if ((renderPass.colorAttachments === undefined) === (renderPass.surface === undefined)) {
         throw invalidArgument(
-          'Render Pass requires exactly one Surface or Texture color attachment.',
+          'Render Pass requires exactly one Surface or ordered Texture color attachment list.',
         );
       }
       let target:
         | Readonly<{
-            format: BackendTextureFormat;
+            formats: readonly [BackendTextureFormat];
             height: number;
             kind: 'surface';
             surface: WebGpuSurfacePort;
             width: number;
           }>
         | Readonly<{
-            colorAttachment: {
+            colorAttachments: readonly {
+              readonly clearColor: BackendFrameSubmission['renderPasses'][number]['clearColor'];
               readonly loadOp: 'clear' | 'load';
               readonly storeOp: 'discard' | 'store';
               readonly view: ReturnType<WebGpuTexturePort['createView']>;
-            };
-            format: BackendTextureFormat;
+            }[];
+            formats: readonly BackendTextureFormat[];
             height: number;
             kind: 'texture';
             width: number;
           }>;
-      if (renderPass.colorAttachment === undefined) {
+      if (renderPass.colorAttachments === undefined) {
         const surface = this.#resources.resolve<'surface', WebGpuSurfaceRecord>(
           renderPass.surface,
           'surface',
@@ -961,61 +965,91 @@ export class WebGpuBackend implements GraphicsBackend {
           });
         }
         target = Object.freeze({
-          format: surface.info.format,
+          formats: Object.freeze([surface.info.format] as const),
           height: surface.info.size.physicalHeight,
           kind: 'surface',
           surface: surface.surface,
           width: surface.info.size.physicalWidth,
         });
       } else {
-        const loadOp = renderPass.colorAttachment.loadOp ?? 'clear';
-        const storeOp = renderPass.colorAttachment.storeOp ?? 'store';
-        if (
-          (loadOp !== 'clear' && loadOp !== 'load') ||
-          (storeOp !== 'discard' && storeOp !== 'store')
-        ) {
-          throw invalidArgument('Color attachment loadOp or storeOp is invalid.');
+        requireNonEmpty('Render Pass color attachments', renderPass.colorAttachments);
+        if (renderPass.colorAttachments.length > this.#capabilities.limits.maxColorAttachments) {
+          throw invalidArgument('Render Pass color attachment count exceeds the Backend limit.');
         }
-        const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(
-          renderPass.colorAttachment.texture,
-          'texture',
-        );
-        if (
-          !record.descriptor.usage.includes('render-attachment') ||
-          record.descriptor.format === 'depth24plus' ||
-          record.descriptor.format === 'depth32float' ||
-          (record.descriptor.sampleCount ?? 1) !== 1
-        ) {
-          throw invalidArgument(
-            'Color attachment requires a single-sampled color Texture with render-attachment usage.',
+        const textures = new Set<BackendTextureHandle>();
+        const attachments = renderPass.colorAttachments.map((attachment) => {
+          if (textures.has(attachment.texture)) {
+            throw invalidArgument('Render Pass color attachments must use distinct Textures.');
+          }
+          textures.add(attachment.texture);
+          const loadOp = attachment.loadOp ?? 'clear';
+          const storeOp = attachment.storeOp ?? 'store';
+          if (
+            (loadOp !== 'clear' && loadOp !== 'load') ||
+            (storeOp !== 'discard' && storeOp !== 'store')
+          ) {
+            throw invalidArgument('Color attachment loadOp or storeOp is invalid.');
+          }
+          const clearColor = attachment.clearColor ?? renderPass.clearColor;
+          requireFiniteClearColor(clearColor);
+          const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(
+            attachment.texture,
+            'texture',
           );
+          if (
+            !record.descriptor.usage.includes('render-attachment') ||
+            record.descriptor.format === 'depth24plus' ||
+            record.descriptor.format === 'depth32float' ||
+            (record.descriptor.sampleCount ?? 1) !== 1
+          ) {
+            throw invalidArgument(
+              'Color attachment requires a single-sampled color Texture with render-attachment usage.',
+            );
+          }
+          const view = resolveRenderAttachmentView(record.descriptor, attachment.view);
+          return Object.freeze({
+            format: record.descriptor.format,
+            height: view.height,
+            request: Object.freeze({
+              clearColor,
+              loadOp,
+              storeOp,
+              view: record.texture.createView(view.descriptor),
+            }),
+            width: view.width,
+          });
+        });
+        const firstAttachment = attachments[0];
+        if (firstAttachment === undefined) {
+          throw invalidArgument('Render Pass requires at least one color attachment.');
         }
-        const attachmentView = resolveRenderAttachmentView(
-          record.descriptor,
-          renderPass.colorAttachment.view,
-        );
+        if (
+          attachments.some(
+            ({ height, width }) =>
+              height !== firstAttachment.height || width !== firstAttachment.width,
+          )
+        ) {
+          throw invalidArgument('Render Pass color attachment dimensions must match.');
+        }
         target = Object.freeze({
-          colorAttachment: Object.freeze({
-            loadOp,
-            storeOp,
-            view: record.texture.createView(attachmentView.descriptor),
-          }),
-          format: record.descriptor.format,
-          height: attachmentView.height,
+          colorAttachments: Object.freeze(attachments.map(({ request }) => request)),
+          formats: Object.freeze(attachments.map(({ format }) => format)),
+          height: firstAttachment.height,
           kind: 'texture',
-          width: attachmentView.width,
+          width: firstAttachment.width,
         });
       }
       const draws = (renderPass.draws ?? []).map((draw) => this.#prepareDraw(draw));
       if (
         draws.some(
           ({ colorFormats }) =>
-            colorFormats.length > 1 ||
-            (colorFormats.length === 1 && colorFormats[0] !== target.format),
+            colorFormats.length > 0 &&
+            (colorFormats.length !== target.formats.length ||
+              colorFormats.some((format, index) => format !== target.formats[index])),
         )
       ) {
         throw invalidArgument(
-          'Render Pipeline color target must match the Render Pass attachment.',
+          'Render Pipeline color targets must exactly match the ordered Render Pass attachments.',
         );
       }
       let depthAttachment;
@@ -1108,7 +1142,7 @@ export class WebGpuBackend implements GraphicsBackend {
       };
       return target.kind === 'surface'
         ? { ...prepared, surface: target.surface }
-        : { ...prepared, colorAttachment: target.colorAttachment };
+        : { ...prepared, colorAttachments: target.colorAttachments };
     });
 
     try {

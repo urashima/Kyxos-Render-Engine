@@ -246,21 +246,31 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
   }
 
   encodeRenderPass(request: WebGpuRenderPassRequest): void {
-    let colorView: GPUTextureView;
-    let colorLoadOp: GPULoadOp = 'clear';
-    let colorStoreOp: GPUStoreOp = 'store';
-    if (request.colorAttachment === undefined) {
+    let colorAttachments: GPURenderPassColorAttachment[];
+    if (request.colorAttachments === undefined) {
       if (!(request.surface instanceof BrowserWebGpuSurface)) {
         throw new Error('Render Pass Surface belongs to another WebGPU device port.');
       }
-      colorView = request.surface.createCurrentTextureView();
+      colorAttachments = [
+        {
+          clearValue: request.clearColor,
+          loadOp: 'clear',
+          storeOp: 'store',
+          view: request.surface.createCurrentTextureView(),
+        },
+      ];
     } else {
-      if (!(request.colorAttachment.view instanceof BrowserWebGpuTextureView)) {
-        throw new Error('Render Pass color Texture belongs to another WebGPU device port.');
-      }
-      colorView = request.colorAttachment.view.native;
-      colorLoadOp = request.colorAttachment.loadOp;
-      colorStoreOp = request.colorAttachment.storeOp;
+      colorAttachments = request.colorAttachments.map((attachment) => {
+        if (!(attachment.view instanceof BrowserWebGpuTextureView)) {
+          throw new Error('Render Pass color Texture belongs to another WebGPU device port.');
+        }
+        return {
+          clearValue: attachment.clearColor,
+          loadOp: attachment.loadOp,
+          storeOp: attachment.storeOp,
+          view: attachment.view.native,
+        };
+      });
     }
     let depthStencilAttachment: GPURenderPassDepthStencilAttachment | undefined;
     if (request.depthAttachment !== undefined) {
@@ -275,14 +285,7 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
       };
     }
     const pass = this.native.beginRenderPass({
-      colorAttachments: [
-        {
-          clearValue: request.clearColor,
-          loadOp: colorLoadOp,
-          storeOp: colorStoreOp,
-          view: colorView,
-        },
-      ],
+      colorAttachments,
       ...(depthStencilAttachment === undefined ? {} : { depthStencilAttachment }),
       ...(request.label === undefined ? {} : { label: request.label }),
     });

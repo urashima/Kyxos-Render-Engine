@@ -15,8 +15,9 @@ import {
   createTemporalHistorySignature,
 } from '@kyxos/render-temporal';
 
-const RGBA16FLOAT_BYTES_PER_TEXEL = 8;
-const HISTORY_TEXTURE_COUNT = 2;
+const CURRENT_COLOR_BYTES_PER_TEXEL = 8;
+const RESOLVED_SET_BYTES_PER_TEXEL = 8 + 4 + 8;
+const RESOLVED_SET_COUNT = 2;
 
 export interface DynamicTaaGpuHistoryOptions {
   readonly height: number;
@@ -30,13 +31,18 @@ export interface DynamicTaaGpuHistorySize {
 }
 
 export interface DynamicTaaGpuFrame {
+  readonly currentColorTexture: BackendTextureHandle;
   readonly historyValid: boolean;
   readonly ownerId: string;
-  readonly readTexture: BackendTextureHandle;
+  readonly readColorTexture: BackendTextureHandle;
+  readonly readDepthTexture: BackendTextureHandle;
+  readonly readNormalTexture: BackendTextureHandle;
   readonly resourceGeneration: number;
   readonly sampler: BackendSamplerHandle;
   readonly size: DynamicTaaGpuHistorySize;
-  readonly writeTexture: BackendTextureHandle;
+  readonly writeColorTexture: BackendTextureHandle;
+  readonly writeDepthTexture: BackendTextureHandle;
+  readonly writeNormalTexture: BackendTextureHandle;
 }
 
 export interface DynamicTaaGpuHistoryDiagnostics {
@@ -50,8 +56,15 @@ export interface DynamicTaaGpuHistoryDiagnostics {
 }
 
 interface DynamicTaaGpuResources {
+  readonly currentColorTexture: BackendTextureHandle;
   readonly sampler: BackendSamplerHandle;
-  readonly textures: readonly [BackendTextureHandle, BackendTextureHandle];
+  readonly targetSets: readonly [DynamicTaaGpuTargetSet, DynamicTaaGpuTargetSet];
+}
+
+interface DynamicTaaGpuTargetSet {
+  readonly colorTexture: BackendTextureHandle;
+  readonly depthTexture: BackendTextureHandle;
+  readonly normalTexture: BackendTextureHandle;
 }
 
 function error(
@@ -141,14 +154,21 @@ export class DynamicTaaGpuHistory implements Disposable {
     const historyValid = this.#history.isReusable(candidate);
     this.#frameSignature = candidate;
     const writeIndex = this.#readIndex === 0 ? 1 : 0;
+    const read = resources.targetSets[this.#readIndex];
+    const write = resources.targetSets[writeIndex];
     return Object.freeze({
+      currentColorTexture: resources.currentColorTexture,
       historyValid,
       ownerId: this.#ownerId,
-      readTexture: resources.textures[this.#readIndex],
+      readColorTexture: read.colorTexture,
+      readDepthTexture: read.depthTexture,
+      readNormalTexture: read.normalTexture,
       resourceGeneration: this.#resourceGeneration,
       sampler: resources.sampler,
       size: this.#size(),
-      writeTexture: resources.textures[writeIndex],
+      writeColorTexture: write.colorTexture,
+      writeDepthTexture: write.depthTexture,
+      writeNormalTexture: write.normalTexture,
     });
   }
 
@@ -215,7 +235,9 @@ export class DynamicTaaGpuHistory implements Disposable {
   getDiagnostics(): DynamicTaaGpuHistoryDiagnostics {
     return Object.freeze({
       estimatedGpuBytes:
-        this.#width * this.#height * RGBA16FLOAT_BYTES_PER_TEXEL * HISTORY_TEXTURE_COUNT,
+        this.#width *
+        this.#height *
+        (CURRENT_COLOR_BYTES_PER_TEXEL + RESOLVED_SET_BYTES_PER_TEXEL * RESOLVED_SET_COUNT),
       frameOpen: this.#frameSignature !== undefined,
       history: this.#history.snapshot(),
       ownerId: this.#ownerId,
@@ -253,20 +275,37 @@ export class DynamicTaaGpuHistory implements Disposable {
   ): DynamicTaaGpuResources {
     const created: BackendResourceHandle[] = [];
     try {
-      const first = backend.createTexture({
-        format: 'rgba16float',
-        label: `taa-history-${this.#ownerId}-0`,
-        size: { height, width },
-        usage: ['render-attachment', 'sampled'],
-      });
-      created.push(first);
-      const second = backend.createTexture({
-        format: 'rgba16float',
-        label: `taa-history-${this.#ownerId}-1`,
-        size: { height, width },
-        usage: ['render-attachment', 'sampled'],
-      });
-      created.push(second);
+      const createTexture = (
+        label: string,
+        format: 'depth32float' | 'rgba16float',
+      ): BackendTextureHandle => {
+        const texture = backend.createTexture({
+          format,
+          label,
+          size: { height, width },
+          usage: ['render-attachment', 'sampled'],
+        });
+        created.push(texture);
+        return texture;
+      };
+      const currentColorTexture = createTexture(
+        `taa-history-${this.#ownerId}-current-color`,
+        'rgba16float',
+      );
+      const createTargetSet = (index: 0 | 1): DynamicTaaGpuTargetSet =>
+        Object.freeze({
+          colorTexture: createTexture(`taa-history-${this.#ownerId}-${index}-color`, 'rgba16float'),
+          depthTexture: createTexture(
+            `taa-history-${this.#ownerId}-${index}-depth`,
+            'depth32float',
+          ),
+          normalTexture: createTexture(
+            `taa-history-${this.#ownerId}-${index}-normal`,
+            'rgba16float',
+          ),
+        });
+      const first = createTargetSet(0);
+      const second = createTargetSet(1);
       const sampler = backend.createSampler({
         addressModeU: 'clamp-to-edge',
         addressModeV: 'clamp-to-edge',
@@ -277,7 +316,11 @@ export class DynamicTaaGpuHistory implements Disposable {
         mipmapFilter: 'nearest',
       });
       created.push(sampler);
-      return Object.freeze({ sampler, textures: Object.freeze([first, second] as const) });
+      return Object.freeze({
+        currentColorTexture,
+        sampler,
+        targetSets: Object.freeze([first, second] as const),
+      });
     } catch (cause) {
       const cleanupErrors = this.#destroyHandles(backend, created.reverse());
       if (cleanupErrors.length > 0) {
@@ -292,10 +335,16 @@ export class DynamicTaaGpuHistory implements Disposable {
   }
 
   #destroyResources(backend: GraphicsBackend, resources: DynamicTaaGpuResources): unknown[] {
+    const [first, second] = resources.targetSets;
     return this.#destroyHandles(backend, [
       resources.sampler,
-      resources.textures[1],
-      resources.textures[0],
+      second.normalTexture,
+      second.depthTexture,
+      second.colorTexture,
+      first.normalTexture,
+      first.depthTexture,
+      first.colorTexture,
+      resources.currentColorTexture,
     ]);
   }
 

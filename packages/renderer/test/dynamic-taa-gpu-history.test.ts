@@ -22,14 +22,14 @@ function signature(
 }
 
 describe('DynamicTaaGpuHistory', () => {
-  it('owns one rgba16float ping-pong pair and commits only prepared signatures', async () => {
+  it('owns Current HDR plus resolved Color/Depth/Normal ping-pong sets', async () => {
     const backend = new MockBackend();
     await backend.initialize();
     const history = new DynamicTaaGpuHistory({ height: 2, ownerId: 'viewport-a', width: 4 });
     const createTexture = vi.spyOn(backend, 'createTexture');
     const createSampler = vi.spyOn(backend, 'createSampler');
     expect(history.getDiagnostics()).toMatchObject({
-      estimatedGpuBytes: 128,
+      estimatedGpuBytes: 384,
       frameOpen: false,
       history: { sampleCount: 0, valid: false },
       ownerId: 'viewport-a',
@@ -39,16 +39,46 @@ describe('DynamicTaaGpuHistory', () => {
 
     history.initialize(backend);
     history.initialize(backend);
-    expect(createTexture).toHaveBeenCalledTimes(2);
+    expect(createTexture).toHaveBeenCalledTimes(7);
     expect(createTexture).toHaveBeenNthCalledWith(1, {
       format: 'rgba16float',
-      label: 'taa-history-viewport-a-0',
+      label: 'taa-history-viewport-a-current-color',
       size: { height: 2, width: 4 },
       usage: ['render-attachment', 'sampled'],
     });
     expect(createTexture).toHaveBeenNthCalledWith(2, {
       format: 'rgba16float',
-      label: 'taa-history-viewport-a-1',
+      label: 'taa-history-viewport-a-0-color',
+      size: { height: 2, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(createTexture).toHaveBeenNthCalledWith(3, {
+      format: 'depth32float',
+      label: 'taa-history-viewport-a-0-depth',
+      size: { height: 2, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(createTexture).toHaveBeenNthCalledWith(4, {
+      format: 'rgba16float',
+      label: 'taa-history-viewport-a-0-normal',
+      size: { height: 2, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(createTexture).toHaveBeenNthCalledWith(5, {
+      format: 'rgba16float',
+      label: 'taa-history-viewport-a-1-color',
+      size: { height: 2, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(createTexture).toHaveBeenNthCalledWith(6, {
+      format: 'depth32float',
+      label: 'taa-history-viewport-a-1-depth',
+      size: { height: 2, width: 4 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(createTexture).toHaveBeenNthCalledWith(7, {
+      format: 'rgba16float',
+      label: 'taa-history-viewport-a-1-normal',
       size: { height: 2, width: 4 },
       usage: ['render-attachment', 'sampled'],
     });
@@ -62,13 +92,13 @@ describe('DynamicTaaGpuHistory', () => {
       mipmapFilter: 'nearest',
     });
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 3,
-      activeEstimatedBytes: 128,
+      activeCount: 8,
+      activeEstimatedBytes: 384,
       byKind: {
         sampler: { activeCount: 1 },
-        texture: { activeCount: 2, activeEstimatedBytes: 128 },
+        texture: { activeCount: 7, activeEstimatedBytes: 384 },
       },
-      createdTotal: 3,
+      createdTotal: 8,
     });
 
     const first = history.prepareFrame(signature());
@@ -80,7 +110,9 @@ describe('DynamicTaaGpuHistory', () => {
     });
     expect(Object.isFrozen(first)).toBe(true);
     expect(Object.isFrozen(first.size)).toBe(true);
-    expect(first.readTexture).not.toBe(first.writeTexture);
+    expect(first.readColorTexture).not.toBe(first.writeColorTexture);
+    expect(first.readDepthTexture).not.toBe(first.writeDepthTexture);
+    expect(first.readNormalTexture).not.toBe(first.writeNormalTexture);
     expect(history.getDiagnostics().frameOpen).toBe(true);
     expect(() => history.prepareFrame(signature())).toThrow('already has an open frame');
 
@@ -90,8 +122,13 @@ describe('DynamicTaaGpuHistory', () => {
     });
     const second = history.prepareFrame(signature());
     expect(second.historyValid).toBe(true);
-    expect(second.readTexture).toBe(first.writeTexture);
-    expect(second.writeTexture).toBe(first.readTexture);
+    expect(second.currentColorTexture).toBe(first.currentColorTexture);
+    expect(second.readColorTexture).toBe(first.writeColorTexture);
+    expect(second.readDepthTexture).toBe(first.writeDepthTexture);
+    expect(second.readNormalTexture).toBe(first.writeNormalTexture);
+    expect(second.writeColorTexture).toBe(first.readColorTexture);
+    expect(second.writeDepthTexture).toBe(first.readDepthTexture);
+    expect(second.writeNormalTexture).toBe(first.readNormalTexture);
     history.cancelFrame();
 
     const changed = history.prepareFrame(signature({ materials: 2 }));
@@ -118,7 +155,7 @@ describe('DynamicTaaGpuHistory', () => {
     history.commitFrame();
 
     expect(history.resize(8, 4)).toMatchObject({
-      estimatedGpuBytes: 512,
+      estimatedGpuBytes: 1536,
       history: {
         generation: 1,
         lastInvalidation: 'viewport',
@@ -130,15 +167,20 @@ describe('DynamicTaaGpuHistory', () => {
       state: 'ready',
     });
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 3,
-      activeEstimatedBytes: 512,
-      createdTotal: 6,
-      destroyedTotal: 3,
+      activeCount: 8,
+      activeEstimatedBytes: 1536,
+      createdTotal: 16,
+      destroyedTotal: 8,
     });
     const after = history.prepareFrame(signature({ viewport: 2 }));
     expect(after.historyValid).toBe(false);
-    expect(after.readTexture).not.toBe(before.readTexture);
-    expect(after.writeTexture).not.toBe(before.writeTexture);
+    expect(after.currentColorTexture).not.toBe(before.currentColorTexture);
+    expect(after.readColorTexture).not.toBe(before.readColorTexture);
+    expect(after.readDepthTexture).not.toBe(before.readDepthTexture);
+    expect(after.readNormalTexture).not.toBe(before.readNormalTexture);
+    expect(after.writeColorTexture).not.toBe(before.writeColorTexture);
+    expect(after.writeDepthTexture).not.toBe(before.writeDepthTexture);
+    expect(after.writeNormalTexture).not.toBe(before.writeNormalTexture);
     expect(() => history.resize(16, 8)).toThrow('during an open frame');
     history.cancelFrame();
     history.resize(8, 4);
@@ -182,13 +224,18 @@ describe('DynamicTaaGpuHistory', () => {
     const restored = history.prepareFrame(signature({ device: 2 }));
     expect(restored.historyValid).toBe(false);
     expect(restored.resourceGeneration).toBe(2);
-    expect(restored.readTexture).not.toBe(before.readTexture);
-    expect(restored.writeTexture).not.toBe(before.writeTexture);
+    expect(restored.currentColorTexture).not.toBe(before.currentColorTexture);
+    expect(restored.readColorTexture).not.toBe(before.readColorTexture);
+    expect(restored.readDepthTexture).not.toBe(before.readDepthTexture);
+    expect(restored.readNormalTexture).not.toBe(before.readNormalTexture);
+    expect(restored.writeColorTexture).not.toBe(before.writeColorTexture);
+    expect(restored.writeDepthTexture).not.toBe(before.writeDepthTexture);
+    expect(restored.writeNormalTexture).not.toBe(before.writeNormalTexture);
     history.cancelFrame();
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 3,
-      createdTotal: 6,
-      destroyedTotal: 3,
+      activeCount: 8,
+      createdTotal: 16,
+      destroyedTotal: 8,
     });
 
     history.dispose();
@@ -218,21 +265,26 @@ describe('DynamicTaaGpuHistory', () => {
       state: 'ready',
     });
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 3,
-      createdTotal: 4,
+      activeCount: 8,
+      createdTotal: 9,
       destroyedTotal: 1,
     });
     const after = history.prepareFrame(signature());
     expect(after.historyValid).toBe(true);
-    expect(after.readTexture).toBe(before.writeTexture);
-    expect(after.writeTexture).toBe(before.readTexture);
+    expect(after.currentColorTexture).toBe(before.currentColorTexture);
+    expect(after.readColorTexture).toBe(before.writeColorTexture);
+    expect(after.readDepthTexture).toBe(before.writeDepthTexture);
+    expect(after.readNormalTexture).toBe(before.writeNormalTexture);
+    expect(after.writeColorTexture).toBe(before.readColorTexture);
+    expect(after.writeDepthTexture).toBe(before.readDepthTexture);
+    expect(after.writeNormalTexture).toBe(before.readNormalTexture);
     history.cancelFrame();
 
     history.dispose();
     expect(backend.getResourceStatistics()).toMatchObject({
       activeCount: 0,
-      createdTotal: 4,
-      destroyedTotal: 4,
+      createdTotal: 9,
+      destroyedTotal: 9,
     });
     backend.dispose();
   });

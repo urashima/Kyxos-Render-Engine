@@ -85,6 +85,14 @@ function invalidArgument(message: string): KyxosEngineError {
   });
 }
 
+function validateClearColor(
+  clearColor: BackendFrameSubmission['renderPasses'][number]['clearColor'],
+): void {
+  if (Object.values(clearColor).some((value) => !Number.isFinite(value))) {
+    throw invalidArgument('Mock clear color channels must be finite.');
+  }
+}
+
 function validateEstimatedBytes(estimatedBytes: number): void {
   if (!Number.isSafeInteger(estimatedBytes) || estimatedBytes < 0) {
     throw invalidArgument('Resource estimatedBytes must be a non-negative safe integer.');
@@ -377,6 +385,12 @@ export class MockBackend implements GraphicsBackend {
     await this.getShaderCompilationInfo(descriptor.vertex.module);
     if (descriptor.fragment !== undefined) {
       await this.getShaderCompilationInfo(descriptor.fragment.module);
+      if (
+        descriptor.fragment.targets.length < 1 ||
+        descriptor.fragment.targets.length > this.capabilities.limits.maxColorAttachments
+      ) {
+        throw invalidArgument('Mock Render Pipeline color target count is invalid.');
+      }
     }
     const handle = this.createResource(
       'pipeline',
@@ -586,11 +600,16 @@ export class MockBackend implements GraphicsBackend {
     let triangles = 0;
     let vertices = 0;
     for (const renderPass of submission.renderPasses) {
-      if ((renderPass.colorAttachment === undefined) === (renderPass.surface === undefined)) {
+      validateClearColor(renderPass.clearColor);
+      if ((renderPass.colorAttachments === undefined) === (renderPass.surface === undefined)) {
         throw invalidArgument('Mock Render Pass requires exactly one color target.');
       }
-      let target: Readonly<{ format: BackendTextureFormat; height: number; width: number }>;
-      if (renderPass.colorAttachment === undefined) {
+      let target: Readonly<{
+        formats: readonly BackendTextureFormat[];
+        height: number;
+        width: number;
+      }>;
+      if (renderPass.colorAttachments === undefined) {
         const surface = this.getSurfaceInfo(renderPass.surface);
         if (surface.size.suspended) {
           throw new KyxosEngineError('Mock Surface is suspended.', {
@@ -600,32 +619,61 @@ export class MockBackend implements GraphicsBackend {
           });
         }
         target = Object.freeze({
-          format: surface.format,
+          formats: Object.freeze([surface.format]),
           height: surface.size.physicalHeight,
           width: surface.size.physicalWidth,
         });
       } else {
-        const loadOp = renderPass.colorAttachment.loadOp ?? 'clear';
-        const storeOp = renderPass.colorAttachment.storeOp ?? 'store';
         if (
-          (loadOp !== 'clear' && loadOp !== 'load') ||
-          (storeOp !== 'discard' && storeOp !== 'store')
+          renderPass.colorAttachments.length < 1 ||
+          renderPass.colorAttachments.length > this.capabilities.limits.maxColorAttachments
         ) {
-          throw invalidArgument('Mock color attachment loadOp or storeOp is invalid.');
+          throw invalidArgument('Mock color attachment count is invalid.');
         }
-        const texture = this.#textures.get(renderPass.colorAttachment.texture);
-        const size = texture && renderAttachmentSize(renderPass.colorAttachment.view, texture);
+        const textures = new Set<BackendTextureHandle>();
+        const attachments = renderPass.colorAttachments.map((attachment) => {
+          if (textures.has(attachment.texture)) {
+            throw invalidArgument('Mock color attachments must use distinct Textures.');
+          }
+          textures.add(attachment.texture);
+          const loadOp = attachment.loadOp ?? 'clear';
+          const storeOp = attachment.storeOp ?? 'store';
+          if (
+            (loadOp !== 'clear' && loadOp !== 'load') ||
+            (storeOp !== 'discard' && storeOp !== 'store')
+          ) {
+            throw invalidArgument('Mock color attachment loadOp or storeOp is invalid.');
+          }
+          validateClearColor(attachment.clearColor ?? renderPass.clearColor);
+          const texture = this.#textures.get(attachment.texture);
+          const size = texture && renderAttachmentSize(attachment.view, texture);
+          if (
+            texture === undefined ||
+            size === undefined ||
+            !texture.usage.includes('render-attachment') ||
+            texture.format === 'depth24plus' ||
+            texture.format === 'depth32float' ||
+            (texture.sampleCount ?? 1) !== 1
+          ) {
+            throw invalidArgument('Mock color attachment is invalid.');
+          }
+          return Object.freeze({ format: texture.format, ...size });
+        });
+        const firstAttachment = attachments[0];
         if (
-          texture === undefined ||
-          size === undefined ||
-          !texture.usage.includes('render-attachment') ||
-          texture.format === 'depth24plus' ||
-          texture.format === 'depth32float' ||
-          (texture.sampleCount ?? 1) !== 1
+          firstAttachment === undefined ||
+          attachments.some(
+            ({ height, width }) =>
+              height !== firstAttachment.height || width !== firstAttachment.width,
+          )
         ) {
-          throw invalidArgument('Mock color attachment is invalid.');
+          throw invalidArgument('Mock color attachment dimensions must match.');
         }
-        target = Object.freeze({ format: texture.format, ...size });
+        target = Object.freeze({
+          formats: Object.freeze(attachments.map(({ format }) => format)),
+          height: firstAttachment.height,
+          width: firstAttachment.width,
+        });
       }
       const depthTexture =
         renderPass.depthAttachment === undefined
@@ -648,8 +696,9 @@ export class MockBackend implements GraphicsBackend {
         }
         const colorFormats = pipeline.fragment?.targets.map(({ format }) => format) ?? [];
         if (
-          colorFormats.length > 1 ||
-          (colorFormats.length === 1 && colorFormats[0] !== target.format)
+          colorFormats.length > 0 &&
+          (colorFormats.length !== target.formats.length ||
+            colorFormats.some((format, index) => format !== target.formats[index]))
         ) {
           throw invalidArgument('Mock Pipeline color target is incompatible.');
         }

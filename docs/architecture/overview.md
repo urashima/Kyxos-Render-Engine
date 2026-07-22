@@ -61,9 +61,10 @@ No global mutable engine singleton participates in this lifecycle.
 
 Dynamic and static histories are separate owner-scoped records. Their immutable signatures cover
 device, scene, camera, viewport, geometry, material, lighting, environment, and post-process
-revisions. Signature mismatch rejects reuse before sampling; GPU Textures remain owned and released
-by a dedicated Renderer owner, which a later Temporal Render Feature may compose, rather than by the
-CPU history contract.
+revisions. Signature mismatch rejects reuse before sampling. Dynamic TAA GPU Textures remain owned
+and released by a dedicated Renderer owner: one Current linear-HDR Color target plus paired resolved
+Color/Depth/Normal sets that swap atomically. A later Temporal Render Feature may compose those
+opaque Handles; the CPU history contract and Backend never infer ownership from attachment use.
 
 ## Backend policy
 
