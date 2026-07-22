@@ -2213,3 +2213,44 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   Color, applies exposure, Khronos PBR Neutral tone mapping, and linear-to-sRGB exactly once, and
   writes to the Canvas Surface without taking ownership of History. Preserve direct Surface mode as
   the default and defer Static Accumulation plus Phase 4 route/acceptance integration.
+
+## 2026-07-22 11:20 PDT — P4-09 final temporal Present passed
+
+### Completed
+
+- Added `DynamicTaaPresentPass`, a final display-only full-screen pass that reads the open
+  `DynamicTaaGpuFrame.writeColorTexture` before History commit and writes to an owned Canvas Surface.
+- Added a dedicated WGSL Present Shader that applies exposure, Khronos PBR Neutral tone mapping, and
+  linear-to-sRGB exactly once. The upstream temporal PBR and Resolve paths remain linear HDR.
+- Kept ownership explicit: the Present pass owns only its Surface, Shader, Pipeline, 16-byte Uniform,
+  and cached Bind Groups. It never commits, cancels, resizes, swaps, or disposes History and never
+  owns the Backend.
+- Added owner and physical-extent validation, suspended-Surface zero-Draw behavior, output updates,
+  Bind Group regeneration after History resource generations, Device Lost detachment/reinitialize,
+  compile rollback, idempotent disposal, public SDK exports, and a twelfth exact Shader mirror.
+- Added native Canvas submission and raw WebGPU `rgba16float` to `rgba8unorm` readback gates, and made
+  the Phase 4 Playwright project explicitly discover both temporal and Present specs.
+
+### Validation
+
+- Verified checkpoint Head `ca8ae24667eb183754fe969ff5347b0f4c7524ba` passed Run `29945593058`,
+  job `89010040816`: formatting, zero-warning Lint, strict TypeScript, 53 unit files / 253 tests,
+  package/architecture boundaries, frozen Phase 0–3 Schemas, twelve Shader mirrors, build, Bundle,
+  Pages, and all 28 pinned Chromium/WebGPU cases.
+- Artifact `8540088727`, digest
+  `sha256:c15235c1c18aca222cf9b1dfb3d5fc3871c368621feece2f37b2b8886af616c8`, contains
+  `taa-present-surface.json`, `taa-present-reference.json`, and the complete verification log.
+- Surface evidence records one Draw / one Triangle, one Surface, seven History Textures, thirteen
+  active resources before cleanup, exact 14 created / 14 destroyed resources, and zero active
+  resources after Present, History, and Backend disposal.
+- CPU/WGSL output-transform evidence covers neutral gray and two HDR colored samples. All twelve RGBA
+  channels match the CPU oracle exactly after `rgba8unorm` quantization; maximum channel difference is
+  zero and Shader compilation reports no messages.
+- Phase 0–3 public routes and acceptance evidence remain frozen. Phase 4 still has no public route,
+  owner acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-10 owner-scoped Static Accumulation with deterministic CPU/WGSL parity, sample-count and
+  convergence limits, complete Dirty Event reset semantics, Resize and Device Lost restoration, and
+  exact resource disposal. Do not yet integrate the final Phase 4 route or acceptance freeze.

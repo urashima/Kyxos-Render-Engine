@@ -330,3 +330,21 @@
   occur in Present exactly once.
 - **ADR required:** No; this is an internal composition decision within the existing backend-neutral,
   owner-scoped temporal architecture.
+
+## ED-037 — Present reads the open resolved write target before History commit
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** The final Present pass reads `DynamicTaaGpuFrame.writeColorTexture` while the frame is
+  open, performs the only display output transform, submits to its independently owned Surface, and
+  leaves History commit/cancel and Backend lifetime to the caller.
+- **Candidates:** Present after commit from the newly swapped History read target; let Resolve write
+  directly to the Surface; read the open resolved write target before commit through a dedicated pass.
+- **Reason:** Direct Surface Resolve would mix linear temporal state with display encoding and make
+  accumulation reuse impossible. Presenting only after commit would expose History role-swapping to
+  the display pass and complicate failure recovery. Reading the open write target preserves the clear
+  order `prepare → scene MRT → resolve → present → commit` and permits cancel on any failed stage.
+- **Impact:** WebGPU gains one full-screen Triangle, one small Uniform, one Pipeline, and one Bind Group
+  in temporal mode. The accepted direct Surface PBR path remains unchanged. WebGL2 can implement the
+  same owner-neutral contract with its supported HDR format and output Surface.
+- **ADR required:** No; this refines the existing temporal transaction and resource-ownership contract.
