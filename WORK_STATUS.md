@@ -2,15 +2,15 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal`
-- **Current Commit:** `0135499ba73b0fe8a3b1d83a899f719e6284e041`
-- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-08 complete; P4-09 implementation complete and under final native-browser verification
-- **Current Task:** P4-09 — Execute the final Present Surface and CPU/WGSL output-transform browser gates
-- **Last Completed Task:** P4-08 — PBR linear-HDR Color + encoded Normal MRT into caller-owned Dynamic TAA targets
-- **Next Action:** Run all 28 pinned Chromium/WebGPU cases, inspect `taa-present-surface.json` and `taa-present-reference.json`, then record P4-09 or fix the exact browser failure
-- **CI Status:** Run 29945442987 reached the standard gate but stopped at `WORK_STATUS.md` formatting before browser execution; no P4-09 runtime result was accepted
+- **Current Commit:** `ca8ae24667eb183754fe969ff5347b0f4c7524ba` (P4-09 final Present verified)
+- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-09 complete
+- **Current Task:** P4-10 — Static accumulation, convergence, and sample-limit state
+- **Last Completed Task:** P4-09 — Final Dynamic TAA Present Surface pass with exactly-once exposure, Khronos PBR Neutral tone mapping, and linear-to-sRGB output
+- **Next Action:** Define and implement owner-scoped static accumulation state and deterministic CPU/WGSL accumulation parity, including sample reset, convergence/sample limit, Resize and Device Lost recovery, and zero-resource disposal
+- **CI Status:** Run 29945593058 / job 89010040816 PASS; 53 unit files / 253 tests; 12 exact Shader mirrors; 28 / 28 Chromium/WebGPU cases; Artifact 8540088727
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 11:12 PDT
+- **Last Updated:** 2026-07-22 11:18 PDT
 
 ## Phase Progress
 
