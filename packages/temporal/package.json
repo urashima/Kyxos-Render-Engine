@@ -2,7 +2,7 @@
   "name": "@kyxos/render-temporal",
   "version": "0.0.0",
   "private": true,
-  "description": "Owner-scoped temporal history signatures and deterministic convergence state.",
+  "description": "Temporal history, convergence, jitter, and deterministic TAA resolve contracts.",
   "type": "module",
   "sideEffects": false,
   "files": [

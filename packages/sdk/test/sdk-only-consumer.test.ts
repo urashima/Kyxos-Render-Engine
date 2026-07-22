@@ -16,6 +16,7 @@ import {
   createKyxosRendererFromBackend,
   createTemporalJitterSample,
   evaluateDeterministicIblReference,
+  evaluateDeterministicTemporalTaaReference,
   evaluatePbrOutputTransform,
   evaluateSplitSumIbl,
   float32ToFloat16Bits,
@@ -295,6 +296,17 @@ describe('SDK-only consumer', () => {
     });
     matrices.dispose();
     camera.dispose();
+  });
+
+  it('evaluates deterministic Dynamic TAA resolve branches from the public SDK', () => {
+    const reference = evaluateDeterministicTemporalTaaReference();
+
+    expect(reference.cases.map(({ id, result }) => [id, result.rejectionReason])).toEqual([
+      ['accepted', null],
+      ['depth-rejected', 'depth'],
+      ['normal-rejected', 'normal'],
+    ]);
+    expect(reference.values).toHaveLength(60);
   });
 
   it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {

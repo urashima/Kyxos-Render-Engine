@@ -32,6 +32,27 @@ reset fail closed by setting Previous equal to Current. Camera pose motion withi
 retains the true prior matrix and Jitter so a later Dynamic TAA pass can reproject it. The tracker
 owns neither its caller-provided Camera nor a GPU resource.
 
+P4-03 freezes the Dynamic TAA resolve math without creating its eventual GPU resources. Its input is
+a current linear-HDR pixel plus History Color, Depth, and Normal already sampled at a
+caller-provided reprojected coordinate. A nine-sample current-color neighborhood bounds History;
+invalid History, incompatible Depth, or incompatible normalized Normals reject it. Accepted History
+uses an explicit base weight reduced by a unit-range responsive mask. Output RGB remains linear HDR
+and output Alpha always comes from the current frame.
+
+The clean-room algorithm inputs are [Brian Karis, High Quality Temporal
+Supersampling](https://de45xmedrsdbp.cloudfront.net/Resources/files/TemporalAA_small-59732822.pdf),
+Playdead's published [Temporal Reprojection Anti-Aliasing in
+INSIDE](https://github.com/playdeadgames/temporal/blob/master/GDC2016_Temporal_Reprojection_AA_INSIDE.pdf),
+and the [W3C WGSL specification](https://www.w3.org/TR/WGSL/) for the exact `min`, `max`, `clamp`,
+`normalize`, `dot`, and `mix` operations. P4-03 independently freezes Kyxos-specific thresholds and
+reference vectors; no private renderer source or assets were used.
+
+The deterministic reference executes three branches: accepted History with neighborhood clamping
+and responsive weighting, Depth disocclusion rejection, and Normal rejection. CPU results and 60
+WebGPU float32 values must agree within the frozen `0.000001` absolute tolerance. Reprojection
+coordinates, Motion Vectors, History Textures, Render Graph resources, and Renderer integration
+remain deferred.
+
 ## Scheduling invariants
 
 1. No strategy owns a global or unconditional RAF loop. Both strategies use an injected frame

@@ -35,7 +35,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting        | Camera, Core, Geometry, Math, Scene                                           |
 | `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics       | Core                                                                          |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                             |
-| `@kyxos/render-temporal`        | Owner-scoped History Signatures and deterministic convergence state     | Core                                                                          |
+| `@kyxos/render-temporal`        | History, convergence, Jitter, and deterministic Dynamic TAA resolve     | Core                                                                          |
 | `@kyxos/render-frame-scheduler` | Dirty-only and opt-in four-mode injected frame scheduling               | Core, Temporal                                                                |
 | `@kyxos/render-renderer`        | Renderer lifecycle, direct/IBL PBR, mapped resources, and GPU caches    | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Visibility |
 | `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry       | Public engine packages                                                        |

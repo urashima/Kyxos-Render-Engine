@@ -36,3 +36,20 @@ export {
   type TemporalHistorySignatureDescriptor,
   type TemporalHistorySignatureField,
 } from './signature.js';
+export {
+  TEMPORAL_TAA_DEFAULT_OPTIONS,
+  TEMPORAL_TAA_REFERENCE_CASES,
+  TEMPORAL_TAA_REFERENCE_OUTPUT_FIELDS,
+  evaluateDeterministicTemporalTaaReference,
+  resolveTemporalTaa,
+  type DeterministicTemporalTaaReference,
+  type TemporalTaaNeighborhood,
+  type TemporalTaaReferenceCase,
+  type TemporalTaaRejectionReason,
+  type TemporalTaaResolveInput,
+  type TemporalTaaResolveOptions,
+  type TemporalTaaResolveResult,
+  type TemporalTaaRgb,
+  type TemporalTaaRgba,
+  type TemporalTaaVec3,
+} from './taa-resolve.js';

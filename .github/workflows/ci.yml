@@ -60,5 +60,6 @@ jobs:
             test-results/phase-01/runtime/
             test-results/phase-02/runtime/
             test-results/phase-03/runtime/
+            test-results/phase-04/runtime/
           if-no-files-found: ignore
           retention-days: 7
