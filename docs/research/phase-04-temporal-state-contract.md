@@ -229,6 +229,6 @@ role-cache reuse/replacement, and resolve ownership. The pinned Chromium/SwiftSh
 dynamically loads the public WebGPU Backend and Renderer modules, submits real two-target
 `rgba16float` MRT passes with `depth32float`, executes the sampled resolve through both initial and
 resized History resources, and records the resource diagnostics. A separate native WebGPU gate
-reads three `rgba16float` output pixels for accepted, Depth-rejected, and Normal-rejected History,
-compares them with the half-float-aware CPU oracle, and stores the result with the deterministic
-Camera reprojection reference in the Phase 4 Artifact.
+reads three `rgba16float` output pixels for accepted, Depth-rejected, and Normal-rejected History
+using render-produced Current and History Depth, compares them with the half-float-aware CPU oracle,
+and stores the result with the deterministic Camera reprojection reference in the Phase 4 Artifact.

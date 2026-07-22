@@ -2110,3 +2110,63 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-07 sampled Dynamic TAA resolve GPU pass: reconstruct History UV from Current Depth,
   sample prior Color/Depth/Normal, apply the frozen P4-03 rejection/clamp/weight math, and write
   resolved linear-HDR Color into the write target without PBR offscreen or Present integration.
+
+## 2026-07-22 08:59 PDT — P4-07 sampled Dynamic TAA resolve passed
+
+### Completed
+
+- Added an independent `DynamicTaaResolvePass` with an exact 176-byte Uniform for inverse Current
+  View-Projection, Previous View-Projection, Viewport, History validity, responsive mask, and the
+  frozen P4-03 resolve options.
+- Bound Current Color plus Current write Depth/Normal and prior read Color/Depth/Normal through one
+  role-specific Bind Group. Extended Backend and Mock validation to permit single-sampled sampled
+  Depth Textures without weakening usage, View, or sample-count validation.
+- Added a byte-exact full-screen WGSL mirror that reconstructs History UV with the P4-05 fail-closed
+  rules, loads a 3×3 Current neighborhood, samples prior Color/Normal, loads prior Depth, applies
+  P4-03 rejection/clamp/responsive weighting, preserves Current Alpha, and writes resolved HDR.
+- Added owner identity validation, generation-scoped Bind Group reuse and resize cleanup, Device
+  Lost detachment/reinitialization, failed-initialization rollback, and complete idempotent release.
+- Upgraded the native owner lifecycle gate to execute real scene MRT and Resolve submissions before
+  and after Resize. Added an independent three-pixel native WebGPU gate for accepted, Depth-rejected,
+  and Normal-rejected History using render-produced `depth32float` fixtures.
+- Preserved the checkpoint boundary: P4-07 adds no PBR offscreen output, Present pass, Render Graph
+  scheduling, Static Accumulation, Phase 4 route, deployment, or acceptance claim.
+
+### Validation
+
+- Implementation commit `bf232a38386368bd1a3219fd0de79337eb33ee00` has Git Tree
+  `6fc563c0617537b521aea9940340ff23504362ef`, identical to the complete locally verified Tree.
+- Local formatting, zero-warning Lint, strict TypeScript, 52 unit files / 249 tests,
+  package/architecture gates, Phase 0–3 frozen Schemas, ten Shader mirrors, build, Bundle, and Pages
+  passed. Playwright discovered all 25 browser cases; local execution stopped before launch only
+  because pinned Chromium v1228 is unavailable in the workspace.
+- Initial Run `29934814481`, job `88973535766`, passed the existing 24 browser cases and the
+  integrated P4-07 owner lifecycle gate. Its only failure was the new raw gate's direct
+  `queue.writeTexture` Depth fixture, whose middle `depth32float` texel was not observed as written.
+  Trace evidence isolated the fixture; the Resolve Shader, thresholds, and algorithm were unchanged.
+- Commit `a8b7014f9214fe581fb6683b02b3ac75d6ecff6e` replaced only that fixture with a depth-only Render
+  Pass matching production depth generation. Its Git Tree is
+  `d9c895497a3fed20b194c56d803ec64f18d9d0e8`, identical to the locally verified Tree.
+- Final Run `29935537307`, job `88976018352`: PASS. The fixed Chromium/SwiftShader environment passed
+  the complete pipeline and all 25 browser/WebGPU cases.
+- Artifact `8536030918`, digest
+  `sha256:6609391d009456e6c7fb313b8c973914980895463f681fb124512c03fc581519`, contains
+  `test-results/phase-04/runtime/taa-resolve-gpu.json` and `taa-history-gpu.json` bound to the exact
+  Head. WGSL compilation messages are empty.
+- Accepted, Depth-rejected, and Normal-rejected GPU pixels match the half-float-aware CPU oracle.
+  Maximum absolute difference is `0.00010742187500001332` against the unchanged `0.001` threshold;
+  both rejection outputs are exact.
+- Two initial/Resize scene MRT and Resolve submissions each record one Draw / one Triangle. Resolve
+  disposal reduces active resources from 14 to the ten History/caller resources; History disposal
+  leaves only the caller-owned Shader/Pipeline, with zero owner Texture, Sampler, Buffer, or Bind
+  Group Handles.
+- Unchanged Bundle thresholds pass with Phase 0 at 37,023 / 65,536, Phase 1 at
+  74,983 / 98,304, Phase 2 at 113,976 / 131,072, and Phase 3 at 163,740 / 196,608 raw JavaScript
+  bytes. Pages still contain only accepted Phases 0–3.
+- Draft PR #7 remains In Development. Phase 4 has no public route, deployment, or Accepted Tag.
+
+### Next
+
+- Add an opt-in PBR temporal offscreen mode that writes linear-HDR Current Color plus encoded Normal
+  MRT with `depth32float` into a prepared `DynamicTaaGpuFrame`, while preserving the accepted surface
+  path; defer final Present, Static Accumulation, and Phase 4 route/acceptance integration.
