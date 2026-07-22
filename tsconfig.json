@@ -5,6 +5,7 @@
     { "path": "packages/core" },
     { "path": "packages/math" },
     { "path": "packages/geometry" },
+    { "path": "packages/environment" },
     { "path": "packages/material-core" },
     { "path": "packages/material-pbr" },
     { "path": "packages/scene" },

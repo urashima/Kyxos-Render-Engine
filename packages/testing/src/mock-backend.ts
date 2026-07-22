@@ -33,6 +33,7 @@ import type {
   BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureViewDescriptor,
   BackendTextureWriteDescriptor,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
@@ -101,6 +102,50 @@ function bindGroupResourceKind(
     throw invalidArgument('Mock Bind Group resource is invalid.');
   }
   return kinds[0] as 'buffer' | 'sampler' | 'texture';
+}
+
+function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
+  const layers = descriptor.size.depthOrArrayLayers ?? 1;
+  const samples = descriptor.sampleCount ?? 1;
+  const mipLevels = descriptor.mipLevelCount ?? 1;
+  let width = descriptor.size.width;
+  let height = descriptor.size.height;
+  let texels = 0;
+  for (let mip = 0; mip < mipLevels; mip += 1) {
+    texels += width * height * layers;
+    width = Math.max(1, Math.floor(width / 2));
+    height = Math.max(1, Math.floor(height / 2));
+  }
+  return texels * samples * (descriptor.format === 'rgba16float' ? 8 : 4);
+}
+
+function validateTextureView(
+  view: BackendTextureViewDescriptor | undefined,
+  texture: BackendTextureDescriptor,
+): boolean {
+  const textureMips = texture.mipLevelCount ?? 1;
+  const textureLayers = texture.size.depthOrArrayLayers ?? 1;
+  const baseMipLevel = view?.baseMipLevel ?? 0;
+  const baseArrayLayer = view?.baseArrayLayer ?? 0;
+  const mipLevelCount = view?.mipLevelCount ?? textureMips - baseMipLevel;
+  const dimension = view?.dimension ?? (textureLayers - baseArrayLayer === 1 ? '2d' : '2d-array');
+  const arrayLayerCount =
+    view?.arrayLayerCount ??
+    (dimension === '2d' ? 1 : dimension === 'cube' ? 6 : textureLayers - baseArrayLayer);
+  return (
+    Number.isSafeInteger(baseMipLevel) &&
+    baseMipLevel >= 0 &&
+    Number.isSafeInteger(baseArrayLayer) &&
+    baseArrayLayer >= 0 &&
+    Number.isSafeInteger(mipLevelCount) &&
+    mipLevelCount >= 1 &&
+    baseMipLevel + mipLevelCount <= textureMips &&
+    Number.isSafeInteger(arrayLayerCount) &&
+    arrayLayerCount >= 1 &&
+    baseArrayLayer + arrayLayerCount <= textureLayers &&
+    (dimension !== '2d' || arrayLayerCount === 1) &&
+    (dimension !== 'cube' || (arrayLayerCount === 6 && texture.size.width === texture.size.height))
+  );
 }
 
 export class MockBackend implements GraphicsBackend {
@@ -196,9 +241,7 @@ export class MockBackend implements GraphicsBackend {
   }
 
   createTexture(descriptor: BackendTextureDescriptor): BackendTextureHandle {
-    const layers = descriptor.size.depthOrArrayLayers ?? 1;
-    const estimatedBytes =
-      descriptor.size.width * descriptor.size.height * layers * (descriptor.sampleCount ?? 1) * 4;
+    const estimatedBytes = estimateTextureBytes(descriptor);
     const handle = this.createResource('texture', {
       estimatedBytes,
       ...(descriptor.label === undefined ? {} : { label: descriptor.label }),
@@ -256,7 +299,8 @@ export class MockBackend implements GraphicsBackend {
           !texture.usage.includes('sampled') ||
           texture.format === 'depth24plus' ||
           texture.format === 'depth32float' ||
-          (texture.sampleCount ?? 1) !== 1
+          (texture.sampleCount ?? 1) !== 1 ||
+          !validateTextureView(entry.resource.view, texture)
         )
           throw invalidArgument('Mock Bind Group Texture entry is invalid.');
       }
@@ -467,14 +511,15 @@ export class MockBackend implements GraphicsBackend {
       z: descriptor.origin?.z ?? 0,
     };
     const depthOrArrayLayers = descriptor.size.depthOrArrayLayers ?? 1;
-    const bytesPerRow = descriptor.bytesPerRow ?? descriptor.size.width * 4;
+    const texelBytes = texture === undefined ? 0 : texture.format === 'rgba16float' ? 8 : 4;
+    const bytesPerRow = descriptor.bytesPerRow ?? descriptor.size.width * texelBytes;
     const rowsPerImage = descriptor.rowsPerImage ?? descriptor.size.height;
     const mipWidth = Math.max(1, Math.floor((texture?.size.width ?? 0) / 2 ** mipLevel));
     const mipHeight = Math.max(1, Math.floor((texture?.size.height ?? 0) / 2 ** mipLevel));
     const requiredBytes =
       bytesPerRow *
         (rowsPerImage * (depthOrArrayLayers - 1) + Math.max(0, descriptor.size.height - 1)) +
-      descriptor.size.width * 4;
+      descriptor.size.width * texelBytes;
     if (
       texture === undefined ||
       !texture.usage.includes('copy-dst') ||
@@ -495,8 +540,8 @@ export class MockBackend implements GraphicsBackend {
       origin.y + descriptor.size.height > mipHeight ||
       origin.z + depthOrArrayLayers > (texture.size.depthOrArrayLayers ?? 1) ||
       !Number.isSafeInteger(bytesPerRow) ||
-      bytesPerRow < descriptor.size.width * 4 ||
-      bytesPerRow % 4 !== 0 ||
+      bytesPerRow < descriptor.size.width * texelBytes ||
+      bytesPerRow % texelBytes !== 0 ||
       !Number.isSafeInteger(rowsPerImage) ||
       rowsPerImage < descriptor.size.height ||
       !Number.isSafeInteger(requiredBytes) ||

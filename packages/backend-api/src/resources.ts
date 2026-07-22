@@ -61,6 +61,8 @@ export type BackendTextureFormat =
   | 'bgra8unorm-srgb'
   | 'depth24plus'
   | 'depth32float'
+  | 'rg16float'
+  | 'rgba16float'
   | 'rgba8unorm'
   | 'rgba8unorm-srgb';
 
@@ -236,6 +238,17 @@ export interface BackendBindGroupSamplerBinding {
 
 export interface BackendBindGroupTextureBinding {
   readonly texture: BackendTextureHandle;
+  readonly view?: BackendTextureViewDescriptor;
+}
+
+export type BackendTextureViewDimension = '2d' | '2d-array' | 'cube';
+
+export interface BackendTextureViewDescriptor {
+  readonly arrayLayerCount?: number;
+  readonly baseArrayLayer?: number;
+  readonly baseMipLevel?: number;
+  readonly dimension?: BackendTextureViewDimension;
+  readonly mipLevelCount?: number;
 }
 
 export type BackendBindGroupResource =

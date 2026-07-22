@@ -24,6 +24,7 @@
     "@kyxos/render-backend-api": "workspace:*",
     "@kyxos/render-camera": "workspace:*",
     "@kyxos/render-core": "workspace:*",
+    "@kyxos/render-environment": "workspace:*",
     "@kyxos/render-frame-scheduler": "workspace:*",
     "@kyxos/render-geometry": "workspace:*",
     "@kyxos/render-material-core": "workspace:*",

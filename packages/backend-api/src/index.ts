@@ -80,6 +80,8 @@ export type {
   BackendTextureOrigin,
   BackendTextureSize,
   BackendTextureUsage,
+  BackendTextureViewDescriptor,
+  BackendTextureViewDimension,
   BackendTextureWriteDescriptor,
   BackendVertexAttribute,
   BackendVertexBufferLayout,

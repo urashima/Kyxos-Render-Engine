@@ -21,6 +21,7 @@ import type {
   BackendTextureDescriptor,
   BackendTextureOrigin,
   BackendTextureSize,
+  BackendTextureViewDescriptor,
   BackendVertexBufferLayout,
 } from '@kyxos/render-backend-api';
 
@@ -65,7 +66,7 @@ export interface WebGpuCommandBufferPort {
 }
 
 export interface WebGpuTexturePort {
-  createView(): WebGpuTextureViewPort;
+  createView(descriptor?: BackendTextureViewDescriptor): WebGpuTextureViewPort;
   destroy(): void;
 }
 

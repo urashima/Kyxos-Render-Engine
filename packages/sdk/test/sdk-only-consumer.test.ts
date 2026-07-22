@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BACKEND_RESOURCE_KINDS,
+  EnvironmentGpuCache,
+  EnvironmentLibrary,
+  EnvironmentSource,
   PbrMaterial,
   PbrTextureLibrary,
   PbrTextureSource,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   evaluateDeterministicIblReference,
+  float32ToFloat16Bits,
   srgbToLinearRgba,
 } from '../src/index.js';
 import type {
@@ -209,6 +213,10 @@ class SdkOnlyFrameDriver implements FrameRequestDriver {
 
 describe('SDK-only consumer', () => {
   it('creates and controls a renderer using only the public SDK entry point', async () => {
+    expect(EnvironmentGpuCache).toBeTypeOf('function');
+    expect(EnvironmentLibrary).toBeTypeOf('function');
+    expect(EnvironmentSource).toBeTypeOf('function');
+    expect(float32ToFloat16Bits(1)).toBe(0x3c00);
     const frameDriver = new SdkOnlyFrameDriver();
     const renderer = await createKyxosRendererFromBackend({
       backend: new SdkOnlyBackend(),

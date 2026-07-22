@@ -128,7 +128,7 @@ try {
       `${JSON.stringify(
         {
           browserCompilerGate:
-            'tests/e2e/phase-01.spec.ts, phase-03-brdf.spec.ts, and phase-03-ibl.spec.ts (BRDF/IBL compute + direct/factor/normal/emission PBR render)',
+            'tests/e2e/phase-01.spec.ts and phase-03-* specs (BRDF/IBL compute + PBR render + HDR cube/LUT sampling)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',

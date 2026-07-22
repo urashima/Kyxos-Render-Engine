@@ -3,6 +3,12 @@ export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 
 export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
 export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
+export {
+  EnvironmentGpuCache,
+  EnvironmentGpuLease,
+  type EnvironmentGpuCacheDiagnostics,
+  type EnvironmentGpuResources,
+} from './environment-gpu-cache.js';
 export type {
   BasicGeometryData,
   BasicGeometryPrimitive,

@@ -10,6 +10,7 @@ import {
   type BackendShaderModuleDescriptor,
   type BackendTextureDescriptor,
   type BackendTextureUsage,
+  type BackendTextureViewDescriptor,
 } from '@kyxos/render-backend-api';
 
 import type {
@@ -165,8 +166,8 @@ class BrowserWebGpuTexture implements WebGpuTexturePort {
     this.native = texture;
   }
 
-  createView(): WebGpuTextureViewPort {
-    return new BrowserWebGpuTextureView(this.native.createView());
+  createView(descriptor?: BackendTextureViewDescriptor): WebGpuTextureViewPort {
+    return new BrowserWebGpuTextureView(this.native.createView(descriptor));
   }
 
   destroy(): void {

@@ -4,6 +4,7 @@ import type {
   BackendLimits,
   BackendLossInfo,
   BackendSurfaceSize,
+  BackendTextureViewDescriptor,
 } from '@kyxos/render-backend-api';
 import { KyxosEngineError } from '@kyxos/render-core';
 import { describe, expect, it, vi } from 'vitest';
@@ -64,7 +65,9 @@ class FakeBuffer implements WebGpuBufferPort {
 }
 
 class FakeTexture implements WebGpuTexturePort {
-  readonly createView = vi.fn<() => WebGpuTextureViewPort>(() => ({ kind: 'texture-view' }));
+  readonly createView = vi.fn<(descriptor?: BackendTextureViewDescriptor) => WebGpuTextureViewPort>(
+    () => ({ kind: 'texture-view' }),
+  );
   readonly destroy = vi.fn();
 }
 
@@ -525,6 +528,81 @@ describe('WebGpuBackend device lifecycle', () => {
     });
   });
 
+  it('uploads HDR formats and creates validated cube and LUT Texture Views', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const cube = backend.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    const lut = backend.createTexture({
+      format: 'rg16float',
+      size: { height: 2, width: 2 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    backend.writeTexture(cube, new Uint16Array(2 * 2 * 6 * 4), {
+      bytesPerRow: 16,
+      rowsPerImage: 2,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+    });
+    backend.writeTexture(cube, new Uint16Array(1 * 1 * 6 * 4), {
+      bytesPerRow: 8,
+      mipLevel: 1,
+      rowsPerImage: 1,
+      size: { depthOrArrayLayers: 6, height: 1, width: 1 },
+    });
+    backend.writeTexture(lut, new Uint16Array(2 * 2 * 2), {
+      bytesPerRow: 8,
+      rowsPerImage: 2,
+      size: { height: 2, width: 2 },
+    });
+    const sampler = backend.createSampler({ minFilter: 'linear' });
+    backend.createBindGroup({
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            texture: cube,
+            view: { arrayLayerCount: 6, dimension: 'cube', mipLevelCount: 2 },
+          },
+        },
+        { binding: 1, resource: { sampler } },
+        { binding: 2, resource: { texture: lut, view: { dimension: '2d' } } },
+      ],
+      group: 0,
+      pipeline,
+    });
+
+    expect(device.textures[0]?.createView).toHaveBeenCalledExactlyOnceWith({
+      arrayLayerCount: 6,
+      dimension: 'cube',
+      mipLevelCount: 2,
+    });
+    expect(device.textures[1]?.createView).toHaveBeenCalledExactlyOnceWith({
+      dimension: '2d',
+    });
+    expect(device.queue.writeTexture.mock.calls.map(([request]) => request.bytesPerRow)).toEqual([
+      16, 8, 8,
+    ]);
+    expect(backend.getResourceStatistics()).toMatchObject({
+      byKind: { texture: { activeCount: 2, activeEstimatedBytes: 256 } },
+    });
+    backend.dispose();
+  });
+
   it('records indexed Draws and rejects reads outside the bound Index Buffer range', async () => {
     const surfacePort = new FakeSurface();
     const device = new FakeDevice([surfacePort]);
@@ -664,7 +742,7 @@ describe('WebGpuBackend device lifecycle', () => {
       backend.writeTexture(sampled, new Uint8Array(3), {
         size: { height: 1, width: 1 },
       }),
-    ).toThrow('source data is smaller');
+    ).toThrow('data is too small');
     const sampler = backend.createSampler({ minFilter: 'linear' });
     expect(() =>
       backend.createBindGroup({

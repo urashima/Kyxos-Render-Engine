@@ -188,7 +188,7 @@ function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
     width = Math.max(1, Math.floor(width / 2));
     height = Math.max(1, Math.floor(height / 2));
   }
-  return texels * samples * 4;
+  return texels * samples * (descriptor.format === 'rgba16float' ? 8 : 4);
 }
 
 function validateSamplerDescriptor(descriptor: BackendSamplerDescriptor): void {
@@ -211,9 +211,7 @@ function bindGroupResourceKind(
     Object.hasOwn(resource, 'texture') ? 'texture' : null,
   ].filter((kind): kind is 'buffer' | 'sampler' | 'texture' => kind !== null);
   if (kinds.length !== 1) {
-    throw invalidArgument(
-      'Bind Group resource must contain exactly one Buffer, Sampler, or Texture Handle.',
-    );
+    throw invalidArgument('Bind Group resource needs exactly one Handle.');
   }
   return kinds[0] as 'buffer' | 'sampler' | 'texture';
 }
@@ -590,9 +588,7 @@ export class WebGpuBackend implements GraphicsBackend {
         requireNonNegativeSafeInteger('Bind Group Buffer offset', offset);
         requirePositiveSafeInteger('Bind Group Buffer size', size);
         if (offset % 4 !== 0 || size % 4 !== 0 || offset + size > buffer.descriptor.size) {
-          throw invalidArgument(
-            'Bind Group Buffer range must be 4-byte aligned and remain within its Buffer.',
-          );
+          throw invalidArgument('Bind Group Buffer range is invalid.');
         }
         resourceHandles.push(entry.resource.buffer);
         return {
@@ -622,19 +618,17 @@ export class WebGpuBackend implements GraphicsBackend {
           texture.descriptor.format === 'depth32float' ||
           (texture.descriptor.sampleCount ?? 1) !== 1
         ) {
-          throw invalidArgument(
-            'Bind Group Texture requires a single-sampled color Texture with sampled usage.',
-          );
+          throw invalidArgument('Bind Group Texture must be sampled color data.');
         }
         sampledTextureCount += 1;
         resourceHandles.push(entry.resource.texture);
         return {
           binding: entry.binding,
           kind: 'texture' as const,
-          view: texture.texture.createView(),
+          view: texture.texture.createView(entry.resource.view),
         };
       }
-      throw invalidArgument('Bind Group resource could not be resolved.');
+      throw invalidArgument('Bind Group resource is invalid.');
     });
     if (sampledTextureCount > this.#capabilities.limits.maxSampledTexturesPerShaderStage) {
       throw new KyxosEngineError(
@@ -803,15 +797,13 @@ export class WebGpuBackend implements GraphicsBackend {
       record.descriptor.format === 'depth32float' ||
       (record.descriptor.sampleCount ?? 1) !== 1
     ) {
-      throw invalidArgument(
-        'Texture write requires a single-sampled color Texture with copy-dst usage.',
-      );
+      throw invalidArgument('Texture write needs copy-dst single-sampled color data.');
     }
 
     const mipLevel = descriptor.mipLevel ?? 0;
     requireNonNegativeSafeInteger('Texture write mipLevel', mipLevel);
     if (mipLevel >= (record.descriptor.mipLevelCount ?? 1)) {
-      throw invalidArgument('Texture write mipLevel exceeds the Texture mip count.');
+      throw invalidArgument('Texture write mip is out of range.');
     }
     const origin = {
       x: descriptor.origin?.x ?? 0,
@@ -837,23 +829,26 @@ export class WebGpuBackend implements GraphicsBackend {
       origin.y + size.height > mipHeight ||
       origin.z + size.depthOrArrayLayers > layers
     ) {
-      throw invalidArgument('Texture write region exceeds the destination subresource.');
+      throw invalidArgument('Texture write exceeds its subresource.');
     }
 
-    const bytesPerRow = descriptor.bytesPerRow ?? size.width * 4;
+    const texelBytes = record.descriptor.format === 'rgba16float' ? 8 : 4;
+    const bytesPerRow = descriptor.bytesPerRow ?? size.width * texelBytes;
     const rowsPerImage = descriptor.rowsPerImage ?? size.height;
     requirePositiveSafeInteger('Texture write bytesPerRow', bytesPerRow);
     requirePositiveSafeInteger('Texture write rowsPerImage', rowsPerImage);
-    if (bytesPerRow % 4 !== 0 || bytesPerRow < size.width * 4 || rowsPerImage < size.height) {
-      throw invalidArgument(
-        'Texture write rows must contain the complete RGBA8 copy region with 4-byte alignment.',
-      );
+    if (
+      bytesPerRow % texelBytes !== 0 ||
+      bytesPerRow < size.width * texelBytes ||
+      rowsPerImage < size.height
+    ) {
+      throw invalidArgument('Texture write rows are invalid.');
     }
     const requiredBytes =
       bytesPerRow * (rowsPerImage * (size.depthOrArrayLayers - 1) + Math.max(0, size.height - 1)) +
-      size.width * 4;
+      size.width * texelBytes;
     if (!Number.isSafeInteger(requiredBytes) || data.byteLength < requiredBytes) {
-      throw invalidArgument('Texture write source data is smaller than the declared region.');
+      throw invalidArgument('Texture write data is too small.');
     }
 
     try {

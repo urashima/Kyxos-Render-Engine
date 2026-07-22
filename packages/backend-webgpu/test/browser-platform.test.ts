@@ -125,6 +125,30 @@ describe('browser WebGPU platform port', () => {
       size: { depthOrArrayLayers: 1, height: 4, width: 8 },
       usage: 0x16,
     });
+    const cubeTexture = device.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    expect(nativeDevice.createTexture).toHaveBeenNthCalledWith(2, {
+      dimension: '2d',
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      sampleCount: 1,
+      size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+      usage: 0x06,
+    });
+    cubeTexture.createView({
+      arrayLayerCount: 6,
+      dimension: 'cube',
+      mipLevelCount: 2,
+    });
+    expect(nativeTexture.createView).toHaveBeenLastCalledWith({
+      arrayLayerCount: 6,
+      dimension: 'cube',
+      mipLevelCount: 2,
+    });
     device.queue.writeTexture(
       {
         bytesPerRow: 32,
