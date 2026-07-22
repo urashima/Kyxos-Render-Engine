@@ -15,11 +15,13 @@ import {
 } from '../../packages/material-core/src/texture.js';
 import { evaluateMetallicRoughnessBrdf } from '../../packages/material-pbr/src/brdf.js';
 import { evaluateSplitSumIbl } from '../../packages/material-pbr/src/ibl-runtime.js';
+import { evaluatePbrOutputTransform } from '../../packages/material-pbr/src/tone-mapping.js';
 import { PHASE_03_BRDF_REFERENCE_WGSL } from '../../packages/material-pbr/src/generated/phase-03-brdf-reference.wgsl.js';
 import { PbrMaterial } from '../../packages/material-pbr/src/pbr-material.js';
 import { identityMat4 } from '../../packages/math/src/index.js';
 import { PHASE_03_PBR_DIRECT_WGSL } from '../../packages/renderer/src/generated/phase-03-pbr-direct.wgsl.js';
 import { PHASE_03_PBR_IBL_WGSL } from '../../packages/renderer/src/generated/phase-03-pbr-ibl.wgsl.js';
+import { PHASE_03_PBR_TONEMAPPED_WGSL } from '../../packages/renderer/src/generated/phase-03-pbr-tonemapped.wgsl.js';
 import {
   createPbrDirectionalLight,
   packPbrObjectUniforms,
@@ -1410,6 +1412,303 @@ test.describe('Phase 3 BRDF reference', () => {
           },
           cpu,
           direct,
+          compilationMessages: gpuResult.compilationMessages,
+          expectedPixel,
+          gpuPixel: gpuResult.pixel,
+          uniformByteLength: uniforms.byteLength,
+          status: 'PASS',
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  });
+
+  test('applies HDR exposure, Khronos PBR Neutral, and sRGB output on the GPU', async ({
+    page,
+  }) => {
+    await page.goto('/acceptance/phase-01');
+    const emissiveFactor = [1, 0.5, 0.25] as const;
+    const emissiveStrength = 4;
+    const exposure = 1;
+    const material = new PbrMaterial({
+      baseColorFactor: [0, 0, 0, 1],
+      emissiveFactor,
+      emissiveStrength,
+      metallicFactor: 0,
+      roughnessFactor: 1,
+    });
+    const uniforms = packPbrObjectUniforms({
+      cameraPosition: [0, 0, 5],
+      environment: { intensity: 0, rotation: 0, specularMipLevelCount: 1 },
+      light: createPbrDirectionalLight({ direction: [0, 0, 1], intensity: 0 }),
+      material: material.snapshot(),
+      output: { exposure, toneMapping: 'khronos-pbr-neutral' },
+      viewProjectionMatrix: identityMat4(),
+      worldMatrix: identityMat4(),
+    });
+
+    const gpuResult = await page.evaluate(
+      async ({ source, uniformValues }) => {
+        const adapter = await navigator.gpu?.requestAdapter();
+        if (adapter === null || adapter === undefined)
+          throw new Error('WebGPU adapter unavailable.');
+        const device = await adapter.requestDevice();
+        const module = device.createShaderModule({
+          code: source,
+          label: 'Phase 3 tone-mapped PBR',
+        });
+        const compilation = await module.getCompilationInfo();
+        const compilationMessages = compilation.messages.map((message) => ({
+          line: message.lineNum,
+          message: message.message,
+          type: message.type,
+        }));
+        const errors = compilationMessages.filter((message) => message.type === 'error');
+        if (errors.length > 0) throw new Error(JSON.stringify(errors));
+
+        const bufferUsage = {
+          copyDestination: 0x0008,
+          mapRead: 0x0001,
+          uniform: 0x0040,
+          vertex: 0x0020,
+        } as const;
+        const textureUsage = {
+          copyDestination: 0x02,
+          copySource: 0x01,
+          renderAttachment: 0x10,
+          sampled: 0x04,
+        } as const;
+        const vertices = new Float32Array([
+          -1, -1, 0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1, 3, -1, 0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1, -1, 3,
+          0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1,
+        ]);
+        const vertexBuffer = device.createBuffer({
+          label: 'Phase 3 tone-mapped PBR vertices',
+          size: vertices.byteLength,
+          usage: bufferUsage.copyDestination | bufferUsage.vertex,
+        });
+        const uniformBuffer = device.createBuffer({
+          label: 'Phase 3 tone-mapped PBR uniforms',
+          size: uniformValues.length * Float32Array.BYTES_PER_ELEMENT,
+          usage: bufferUsage.copyDestination | bufferUsage.uniform,
+        });
+        const srgbTexture = device.createTexture({
+          format: 'rgba8unorm-srgb',
+          label: 'Phase 3 tone-mapped PBR sRGB fallback',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const linearTexture = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 tone-mapped PBR linear fallback',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const normalTexture = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 tone-mapped PBR flat Normal',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const environmentTexture = device.createTexture({
+          format: 'rgba16float',
+          label: 'Phase 3 tone-mapped PBR black environment',
+          size: { depthOrArrayLayers: 6, height: 1, width: 1 },
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const brdfTexture = device.createTexture({
+          format: 'rg16float',
+          label: 'Phase 3 tone-mapped PBR black BRDF LUT',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const target = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 tone-mapped PBR target',
+          size: [4, 4],
+          usage: textureUsage.copySource | textureUsage.renderAttachment,
+        });
+        const readback = device.createBuffer({
+          label: 'Phase 3 tone-mapped PBR readback',
+          size: 256 * 4,
+          usage: bufferUsage.copyDestination | bufferUsage.mapRead,
+        });
+        try {
+          device.queue.writeBuffer(vertexBuffer, 0, vertices);
+          device.queue.writeBuffer(uniformBuffer, 0, new Float32Array(uniformValues));
+          const white = new Uint8Array([255, 255, 255, 255]);
+          device.queue.writeTexture(
+            { texture: srgbTexture },
+            white,
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: linearTexture },
+            white,
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: normalTexture },
+            new Uint8Array([128, 128, 255, 255]),
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: environmentTexture },
+            new Uint16Array(6 * 4),
+            { bytesPerRow: 8, rowsPerImage: 1 },
+            { depthOrArrayLayers: 6, height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: brdfTexture },
+            new Uint16Array(2),
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+
+          const pipeline = await device.createRenderPipelineAsync({
+            fragment: {
+              entryPoint: 'fragmentOpaque',
+              module,
+              targets: [{ format: 'rgba8unorm' }],
+            },
+            label: 'Phase 3 tone-mapped PBR pipeline',
+            layout: 'auto',
+            primitive: { cullMode: 'none', topology: 'triangle-list' },
+            vertex: {
+              buffers: [
+                {
+                  arrayStride: 48,
+                  attributes: [
+                    { format: 'float32x3', offset: 0, shaderLocation: 0 },
+                    { format: 'float32x3', offset: 12, shaderLocation: 1 },
+                    { format: 'float32x2', offset: 24, shaderLocation: 2 },
+                    { format: 'float32x4', offset: 32, shaderLocation: 3 },
+                  ],
+                },
+              ],
+              entryPoint: 'vertexMain',
+              module,
+            },
+          });
+          const materialSampler = device.createSampler({
+            magFilter: 'nearest',
+            minFilter: 'nearest',
+          });
+          const environmentSampler = device.createSampler({
+            magFilter: 'nearest',
+            minFilter: 'nearest',
+            mipmapFilter: 'nearest',
+          });
+          const materialGroup = device.createBindGroup({
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: srgbTexture.createView() },
+              { binding: 2, resource: materialSampler },
+              { binding: 3, resource: linearTexture.createView() },
+              { binding: 4, resource: materialSampler },
+              { binding: 5, resource: normalTexture.createView() },
+              { binding: 6, resource: materialSampler },
+              { binding: 7, resource: srgbTexture.createView() },
+              { binding: 8, resource: materialSampler },
+              { binding: 9, resource: linearTexture.createView() },
+              { binding: 10, resource: materialSampler },
+            ],
+            layout: pipeline.getBindGroupLayout(0),
+          });
+          const environmentGroup = device.createBindGroup({
+            entries: [
+              { binding: 0, resource: environmentTexture.createView({ dimension: 'cube' }) },
+              { binding: 1, resource: environmentTexture.createView({ dimension: 'cube' }) },
+              { binding: 2, resource: environmentSampler },
+              { binding: 3, resource: brdfTexture.createView({ dimension: '2d' }) },
+              { binding: 4, resource: materialSampler },
+            ],
+            layout: pipeline.getBindGroupLayout(1),
+          });
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                clearValue: { a: 0, b: 0, g: 0, r: 0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+                view: target.createView(),
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, materialGroup);
+          pass.setBindGroup(1, environmentGroup);
+          pass.setVertexBuffer(0, vertexBuffer);
+          pass.draw(3);
+          pass.end();
+          encoder.copyTextureToBuffer(
+            { texture: target },
+            { buffer: readback, bytesPerRow: 256, rowsPerImage: 4 },
+            { height: 4, width: 4 },
+          );
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(bufferUsage.mapRead);
+          const offset = 2 * 256 + 2 * 4;
+          const pixel = Array.from(
+            new Uint8Array(readback.getMappedRange()).slice(offset, offset + 4),
+          );
+          readback.unmap();
+          return { compilationMessages, pixel };
+        } finally {
+          vertexBuffer.destroy();
+          uniformBuffer.destroy();
+          srgbTexture.destroy();
+          linearTexture.destroy();
+          normalTexture.destroy();
+          environmentTexture.destroy();
+          brdfTexture.destroy();
+          target.destroy();
+          readback.destroy();
+          device.destroy();
+        }
+      },
+      {
+        source: PHASE_03_PBR_TONEMAPPED_WGSL,
+        uniformValues: Array.from(uniforms),
+      },
+    );
+
+    const linearHdr = emissiveFactor.map(
+      (channel) => channel * emissiveStrength,
+    ) as unknown as readonly [number, number, number];
+    const cpu = evaluatePbrOutputTransform(linearHdr, {
+      exposure,
+      toneMapping: 'khronos-pbr-neutral',
+    });
+    const expectedPixel = [...cpu.srgb.map((channel) => Math.round(channel * 255)), 255];
+    expect(gpuResult.compilationMessages.filter((message) => message.type === 'error')).toEqual([]);
+    gpuResult.pixel.forEach((channel, index) => {
+      expect(
+        Math.abs(channel - (expectedPixel[index] as number)),
+        `tone-mapped PBR channel ${index}: expected ${expectedPixel[index]}, received ${channel}`,
+      ).toBeLessThanOrEqual(2);
+    });
+
+    const runtimeDirectory = path.resolve('test-results/phase-03/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'pbr-tone-mapping.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          phase: '03',
+          checkpoint: 'P3-09',
+          semantics: {
+            order: 'linear HDR composition -> 2^EV exposure -> Khronos PBR Neutral -> sRGB OETF',
+            outputTarget: 'rgba8unorm with explicit single sRGB encoding',
+          },
+          inputs: { emissiveFactor, emissiveStrength, exposure, linearHdr },
+          cpu,
           compilationMessages: gpuResult.compilationMessages,
           expectedPixel,
           gpuPixel: gpuResult.pixel,

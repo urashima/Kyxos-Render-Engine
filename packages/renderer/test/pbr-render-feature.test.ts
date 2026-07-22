@@ -130,6 +130,7 @@ describe('PBR GPU layout', () => {
       light,
       material: material.snapshot(),
       normalYDirection: 'down',
+      output: { exposure: 1, toneMapping: 'none' },
       viewProjectionMatrix: identityMat4(),
       worldMatrix: identityMat4(),
     });
@@ -151,7 +152,7 @@ describe('PBR GPU layout', () => {
     expectFloatTuple(packed.slice(96, 100), [0, 1, 0, -1]);
     expectFloatTuple(packed.slice(100, 104), [0.3, -0.2, 0.75, 1.25]);
     expectFloatTuple(packed.slice(104, 108), [Math.SQRT1_2, Math.SQRT1_2, 0, 1]);
-    expectFloatTuple(packed.slice(108, 112), [2.5, 3, 0, 0]);
+    expectFloatTuple(packed.slice(108, 112), [2.5, 3, 2, 0]);
     expect(() =>
       packPbrObjectUniforms({
         cameraPosition: [1, 2, 3],
@@ -271,6 +272,9 @@ describe('PbrRenderFeature', () => {
       gpuMeshCount: 1,
       materialCount: 3,
       objectBindingCount: 4,
+      outputExposure: 0,
+      outputExposureMultiplier: 1,
+      outputToneMapping: 'khronos-pbr-neutral',
       pipelineCount: 12,
       visibility: { opaqueCount: 3, transparentCount: 1, visibleCount: 4 },
     });
@@ -427,10 +431,11 @@ describe('PbrRenderFeature', () => {
     const initialUniform = writeBuffer.mock.calls
       .map(([, data]) => data)
       .find((data): data is Float32Array => data instanceof Float32Array && data.length === 112);
-    expectFloatTuple(initialUniform?.slice(108, 112) ?? [], [1.5, 0, 0, 0]);
+    expectFloatTuple(initialUniform?.slice(108, 112) ?? [], [1.5, 0, 1, 1]);
 
     const beforeControls = backend.getResourceStatistics();
     feature.setEnvironment({ intensity: 2, rotation: Math.PI / 2 });
+    feature.setOutputTransform({ exposure: 1, toneMapping: 'none' });
     expect(backend.getResourceStatistics()).toEqual(beforeControls);
 
     const beforeReplacement = backend.getResourceStatistics();
@@ -443,6 +448,9 @@ describe('PbrRenderFeature', () => {
       environmentIdentity: secondEnvironment.identityKey,
       environmentIntensity: 2,
       environmentRotation: Math.PI / 2,
+      outputExposure: 1,
+      outputExposureMultiplier: 2,
+      outputToneMapping: 'none',
     });
 
     feature.render({ backend, dirtyFlags: ['environment'], frameIndex: 2, timestamp: 16 });
@@ -451,7 +459,7 @@ describe('PbrRenderFeature', () => {
       .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 112)
       .at(-1);
     expectFloatTuple(latestUniform?.slice(104, 108) ?? [], [1, 0, 0, 1]);
-    expectFloatTuple(latestUniform?.slice(108, 112) ?? [], [2, 1, 0, 0]);
+    expectFloatTuple(latestUniform?.slice(108, 112) ?? [], [2, 1, 2, 0]);
 
     feature.dispose();
     expect(backend.getResourceStatistics().activeCount).toBe(0);
@@ -586,7 +594,7 @@ describe('PbrRenderFeature', () => {
     expectFloatTuple(objectUniform?.slice(52, 56) ?? [], [0.25, 0.5, 0.75, 3]);
     expectFloatTuple(objectUniform?.slice(60, 64) ?? [], [1, 1, 1, -1]);
     expectFloatTuple(objectUniform?.slice(100, 104) ?? [], [0.125, 0.25, 1, 1]);
-    expectFloatTuple(objectUniform?.slice(108, 112) ?? [], [1, 0, 0, 0]);
+    expectFloatTuple(objectUniform?.slice(108, 112) ?? [], [1, 0, 1, 1]);
     const vertexUpload = writeBuffer.mock.calls
       .map(([, data]) => data)
       .find(

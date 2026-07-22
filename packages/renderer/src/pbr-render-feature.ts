@@ -24,8 +24,13 @@ import {
 } from '@kyxos/render-environment';
 import { generateMeshTangents } from '@kyxos/render-geometry';
 import type { MeshData } from '@kyxos/render-geometry';
-import { createPbrMaterialFeatureKey } from '@kyxos/render-material-pbr';
-import type { PbrAlphaMode, PbrMaterialSnapshot } from '@kyxos/render-material-pbr';
+import { createPbrMaterialFeatureKey, createPbrOutputTransform } from '@kyxos/render-material-pbr';
+import type {
+  PbrAlphaMode,
+  PbrMaterialSnapshot,
+  PbrOutputTransform,
+  PbrOutputTransformDescriptor,
+} from '@kyxos/render-material-pbr';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
 import { VisibilitySystem } from '@kyxos/render-visibility';
 import type {
@@ -41,7 +46,7 @@ import type {
   RenderFeatureInitializationContext,
 } from './extensions.js';
 import { EnvironmentGpuCache, EnvironmentGpuLease } from './environment-gpu-cache.js';
-import { PHASE_03_PBR_IBL_WGSL } from './generated/phase-03-pbr-ibl.wgsl.js';
+import { PHASE_03_PBR_TONEMAPPED_WGSL } from './generated/phase-03-pbr-tonemapped.wgsl.js';
 import {
   PBR_OBJECT_UNIFORM_LAYOUT,
   createPbrDirectionalLight,
@@ -143,6 +148,8 @@ export interface PbrRenderFeatureOptions extends BuildRenderQueuesOptions {
    */
   readonly materials?: PbrMaterialLibrary;
   readonly meshRenderers: MeshRendererStore;
+  /** Display transform applied after linear direct, indirect, and Emission composition. */
+  readonly output?: PbrOutputTransformDescriptor;
   readonly scene: Scene;
   readonly surface: BackendSurfaceDescriptor;
   /** CPU RGBA8 sources remain caller-owned when this registry is supplied. */
@@ -160,6 +167,9 @@ export interface PbrRenderFeatureDiagnostics {
   readonly gpuTextureSourceCount: number;
   readonly materialCount: number;
   readonly objectBindingCount: number;
+  readonly outputExposure: number;
+  readonly outputExposureMultiplier: number;
+  readonly outputToneMapping: PbrOutputTransform['toneMapping'];
   readonly pipelineCount: number;
   readonly surface: BackendSurfaceInfo;
   readonly textureSourceCount: number;
@@ -196,6 +206,18 @@ function normalizeEnvironment(
     });
   }
   return Object.freeze({ intensity, rotation, source });
+}
+
+function normalizeOutput(
+  descriptor: PbrOutputTransformDescriptor = {},
+  previous?: PbrOutputTransform,
+): PbrOutputTransform {
+  const exposure = descriptor.exposure ?? previous?.exposure;
+  const toneMapping = descriptor.toneMapping ?? previous?.toneMapping;
+  return createPbrOutputTransform({
+    ...(exposure === undefined ? {} : { exposure }),
+    ...(toneMapping === undefined ? {} : { toneMapping }),
+  });
 }
 
 function blackCubeFaces(): EnvironmentCubeFaceData {
@@ -279,6 +301,7 @@ export class PbrRenderFeature implements RenderFeature {
   #lastFallbackDrawCount = 0;
   #lastVisibility: VisibilityDiagnostics | null = null;
   #light: PbrDirectionalLight;
+  #output: PbrOutputTransform;
   #resources: PbrRenderResources | undefined;
 
   constructor(options: PbrRenderFeatureOptions) {
@@ -306,6 +329,7 @@ export class PbrRenderFeature implements RenderFeature {
     );
     this.#light = createPbrDirectionalLight(options.light);
     this.#environment = normalizeEnvironment(options.environment);
+    this.#output = normalizeOutput(options.output);
     this.#environmentCache = options.environmentCache ?? new EnvironmentGpuCache();
     this.#ownsEnvironmentCache = options.environmentCache === undefined;
     this.#materials = options.materials ?? new PbrMaterialLibrary();
@@ -335,6 +359,11 @@ export class PbrRenderFeature implements RenderFeature {
     return this.#environment;
   }
 
+  get output(): PbrOutputTransform {
+    this.#assertActive();
+    return this.#output;
+  }
+
   async initialize(context: RenderFeatureInitializationContext): Promise<void> {
     this.#assertActive();
     if (this.#resources !== undefined) {
@@ -353,8 +382,8 @@ export class PbrRenderFeature implements RenderFeature {
       const surfaceInfo = backend.getSurfaceInfo(surface);
       this.#updateCameraAspect(surfaceInfo);
       const shader = backend.createShaderModule({
-        code: PHASE_03_PBR_IBL_WGSL,
-        label: 'phase-03-pbr-ibl',
+        code: PHASE_03_PBR_TONEMAPPED_WGSL,
+        label: 'phase-03-pbr-tonemapped',
         language: 'wgsl',
       });
       created.push(shader);
@@ -544,6 +573,9 @@ export class PbrRenderFeature implements RenderFeature {
       gpuTextureSourceCount: this.#textureResources.size,
       materialCount: this.#materials.size,
       objectBindingCount: this.#objectResources.size,
+      outputExposure: this.#output.exposure,
+      outputExposureMultiplier: this.#output.exposureMultiplier,
+      outputToneMapping: this.#output.toneMapping,
       pipelineCount: resources.pipelines.size,
       surface: this.getSurfaceInfo(),
       textureSourceCount: this.#textures.size,
@@ -577,6 +609,12 @@ export class PbrRenderFeature implements RenderFeature {
   setLight(light: PbrDirectionalLightDescriptor): void {
     this.#assertActive();
     this.#light = createPbrDirectionalLight(light);
+  }
+
+  setOutputTransform(descriptor: PbrOutputTransformDescriptor): PbrOutputTransform {
+    this.#assertActive();
+    this.#output = normalizeOutput(descriptor, this.#output);
+    return this.#output;
   }
 
   setEnvironment(descriptor: PbrEnvironmentDescriptor): PbrEnvironmentState {
@@ -1012,6 +1050,7 @@ export class PbrRenderFeature implements RenderFeature {
         light: this.#light,
         material: material.snapshot,
         normalYDirection: material.normalSource?.normalYDirection ?? 'up',
+        output: this.#output,
         viewProjectionMatrix: this.#camera.viewProjectionMatrix(),
         worldMatrix: item.worldMatrix,
       }),

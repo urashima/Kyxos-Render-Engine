@@ -1,9 +1,10 @@
 import { KyxosEngineError } from '@kyxos/render-core';
 import { createLinearRgb } from '@kyxos/render-material-core';
+import { createPbrOutputTransform } from '@kyxos/render-material-pbr';
 import { createVec3, multiplyMat4, normalMatrixMat4, normalizeVec3 } from '@kyxos/render-math';
 
 import type { MaterialTextureBinding, RgbColor } from '@kyxos/render-material-core';
-import type { PbrMaterialSnapshot } from '@kyxos/render-material-pbr';
+import type { PbrMaterialSnapshot, PbrOutputTransformDescriptor } from '@kyxos/render-material-pbr';
 import type { Mat4, Vec3 } from '@kyxos/render-math';
 import type { PbrNormalYDirection } from './pbr-texture-library.js';
 
@@ -90,6 +91,7 @@ export interface PackPbrObjectUniformsOptions {
   readonly material: PbrMaterialSnapshot;
   /** Asset-boundary Normal convention metadata; defaults to the engine's Y-up convention. */
   readonly normalYDirection?: PbrNormalYDirection;
+  readonly output?: PbrOutputTransformDescriptor;
   readonly viewProjectionMatrix: Mat4;
   readonly worldMatrix: Mat4;
 }
@@ -145,6 +147,7 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
     rotation: 0,
     specularMipLevelCount: 1,
   };
+  const output = createPbrOutputTransform(options.output);
   if (!Number.isFinite(environment.intensity) || environment.intensity < 0) {
     throw new KyxosEngineError('PBR environment intensity must be finite and nonnegative.', {
       code: 'INVALID_ARGUMENT',
@@ -257,7 +260,12 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
     offsets.occlusionEnvironmentRotations,
   );
   result.set(
-    [environment.intensity, environment.specularMipLevelCount - 1, 0, 0],
+    [
+      environment.intensity,
+      environment.specularMipLevelCount - 1,
+      output.exposureMultiplier,
+      output.toneMapping === 'khronos-pbr-neutral' ? 1 : 0,
+    ],
     offsets.environmentControls,
   );
   return result;

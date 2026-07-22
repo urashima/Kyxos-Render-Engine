@@ -37,6 +37,17 @@ export {
   type SplitSumIblResult,
 } from './ibl-runtime.js';
 export {
+  PBR_EXPOSURE_EV_RANGE,
+  PBR_TONE_MAPPING_MODES,
+  createPbrOutputTransform,
+  evaluatePbrOutputTransform,
+  khronosPbrNeutralToneMap,
+  type PbrOutputTransform,
+  type PbrOutputTransformDescriptor,
+  type PbrOutputTransformResult,
+  type PbrToneMappingMode,
+} from './tone-mapping.js';
+export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
   createPbrMaterialFeatureKey,

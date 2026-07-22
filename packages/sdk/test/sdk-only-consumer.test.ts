@@ -11,6 +11,7 @@ import {
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   evaluateDeterministicIblReference,
+  evaluatePbrOutputTransform,
   evaluateSplitSumIbl,
   float32ToFloat16Bits,
   srgbToLinearRgba,
@@ -274,6 +275,14 @@ describe('SDK-only consumer', () => {
     });
 
     expect(result.total.every((channel) => channel > 0)).toBe(true);
+  });
+
+  it('evaluates the HDR display transform using only the public SDK entry point', () => {
+    const result = evaluatePbrOutputTransform([4, 2, 1], { exposure: 1 });
+
+    expect(result.exposed).toEqual([8, 4, 2]);
+    expect(result.transform.toneMapping).toBe('khronos-pbr-neutral');
+    expect(result.srgb.every((channel) => channel >= 0 && channel <= 1)).toBe(true);
   });
 
   it('registers immutable PBR Texture sources using only the public SDK entry point', () => {
