@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                             |
-| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                 |
-| Current Commit      | `e6562af223d4d6e64a452e885e85d95bd0a418d2` (P3-02 evidence-retention checkpoint)                         |
-| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 and P3-02 complete                                     |
-| Current Task        | P3-03 — Renderer material bindings and direct-light WebGPU PBR                                           |
-| Last Completed Task | P3-02 — CPU/WGSL BRDF parity and retained Chromium/WebGPU diagnostics                                    |
-| Next Action         | Implement P3-03 material GPU layout, cache ownership, and direct-light PBR Renderer integration          |
-| CI Status           | Run 29889333840 PASS; 161 unit tests + 11 browser tests; Artifact 8517693659 retains Phase 3 diagnostics |
-| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                           |
-| Known Blockers      | None                                                                                                     |
-| Last Updated        | 2026-07-21 20:50 PDT                                                                                     |
+| Field               | Value                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                         |
+| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                             |
+| Current Commit      | `b3e531dd5e9e87ec76c6c661dfd1cd0e68a6d7c5` (P3-03 direct-light Renderer checkpoint)                                  |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-03 complete                                             |
+| Current Task        | P3-04 — Sampled Texture/Sampler Backend bindings and factor-map PBR                                                  |
+| Last Completed Task | P3-03 — Material GPU layout, explicit cache ownership, and direct-light PBR Renderer                                 |
+| Next Action         | Extend Backend Bind Groups with sampled Texture/Sampler entries and bind base-color plus metallic-roughness PBR maps |
+| CI Status           | Run 29890593096 PASS; 168 unit tests + 12 browser cases; Artifact 8518126596 retains exact P3-03 pixel diagnostics   |
+| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                       |
+| Known Blockers      | None                                                                                                                 |
+| Last Updated        | 2026-07-21 21:19 PDT                                                                                                 |
 
 ## Phase Progress
 

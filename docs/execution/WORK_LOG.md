@@ -1309,3 +1309,56 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement P3-03 material GPU layout, explicit resource/cache ownership, and direct-light
   metallic-roughness integration in the WebGPU Renderer while retaining the P3-02 CPU/GPU oracle.
+
+## 2026-07-21 21:19 PDT — P3-03 direct-light PBR Renderer passed
+
+### Completed
+
+- Added the independent `PbrRenderFeature` without changing the Phase 2 `SceneRenderFeature`, its
+  accepted source path, or its visual baselines.
+- Added a public 304-byte, 76-Float32 per-object GPU layout covering model/MVP/normal matrices,
+  linear material factors, camera position, and directional-light state.
+- Added one canonical direct-light WGSL module with an exact runtime mirror, shared P3-02
+  GGX/Smith/Schlick BRDF, and separate Opaque, Mask, and Blend Fragment entry points.
+- Prewarmed six Pipeline variants for the three alpha modes across single- and double-sided state.
+  Continuous material changes keep the Pipeline and Bind Group; discrete state changes reuse the
+  prewarmed Pipeline and replace only the pipeline-specific Bind Group.
+- Added Mesh-identity Buffer sharing, Entity-owned Uniform/Bind Group caches, stale-resource
+  reconciliation, depth resize, fallback material resolution, Device Lost rebuild, and complete GPU
+  Handle disposal.
+- Added `PbrMaterialLibrary` with explicit ownership: registrations and caller-supplied fallbacks
+  remain caller-owned; an internal fallback is disposed only when the feature created it.
+- Exposed the Renderer/material-library/light/layout contract through the public SDK and updated the
+  dependency boundary so Renderer may depend directly on Material Core/PBR, without creating a
+  reverse dependency.
+- Kept unsupported sampling fail-closed: factor-only direct lighting is implemented, while any
+  non-null texture slot reports `UNSUPPORTED_CAPABILITY` until Backend Bind Groups support sampled
+  Texture/Sampler resources.
+- Added architecture/ownership documentation, CPU/Mock Backend lifecycle tests, exact layout tests,
+  cache-transition tests, and a real WebGPU RGBA8 render/readback gate.
+
+### Validation
+
+- Implementation commit `b3e531dd5e9e87ec76c6c661dfd1cd0e68a6d7c5`, PR-head Run
+  `29890593096`, job `88830092928`: PASS.
+- Complete local non-browser pipeline passed: formatting, zero-warning Lint, strict typecheck,
+  37 unit files / 168 tests, dependency boundaries and cycle fixture, architecture checks, accepted
+  Phase 0–2 Schemas, four exact-mirror Shaders, build, Bundle budgets, and isolated Pages artifacts.
+- The fixed CI environment ran 12 browser cases. Both Phase 3 cases passed on their first attempt:
+  the P3-02 float32 compute oracle remained within its established tolerance, and the new P3-03
+  direct-render pixel `[151, 73, 42, 255]` exactly matched the CPU expectation with no WGSL compiler
+  messages.
+- Artifact `8518126596`, digest
+  `sha256:5da52e143e803cee8bfa9596f1fed1e7dae443935d51d7ad41dada08d7f23fb9`, retains both
+  `brdf-reference.json` and `pbr-direct-renderer.json`; the latter records the exact 304-byte Uniform
+  layout and PASS result.
+- The accepted Phase 2 interaction/visual test showed one transient 106-pixel reference difference
+  and passed its unchanged built-in retry; no baseline, threshold, test, or retry policy was changed.
+- Local Playwright still cannot launch because this workspace has no cached Chromium executable;
+  the official CI installed pinned Chromium and executed the unchanged browser gate.
+
+### Next
+
+- Extend Backend Bind Group resources with sampled Texture and Sampler entries, then bind base-color
+  and metallic-roughness maps through `PbrRenderFeature` with their existing sRGB/linear and channel
+  semantics.
