@@ -1,7 +1,7 @@
 # Phase 03 Acceptance — Basic PBR and IBL
 
 - **Evidence status:** Automated verification, technical QA, and autonomous owner evidence review complete
-- **Phase status:** Owner Acceptance Passed — Deployment Pending; Phase 3 is not yet Accepted
+- **Phase status:** Phase Accepted; post-deployment evidence is recorded in [`DEPLOYMENT_ACCEPTANCE.md`](./DEPLOYMENT_ACCEPTANCE.md)
 - **Branch:** `agent/phase-03-pbr-ibl`
 - **Pull request:** [#5](https://github.com/urashima/Kyxos-Render-Engine/pull/5)
 - **Reviewed checkpoint:** `7e4abe7a625769cc830ee8db8d419fea8243c3ad`
@@ -9,11 +9,12 @@
 - **Evidence-pack Run:** [29918823067](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29918823067), job `88918945110` — PASS
 - **Evidence generated:** 2026-07-22 04:58 PDT
 
-This document preserves the pre-deployment Phase 3 candidate required by `DEVELOPMENT_PLAN.md` and
-`PHASE_ACCEPTANCE_PLAN.md`. It deliberately does not claim `Phase Accepted`. The evidence-pack and
-final provenance Heads must pass, PR #5 must merge, GitHub Pages must deploy, the public Phase 3
-routes must pass real Chromium/WebGPU interaction checks, and `phase-03-accepted` must be created
-only after that successful deployment.
+This document preserves the immutable pre-deployment Phase 3 candidate required by
+`DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. At that checkpoint it deliberately did not
+claim `Phase Accepted`: the final provenance Head had to pass, PR #5 had to merge, GitHub Pages had
+to deploy, the public Phase 3 routes had to pass real Chromium/WebGPU interaction checks, and
+`phase-03-accepted` had to be created only after that successful deployment. Those remaining gates
+subsequently passed and are frozen separately in [`DEPLOYMENT_ACCEPTANCE.md`](./DEPLOYMENT_ACCEPTANCE.md).
 
 ## Acceptance surface
 
@@ -190,13 +191,20 @@ verified main commit, prove public reachability, and run the complete Phase 3 co
 sequence in Chromium/WebGPU. Only the successful deployment may trigger the immutable
 `phase-03-accepted` tag.
 
-Current deployment status: **PENDING**. Phase 3 is not Accepted while this status remains pending.
+Deployment status at the reviewed evidence checkpoint: **PENDING**.
+
+Phase 3 is not Accepted while this status remains pending.
+
+The required gates subsequently passed; see
+[`DEPLOYMENT_ACCEPTANCE.md`](./DEPLOYMENT_ACCEPTANCE.md) for the accepted merge source, public route
+proof, online operations, and immutable Tag.
 
 ## Acceptance conclusion
 
-Phase 3 passes source automated verification, technical QA, canonical visual review,
+Phase 3 passed source automated verification, technical QA, canonical visual review,
 performance/resource budgets, and autonomous owner evidence review at checkpoint
 `7e4abe7a625769cc830ee8db8d419fea8243c3ad`; evidence-pack Head
-`bc3faa5ffac5d04837ba04f2382cc43bc5819d38` also passed. Require the final provenance Head to pass,
-merge PR #5, deploy GitHub Pages, pass all public interactions, and verify
-`phase-03-accepted` before changing the Phase status to Accepted.
+`bc3faa5ffac5d04837ba04f2382cc43bc5819d38` and final provenance Head
+`b5a83cb9721c90f743184f50228f102e0ec9a5be` also passed. PR #5 then merged as
+`6b3331251fd1a20257aeebab26a72c2f26103f0a`, public Pages and online interactions passed, and
+`phase-03-accepted` was frozen at that exact merge source. Phase 3 is Accepted.
