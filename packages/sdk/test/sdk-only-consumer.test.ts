@@ -11,6 +11,7 @@ import {
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   evaluateDeterministicIblReference,
+  evaluateSplitSumIbl,
   float32ToFloat16Bits,
   srgbToLinearRgba,
 } from '../src/index.js';
@@ -259,6 +260,20 @@ describe('SDK-only consumer', () => {
       diffuse: { sampleCount: 64 },
       specular: { roughness: 0.43, sampleCount: 64 },
     });
+  });
+
+  it('evaluates runtime split-sum IBL using only the public SDK entry point', () => {
+    const result = evaluateSplitSumIbl({
+      ambientOcclusion: 0.5,
+      baseColor: [0.8, 0.4, 0.2],
+      brdfLut: [0.6, 0.1],
+      diffuseIrradiance: [1, 1, 1],
+      intensity: 2,
+      metallic: 0.25,
+      prefilteredSpecular: [0.2, 0.3, 0.4],
+    });
+
+    expect(result.total.every((channel) => channel > 0)).toBe(true);
   });
 
   it('registers immutable PBR Texture sources using only the public SDK entry point', () => {

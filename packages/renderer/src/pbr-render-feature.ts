@@ -1,4 +1,5 @@
 import type {
+  BackendBindGroupHandle,
   BackendBufferHandle,
   BackendClearColor,
   BackendDrawCommand,
@@ -16,9 +17,14 @@ import type {
 } from '@kyxos/render-backend-api';
 import type { PerspectiveCamera } from '@kyxos/render-camera';
 import { KyxosEngineError } from '@kyxos/render-core';
+import {
+  ENVIRONMENT_CUBE_FACES,
+  type EnvironmentCubeFaceData,
+  EnvironmentSource,
+} from '@kyxos/render-environment';
 import { generateMeshTangents } from '@kyxos/render-geometry';
 import type { MeshData } from '@kyxos/render-geometry';
-import { PBR_TEXTURE_SLOTS, createPbrMaterialFeatureKey } from '@kyxos/render-material-pbr';
+import { createPbrMaterialFeatureKey } from '@kyxos/render-material-pbr';
 import type { PbrAlphaMode, PbrMaterialSnapshot } from '@kyxos/render-material-pbr';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
 import { VisibilitySystem } from '@kyxos/render-visibility';
@@ -34,7 +40,8 @@ import type {
   RenderFeatureFrameContext,
   RenderFeatureInitializationContext,
 } from './extensions.js';
-import { PHASE_03_PBR_DIRECT_WGSL } from './generated/phase-03-pbr-direct.wgsl.js';
+import { EnvironmentGpuCache, EnvironmentGpuLease } from './environment-gpu-cache.js';
+import { PHASE_03_PBR_IBL_WGSL } from './generated/phase-03-pbr-ibl.wgsl.js';
 import {
   PBR_OBJECT_UNIFORM_LAYOUT,
   createPbrDirectionalLight,
@@ -60,6 +67,7 @@ const EMPTY_STATISTICS: BackendRenderPassStatistics = Object.freeze({
 
 interface PbrRenderResources {
   depthTexture: BackendTextureHandle | undefined;
+  environmentBindGroups: ReadonlyMap<BackendPipelineHandle, BackendBindGroupHandle>;
   readonly fallbackBaseColorTexture: BackendTextureHandle;
   readonly fallbackMetallicRoughnessTexture: BackendTextureHandle;
   readonly fallbackNormalTexture: BackendTextureHandle;
@@ -102,13 +110,32 @@ interface PreparedMaterial {
   readonly fallback: boolean;
   readonly metallicRoughnessSource: PbrTextureSource | null;
   readonly normalSource: PbrTextureSource | null;
+  readonly occlusionSource: PbrTextureSource | null;
   readonly pipeline: BackendPipelineHandle;
   readonly snapshot: PbrMaterialSnapshot;
+}
+
+export interface PbrEnvironmentDescriptor {
+  /** Linear multiplier applied only to indirect environment lighting. */
+  readonly intensity?: number;
+  /** World-to-environment rotation around positive Y, in radians. */
+  readonly rotation?: number;
+  /** Null disables IBL through the owned black fallback environment. */
+  readonly source?: EnvironmentSource | null;
+}
+
+export interface PbrEnvironmentState {
+  readonly intensity: number;
+  readonly rotation: number;
+  readonly source: EnvironmentSource | null;
 }
 
 export interface PbrRenderFeatureOptions extends BuildRenderQueuesOptions {
   readonly camera: PerspectiveCamera;
   readonly clearColor?: BackendClearColor;
+  readonly environment?: PbrEnvironmentDescriptor;
+  /** An omitted cache is created and owned by this Render Feature. */
+  readonly environmentCache?: EnvironmentGpuCache;
   readonly light?: PbrDirectionalLightDescriptor;
   /**
    * The caller retains ownership of a supplied library. An omitted library is
@@ -124,6 +151,10 @@ export interface PbrRenderFeatureOptions extends BuildRenderQueuesOptions {
 }
 
 export interface PbrRenderFeatureDiagnostics {
+  readonly environmentCache: ReturnType<EnvironmentGpuCache['diagnostics']>;
+  readonly environmentIdentity: string | null;
+  readonly environmentIntensity: number;
+  readonly environmentRotation: number;
   readonly fallbackDrawCount: number;
   readonly gpuMeshCount: number;
   readonly gpuTextureSourceCount: number;
@@ -134,6 +165,53 @@ export interface PbrRenderFeatureDiagnostics {
   readonly textureSourceCount: number;
   readonly variantKeys: readonly string[];
   readonly visibility: VisibilityDiagnostics | null;
+}
+
+function normalizeEnvironment(
+  descriptor: PbrEnvironmentDescriptor = {},
+  previous?: PbrEnvironmentState,
+): PbrEnvironmentState {
+  const source = descriptor.source === undefined ? (previous?.source ?? null) : descriptor.source;
+  if (source !== null && !(source instanceof EnvironmentSource)) {
+    throw new KyxosEngineError('PBR environment source must be an EnvironmentSource or null.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  const intensity = descriptor.intensity ?? previous?.intensity ?? 1;
+  if (!Number.isFinite(intensity) || intensity < 0) {
+    throw new KyxosEngineError('PBR environment intensity must be finite and nonnegative.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  const rotation = descriptor.rotation ?? previous?.rotation ?? 0;
+  if (!Number.isFinite(rotation)) {
+    throw new KyxosEngineError('PBR environment rotation must be finite.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  return Object.freeze({ intensity, rotation, source });
+}
+
+function blackCubeFaces(): EnvironmentCubeFaceData {
+  return Object.fromEntries(
+    ENVIRONMENT_CUBE_FACES.map((face) => [face, new Float32Array(3)]),
+  ) as unknown as EnvironmentCubeFaceData;
+}
+
+function createBlackEnvironment(): EnvironmentSource {
+  return new EnvironmentSource({
+    brdfLut: { height: 1, pixels: new Float32Array(2), width: 1 },
+    diffuseIrradiance: { faces: blackCubeFaces(), size: 1 },
+    id: 'kyxos:pbr-black-environment',
+    specularPrefilter: { levels: [{ faces: blackCubeFaces() }], size: 1 },
+    version: '1',
+  });
 }
 
 function cloneClearColor(color: BackendClearColor): BackendClearColor {
@@ -151,8 +229,8 @@ function shaderFailureMessage(
   messages: Awaited<ReturnType<GraphicsBackend['getShaderCompilationInfo']>>['messages'],
 ): string {
   const errors = messages.filter((message) => message.type === 'error');
-  if (errors.length === 0) return 'The Phase 3 direct-light PBR WGSL module failed validation.';
-  return `The Phase 3 direct-light PBR WGSL module failed validation: ${errors
+  if (errors.length === 0) return 'The Phase 3 PBR IBL WGSL module failed validation.';
+  return `The Phase 3 PBR IBL WGSL module failed validation: ${errors
     .map((message) => `${message.lineNumber}:${message.linePosition} ${message.message}`)
     .join('; ')}`;
 }
@@ -168,7 +246,7 @@ function fragmentEntryPoint(alphaMode: PbrAlphaMode): string {
 }
 
 /**
- * Independent forward PBR path for direct light and glTF factor-map sampling.
+ * Independent forward PBR path for direct light, split-sum IBL, and glTF Texture sampling.
  *
  * It owns every GPU Handle it creates. Scene, Camera, MeshRendererStore,
  * externally supplied PbrMaterialLibrary instances, and registered
@@ -176,11 +254,14 @@ function fragmentEntryPoint(alphaMode: PbrAlphaMode): string {
  */
 export class PbrRenderFeature implements RenderFeature {
   readonly #camera: PerspectiveCamera;
+  readonly #environmentCache: EnvironmentGpuCache;
+  readonly #fallbackEnvironment = createBlackEnvironment();
   readonly #materials: PbrMaterialLibrary;
   readonly #meshRenderers: MeshRendererStore;
   readonly #meshResources = new Map<MeshData, MeshGpuResources>();
   readonly #objectResources = new Map<EntityHandle, ObjectGpuResources>();
   readonly #ownsMaterials: boolean;
+  readonly #ownsEnvironmentCache: boolean;
   readonly #ownsTextures: boolean;
   readonly #scene: Scene;
   readonly #surfaceDescriptor: BackendSurfaceDescriptor;
@@ -192,6 +273,8 @@ export class PbrRenderFeature implements RenderFeature {
   #cameraLayerMask: number | undefined;
   #clearColor: BackendClearColor;
   #disposed = false;
+  #environment: PbrEnvironmentState;
+  #environmentLease: EnvironmentGpuLease | undefined;
   #frustumCulling: boolean | undefined;
   #lastFallbackDrawCount = 0;
   #lastVisibility: VisibilityDiagnostics | null = null;
@@ -204,7 +287,8 @@ export class PbrRenderFeature implements RenderFeature {
       options.camera.disposed ||
       options.meshRenderers.disposed ||
       options.materials?.disposed === true ||
-      options.textures?.disposed === true
+      options.textures?.disposed === true ||
+      options.environmentCache?.disposed === true
     ) {
       throw new KyxosEngineError('PBR rendering inputs must be active.', {
         code: 'INVALID_ARGUMENT',
@@ -221,6 +305,9 @@ export class PbrRenderFeature implements RenderFeature {
       options.clearColor ?? { a: 1, b: 0.025, g: 0.018, r: 0.012 },
     );
     this.#light = createPbrDirectionalLight(options.light);
+    this.#environment = normalizeEnvironment(options.environment);
+    this.#environmentCache = options.environmentCache ?? new EnvironmentGpuCache();
+    this.#ownsEnvironmentCache = options.environmentCache === undefined;
     this.#materials = options.materials ?? new PbrMaterialLibrary();
     this.#ownsMaterials = options.materials === undefined;
     this.#textures = options.textures ?? new PbrTextureLibrary();
@@ -243,6 +330,11 @@ export class PbrRenderFeature implements RenderFeature {
     return this.#textures;
   }
 
+  get environment(): PbrEnvironmentState {
+    this.#assertActive();
+    return this.#environment;
+  }
+
   async initialize(context: RenderFeatureInitializationContext): Promise<void> {
     this.#assertActive();
     if (this.#resources !== undefined) {
@@ -254,14 +346,15 @@ export class PbrRenderFeature implements RenderFeature {
 
     const backend = context.backend;
     const created: BackendResourceHandle[] = [];
+    let acquiredEnvironmentLease: EnvironmentGpuLease | undefined;
     try {
       const surface = backend.createSurface(this.#surfaceDescriptor);
       created.push(surface);
       const surfaceInfo = backend.getSurfaceInfo(surface);
       this.#updateCameraAspect(surfaceInfo);
       const shader = backend.createShaderModule({
-        code: PHASE_03_PBR_DIRECT_WGSL,
-        label: 'phase-03-pbr-direct',
+        code: PHASE_03_PBR_IBL_WGSL,
+        label: 'phase-03-pbr-ibl',
         language: 'wgsl',
       });
       created.push(shader);
@@ -326,9 +419,24 @@ export class PbrRenderFeature implements RenderFeature {
       const depthTexture = this.#createDepthTexture(backend, surfaceInfo);
       if (depthTexture !== undefined) created.push(depthTexture);
 
+      this.#environmentCache.initialize(backend);
+      const environmentLease =
+        this.#environmentLease ??
+        (acquiredEnvironmentLease = this.#environmentCache.acquire(
+          this.#environment.source ?? this.#fallbackEnvironment,
+        ));
+      const environmentBindGroups = this.#createEnvironmentBindGroups(
+        backend,
+        pipelines,
+        environmentLease,
+      );
+      created.push(...environmentBindGroups.values());
+
       this.#backend = backend;
+      this.#environmentLease = environmentLease;
       this.#resources = {
         depthTexture,
+        environmentBindGroups,
         fallbackBaseColorTexture,
         fallbackMetallicRoughnessTexture,
         fallbackNormalTexture,
@@ -339,6 +447,13 @@ export class PbrRenderFeature implements RenderFeature {
       };
     } catch (error) {
       const cleanupErrors = this.#destroyHandles(backend, created.reverse());
+      if (acquiredEnvironmentLease !== undefined) {
+        try {
+          acquiredEnvironmentLease.dispose();
+        } catch (cleanupError) {
+          cleanupErrors.push(cleanupError);
+        }
+      }
       if (cleanupErrors.length > 0) {
         throw new AggregateError(
           [error, ...cleanupErrors],
@@ -389,7 +504,7 @@ export class PbrRenderFeature implements RenderFeature {
             clearColor: this.#clearColor,
             depthAttachment: { texture: resources.depthTexture },
             draws,
-            label: 'phase-03-pbr-direct-pass',
+            label: 'phase-03-pbr-pass',
             surface: resources.surface,
           },
         ],
@@ -420,6 +535,10 @@ export class PbrRenderFeature implements RenderFeature {
       throw this.#error('PBR rendering must be initialized before diagnostics.', 'INVALID_STATE');
     }
     return Object.freeze({
+      environmentCache: this.#environmentCache.diagnostics(),
+      environmentIdentity: this.#environment.source?.identityKey ?? null,
+      environmentIntensity: this.#environment.intensity,
+      environmentRotation: this.#environment.rotation,
       fallbackDrawCount: this.#lastFallbackDrawCount,
       gpuMeshCount: this.#meshResources.size,
       gpuTextureSourceCount: this.#textureResources.size,
@@ -458,6 +577,19 @@ export class PbrRenderFeature implements RenderFeature {
   setLight(light: PbrDirectionalLightDescriptor): void {
     this.#assertActive();
     this.#light = createPbrDirectionalLight(light);
+  }
+
+  setEnvironment(descriptor: PbrEnvironmentDescriptor): PbrEnvironmentState {
+    this.#assertActive();
+    const next = normalizeEnvironment(descriptor, this.#environment);
+    const previousEffective = this.#environment.source ?? this.#fallbackEnvironment;
+    const nextEffective = next.source ?? this.#fallbackEnvironment;
+    if (previousEffective.identityKey !== nextEffective.identityKey) {
+      this.#replaceEnvironment(next, nextEffective);
+      return next;
+    }
+    this.#environment = next;
+    return next;
   }
 
   setVisibilityOptions(options: BuildRenderQueuesOptions): void {
@@ -500,6 +632,7 @@ export class PbrRenderFeature implements RenderFeature {
       }
       if (resources.depthTexture !== undefined) handles.push(resources.depthTexture);
       handles.push(
+        ...resources.environmentBindGroups.values(),
         resources.fallbackBaseColorTexture,
         resources.fallbackMetallicRoughnessTexture,
         resources.fallbackNormalTexture,
@@ -514,6 +647,19 @@ export class PbrRenderFeature implements RenderFeature {
     this.#textureResources.clear();
 
     const errors = backend === undefined ? [] : this.#destroyHandles(backend, handles);
+    try {
+      this.#environmentLease?.dispose();
+    } catch (error) {
+      errors.push(error);
+    }
+    this.#environmentLease = undefined;
+    if (this.#ownsEnvironmentCache) {
+      try {
+        this.#environmentCache.dispose();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
     if (this.#ownsMaterials) {
       try {
         this.#materials.dispose();
@@ -629,32 +775,113 @@ export class PbrRenderFeature implements RenderFeature {
     });
   }
 
+  #createEnvironmentBindGroups(
+    backend: GraphicsBackend,
+    pipelines: ReadonlyMap<string, BackendPipelineHandle>,
+    lease: EnvironmentGpuLease,
+  ): ReadonlyMap<BackendPipelineHandle, BackendBindGroupHandle> {
+    const environment = lease.resources;
+    const result = new Map<BackendPipelineHandle, BackendBindGroupHandle>();
+    try {
+      for (const pipeline of pipelines.values()) {
+        result.set(
+          pipeline,
+          backend.createBindGroup({
+            entries: [
+              {
+                binding: 0,
+                resource: {
+                  texture: environment.diffuseIrradianceTexture,
+                  view: environment.diffuseIrradianceView,
+                },
+              },
+              {
+                binding: 1,
+                resource: {
+                  texture: environment.specularPrefilterTexture,
+                  view: environment.specularPrefilterView,
+                },
+              },
+              { binding: 2, resource: { sampler: environment.cubeSampler } },
+              {
+                binding: 3,
+                resource: {
+                  texture: environment.brdfLutTexture,
+                  view: environment.brdfLutView,
+                },
+              },
+              { binding: 4, resource: { sampler: environment.brdfLutSampler } },
+            ],
+            group: 1,
+            label: `pbr-environment-${environment.identityKey}`,
+            pipeline,
+          }),
+        );
+      }
+      return result;
+    } catch (error) {
+      const cleanupErrors = this.#destroyHandles(backend, [...result.values()]);
+      if (cleanupErrors.length > 0) {
+        throw new AggregateError(
+          [error, ...cleanupErrors],
+          'PBR environment Bind Group creation failed.',
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+  }
+
+  #replaceEnvironment(next: PbrEnvironmentState, source: EnvironmentSource): void {
+    const backend = this.#backend;
+    const resources = this.#resources;
+    if (backend === undefined || resources === undefined) {
+      this.#environmentLease?.dispose();
+      this.#environmentLease = undefined;
+      this.#environment = next;
+      return;
+    }
+
+    const nextLease = this.#environmentCache.acquire(source);
+    let nextBindGroups: ReadonlyMap<BackendPipelineHandle, BackendBindGroupHandle>;
+    try {
+      nextBindGroups = this.#createEnvironmentBindGroups(backend, resources.pipelines, nextLease);
+    } catch (error) {
+      nextLease.dispose();
+      throw error;
+    }
+
+    const previousBindGroups = resources.environmentBindGroups;
+    const previousLease = this.#environmentLease;
+    resources.environmentBindGroups = nextBindGroups;
+    this.#environmentLease = nextLease;
+    this.#environment = next;
+    const cleanupErrors = this.#destroyHandles(backend, [...previousBindGroups.values()]);
+    try {
+      previousLease?.dispose();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+    if (cleanupErrors.length === 1) throw cleanupErrors[0];
+    if (cleanupErrors.length > 1) {
+      throw new AggregateError(cleanupErrors, 'PBR previous environment cleanup failed.');
+    }
+  }
+
   #prepareMaterial(item: RenderItem, resources: PbrRenderResources): PreparedMaterial {
     const fallback = !this.#materials.has(item.materialKey);
     const snapshot = this.#materials.resolve(item.materialKey).snapshot();
-    const unsupportedSlots = PBR_TEXTURE_SLOTS.filter(
-      (slot) => slot === 'occlusion' && snapshot.textures[slot] !== null,
-    );
-    if (unsupportedSlots.length > 0) {
-      throw new KyxosEngineError(
-        `P3-05 material rendering does not yet bind PBR textures: ${unsupportedSlots.join(', ')}.`,
-        {
-          code: 'UNSUPPORTED_CAPABILITY',
-          module: 'renderer',
-          recoverable: true,
-          suggestedAction: 'Retain occlusion for the IBL indirect-light checkpoint.',
-        },
-      );
-    }
     const baseColorBinding = snapshot.textures['base-color'];
     const emissiveBinding = snapshot.textures.emissive;
     const metallicRoughnessBinding = snapshot.textures['metallic-roughness'];
     const normalBinding = snapshot.textures.normal;
+    const occlusionBinding = snapshot.textures.occlusion;
     for (const [label, binding] of [
       ['base-color', baseColorBinding],
       ['emissive', emissiveBinding],
       ['metallic-roughness', metallicRoughnessBinding],
       ['normal', normalBinding],
+      ['occlusion', occlusionBinding],
     ] as const) {
       if (binding !== null && binding.transform.texCoord !== 0) {
         throw new KyxosEngineError(`PBR ${label} Texture currently requires UV set 0.`, {
@@ -675,6 +902,8 @@ export class PbrRenderFeature implements RenderFeature {
         : this.#textures.resolve(metallicRoughnessBinding.texture);
     const normalSource =
       normalBinding === null ? null : this.#textures.resolve(normalBinding.texture);
+    const occlusionSource =
+      occlusionBinding === null ? null : this.#textures.resolve(occlusionBinding.texture);
     const expectedAlphaMode = snapshot.alphaMode === 'blend' ? 'blend' : 'opaque';
     if (item.alphaMode !== expectedAlphaMode) {
       throw this.#error(
@@ -695,6 +924,7 @@ export class PbrRenderFeature implements RenderFeature {
       fallback,
       metallicRoughnessSource,
       normalSource,
+      occlusionSource,
       pipeline,
       snapshot,
     });
@@ -709,7 +939,8 @@ export class PbrRenderFeature implements RenderFeature {
       (material.baseColorSource !== null ||
         material.emissiveSource !== null ||
         material.metallicRoughnessSource !== null ||
-        material.normalSource !== null) &&
+        material.normalSource !== null ||
+        material.occlusionSource !== null) &&
       item.mesh.uv0 === null
     ) {
       throw this.#error(
@@ -750,6 +981,14 @@ export class PbrRenderFeature implements RenderFeature {
             texture: resources.fallbackBaseColorTexture,
           }
         : this.#ensureTextureResources(backend, material.emissiveSource);
+    const occlusionTexture: PreparedTextureBinding =
+      material.occlusionSource === null
+        ? {
+            sampler: resources.fallbackSampler,
+            source: null,
+            texture: resources.fallbackMetallicRoughnessTexture,
+          }
+        : this.#ensureTextureResources(backend, material.occlusionSource);
     const mesh = this.#ensureMeshResources(backend, item.mesh);
     const object = this.#ensureObjectResources(
       backend,
@@ -759,11 +998,17 @@ export class PbrRenderFeature implements RenderFeature {
       metallicRoughnessTexture,
       normalTexture,
       emissiveTexture,
+      occlusionTexture,
     );
     backend.writeBuffer(
       object.uniformBuffer,
       packPbrObjectUniforms({
         cameraPosition: this.#camera.position,
+        environment: {
+          intensity: this.#environment.intensity,
+          rotation: this.#environment.rotation,
+          specularMipLevelCount: this.#requireEnvironmentLease().resources.specularMipLevelCount,
+        },
         light: this.#light,
         material: material.snapshot,
         normalYDirection: material.normalSource?.normalYDirection ?? 'up',
@@ -771,8 +1016,15 @@ export class PbrRenderFeature implements RenderFeature {
         worldMatrix: item.worldMatrix,
       }),
     );
+    const environmentBindGroup = resources.environmentBindGroups.get(material.pipeline);
+    if (environmentBindGroup === undefined) {
+      throw this.#error('PBR environment Bind Group is missing for the Pipeline.', 'INVALID_STATE');
+    }
     return {
-      bindGroups: [{ bindGroup: object.bindGroup, group: 0 }],
+      bindGroups: [
+        { bindGroup: object.bindGroup, group: 0 },
+        { bindGroup: environmentBindGroup, group: 1 },
+      ],
       indexBuffer: {
         buffer: mesh.indexBuffer,
         format: mesh.indexFormat,
@@ -881,6 +1133,7 @@ export class PbrRenderFeature implements RenderFeature {
     metallicRoughnessTexture: PreparedTextureBinding,
     normalTexture: PreparedTextureBinding,
     emissiveTexture: PreparedTextureBinding,
+    occlusionTexture: PreparedTextureBinding,
   ): ObjectGpuResources {
     const existing = this.#objectResources.get(entity);
     const bindingKey = [
@@ -893,6 +1146,8 @@ export class PbrRenderFeature implements RenderFeature {
       normalTexture.sampler.id,
       emissiveTexture.texture.id,
       emissiveTexture.sampler.id,
+      occlusionTexture.texture.id,
+      occlusionTexture.sampler.id,
     ].join(':');
     if (existing?.bindingKey === bindingKey) return existing;
     const uniformBuffer =
@@ -918,6 +1173,8 @@ export class PbrRenderFeature implements RenderFeature {
           { binding: 6, resource: { sampler: normalTexture.sampler } },
           { binding: 7, resource: { texture: emissiveTexture.texture } },
           { binding: 8, resource: { sampler: emissiveTexture.sampler } },
+          { binding: 9, resource: { texture: occlusionTexture.texture } },
+          { binding: 10, resource: { sampler: occlusionTexture.sampler } },
         ],
         group: 0,
         label: `pbr-object-${entity.id}`,
@@ -935,6 +1192,7 @@ export class PbrRenderFeature implements RenderFeature {
           metallicRoughnessTexture.source,
           normalTexture.source,
           emissiveTexture.source,
+          occlusionTexture.source,
         ]),
       ].filter((source): source is PbrTextureSource => source !== null),
     );
@@ -990,6 +1248,13 @@ export class PbrRenderFeature implements RenderFeature {
       throw this.#error('PBR resources are not initialized for this backend.', 'INVALID_STATE');
     }
     return this.#resources;
+  }
+
+  #requireEnvironmentLease(): EnvironmentGpuLease {
+    if (this.#environmentLease === undefined) {
+      throw this.#error('PBR environment resources are not initialized.', 'INVALID_STATE');
+    }
+    return this.#environmentLease;
   }
 
   #assertActive(): void {

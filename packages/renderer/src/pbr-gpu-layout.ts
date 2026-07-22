@@ -8,8 +8,8 @@ import type { Mat4, Vec3 } from '@kyxos/render-math';
 import type { PbrNormalYDirection } from './pbr-texture-library.js';
 
 export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
-  byteLength: 400,
-  floatLength: 100,
+  byteLength: 448,
+  floatLength: 112,
   offsets: Object.freeze({
     baseColor: 48,
     baseColorUvOffsetScale: 76,
@@ -26,6 +26,9 @@ export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
     normalMatrix: 32,
     normalOcclusion: 60,
     normalUvOffsetScale: 84,
+    occlusionEnvironmentRotations: 104,
+    occlusionUvOffsetScale: 100,
+    environmentControls: 108,
     textureUvRotations: 92,
   }),
 } as const);
@@ -82,12 +85,19 @@ export interface PbrDirectionalLightDescriptor {
 
 export interface PackPbrObjectUniformsOptions {
   readonly cameraPosition: Vec3;
+  readonly environment?: PbrEnvironmentUniforms;
   readonly light: PbrDirectionalLight;
   readonly material: PbrMaterialSnapshot;
   /** Asset-boundary Normal convention metadata; defaults to the engine's Y-up convention. */
   readonly normalYDirection?: PbrNormalYDirection;
   readonly viewProjectionMatrix: Mat4;
   readonly worldMatrix: Mat4;
+}
+
+export interface PbrEnvironmentUniforms {
+  readonly intensity: number;
+  readonly rotation: number;
+  readonly specularMipLevelCount: number;
 }
 
 export function createPbrDirectionalLight(
@@ -125,6 +135,35 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
   const normalYDirection = options.normalYDirection ?? 'up';
   if (normalYDirection !== 'down' && normalYDirection !== 'up') {
     throw new KyxosEngineError('PBR normalYDirection must be "up" or "down".', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  const environment = options.environment ?? {
+    intensity: 0,
+    rotation: 0,
+    specularMipLevelCount: 1,
+  };
+  if (!Number.isFinite(environment.intensity) || environment.intensity < 0) {
+    throw new KyxosEngineError('PBR environment intensity must be finite and nonnegative.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  if (!Number.isFinite(environment.rotation)) {
+    throw new KyxosEngineError('PBR environment rotation must be finite.', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
+  if (
+    !Number.isSafeInteger(environment.specularMipLevelCount) ||
+    environment.specularMipLevelCount < 1
+  ) {
+    throw new KyxosEngineError('PBR environment mip count must be a positive safe integer.', {
       code: 'INVALID_ARGUMENT',
       module: 'renderer',
       recoverable: false,
@@ -192,6 +231,10 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
     options.material.textures.emissive,
     'PBR Emissive Texture',
   );
+  const occlusionTransform = packTextureTransform(
+    options.material.textures.occlusion,
+    'PBR Occlusion Texture',
+  );
   result.set(baseColorTransform.offsetScale, offsets.baseColorUvOffsetScale);
   result.set(metallicRoughnessTransform.offsetScale, offsets.metallicRoughnessUvOffsetScale);
   result.set(normalTransform.offsetScale, offsets.normalUvOffsetScale);
@@ -203,6 +246,19 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
   result.set(
     [...normalTransform.rotation, ...emissiveTransform.rotation],
     offsets.normalEmissiveUvRotations,
+  );
+  result.set(occlusionTransform.offsetScale, offsets.occlusionUvOffsetScale);
+  result.set(
+    [
+      ...occlusionTransform.rotation,
+      Math.cos(environment.rotation),
+      Math.sin(environment.rotation),
+    ],
+    offsets.occlusionEnvironmentRotations,
+  );
+  result.set(
+    [environment.intensity, environment.specularMipLevelCount - 1, 0, 0],
+    offsets.environmentControls,
   );
   return result;
 }

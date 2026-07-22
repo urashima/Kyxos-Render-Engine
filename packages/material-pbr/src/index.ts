@@ -32,6 +32,11 @@ export {
   type IblVec3,
 } from './ibl-reference.js';
 export {
+  evaluateSplitSumIbl,
+  type SplitSumIblInput,
+  type SplitSumIblResult,
+} from './ibl-runtime.js';
+export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
   createPbrMaterialFeatureKey,

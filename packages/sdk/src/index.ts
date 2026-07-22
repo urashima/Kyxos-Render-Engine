@@ -157,6 +157,7 @@ export {
   convolveDiffuseIrradiance,
   createPbrMaterialFeatureKey,
   evaluateDeterministicIblReference,
+  evaluateSplitSumIbl,
   hammersley2d,
   integrateGgxBrdfLut,
   prefilterGgxSpecular,
@@ -179,6 +180,8 @@ export {
   type PbrMaterialSnapshot,
   type PbrTextureBindings,
   type PbrTextureSlot,
+  type SplitSumIblInput,
+  type SplitSumIblResult,
 } from '@kyxos/render-material-pbr';
 export type {
   AssetDecoder,
@@ -189,6 +192,9 @@ export type {
   PackPbrObjectUniformsOptions,
   PbrDirectionalLight,
   PbrDirectionalLightDescriptor,
+  PbrEnvironmentDescriptor,
+  PbrEnvironmentState,
+  PbrEnvironmentUniforms,
   PbrMaterialLibraryChangeEvent,
   PbrMaterialLibraryChangeKind,
   PbrMaterialLibraryDiagnostics,

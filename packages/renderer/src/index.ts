@@ -56,10 +56,13 @@ export {
   type PackPbrObjectUniformsOptions,
   type PbrDirectionalLight,
   type PbrDirectionalLightDescriptor,
+  type PbrEnvironmentUniforms,
 } from './pbr-gpu-layout.js';
 export {
   PBR_RENDER_FEATURE_ID,
   PbrRenderFeature,
+  type PbrEnvironmentDescriptor,
+  type PbrEnvironmentState,
   type PbrRenderFeatureDiagnostics,
   type PbrRenderFeatureOptions,
 } from './pbr-render-feature.js';

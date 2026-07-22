@@ -3,16 +3,23 @@ import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
+import {
+  ENVIRONMENT_CUBE_FACES,
+  encodeFloat16,
+  float16BitsToFloat32,
+} from '../../packages/environment/src/index.js';
 import { srgbToLinearRgba } from '../../packages/material-core/src/color.js';
 import {
   createMaterialTextureBinding,
   createMaterialTextureReference,
 } from '../../packages/material-core/src/texture.js';
 import { evaluateMetallicRoughnessBrdf } from '../../packages/material-pbr/src/brdf.js';
+import { evaluateSplitSumIbl } from '../../packages/material-pbr/src/ibl-runtime.js';
 import { PHASE_03_BRDF_REFERENCE_WGSL } from '../../packages/material-pbr/src/generated/phase-03-brdf-reference.wgsl.js';
 import { PbrMaterial } from '../../packages/material-pbr/src/pbr-material.js';
 import { identityMat4 } from '../../packages/math/src/index.js';
 import { PHASE_03_PBR_DIRECT_WGSL } from '../../packages/renderer/src/generated/phase-03-pbr-direct.wgsl.js';
+import { PHASE_03_PBR_IBL_WGSL } from '../../packages/renderer/src/generated/phase-03-pbr-ibl.wgsl.js';
 import {
   createPbrDirectionalLight,
   packPbrObjectUniforms,
@@ -27,6 +34,23 @@ const referenceInput = {
   roughness: 0.42,
   vDotH: 0.88,
 };
+
+function environmentCubeLevel(
+  size: number,
+  negativeX: readonly [number, number, number],
+): Uint16Array {
+  const values = new Float32Array(size * size * ENVIRONMENT_CUBE_FACES.length * 4);
+  for (let face = 0; face < ENVIRONMENT_CUBE_FACES.length; face += 1) {
+    for (let texel = 0; texel < size * size; texel += 1) {
+      const offset = (face * size * size + texel) * 4;
+      values[offset] = face === 1 ? negativeX[0] : 0;
+      values[offset + 1] = face === 1 ? negativeX[1] : 0;
+      values[offset + 2] = face === 1 ? negativeX[2] : 0;
+      values[offset + 3] = 1;
+    }
+  }
+  return encodeFloat16(values);
+}
 
 test.describe('Phase 3 BRDF reference', () => {
   test('compiles and matches the CPU reference through WebGPU float32 readback', async ({
@@ -991,6 +1015,405 @@ test.describe('Phase 3 BRDF reference', () => {
             emission: gpuResult.emissivePixel,
           },
           uniformByteLength: upUniforms.byteLength,
+          status: 'PASS',
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  });
+
+  test('binds rotated split-sum IBL and applies Occlusion only to indirect light', async ({
+    page,
+  }) => {
+    await page.goto('/acceptance/phase-01');
+    const baseColor = [0.5, 0.4, 0.3] as const;
+    const diffuseIrradiance = [0.6, 0.3, 0.15] as const;
+    const prefilteredSpecular = [0.2, 0.4, 0.1] as const;
+    const brdfLut = [0.5, 0.1] as const;
+    const occlusionByte = 64;
+    const occlusionStrength = 0.8;
+    const directLightIntensity = 0.5;
+    const environmentIntensity = 2;
+    const environmentRotation = Math.PI / 2;
+    const material = new PbrMaterial({
+      baseColorFactor: [...baseColor, 1],
+      metallicFactor: 0.25,
+      occlusionStrength,
+      roughnessFactor: 1,
+      textures: {
+        occlusion: createMaterialTextureBinding({
+          texture: createMaterialTextureReference({
+            id: 'occlusion',
+            transferFunction: 'linear',
+          }),
+        }),
+      },
+    });
+    const uniforms = packPbrObjectUniforms({
+      cameraPosition: [0, 0, 5],
+      environment: {
+        intensity: environmentIntensity,
+        rotation: environmentRotation,
+        specularMipLevelCount: 2,
+      },
+      light: createPbrDirectionalLight({
+        direction: [0, 0, 1],
+        intensity: directLightIntensity,
+      }),
+      material: material.snapshot(),
+      viewProjectionMatrix: identityMat4(),
+      worldMatrix: identityMat4(),
+    });
+    uniforms.fill(0, 16, 32);
+    uniforms[31] = 1;
+    const diffusePixels = environmentCubeLevel(1, diffuseIrradiance);
+    const specularMip0 = environmentCubeLevel(2, [0, 0, 0]);
+    const specularMip1 = environmentCubeLevel(1, prefilteredSpecular);
+    const brdfPixels = encodeFloat16(brdfLut);
+
+    const gpuResult = await page.evaluate(
+      async ({ brdf, diffuse, occlusion, source, specular0, specular1, uniformValues }) => {
+        const adapter = await navigator.gpu?.requestAdapter();
+        if (adapter === null || adapter === undefined)
+          throw new Error('WebGPU adapter unavailable.');
+        const device = await adapter.requestDevice();
+        const module = device.createShaderModule({ code: source, label: 'Phase 3 indirect PBR' });
+        const compilation = await module.getCompilationInfo();
+        const compilationMessages = compilation.messages.map((message) => ({
+          line: message.lineNum,
+          message: message.message,
+          type: message.type,
+        }));
+        const errors = compilationMessages.filter((message) => message.type === 'error');
+        if (errors.length > 0) throw new Error(JSON.stringify(errors));
+
+        const bufferUsage = {
+          copyDestination: 0x0008,
+          mapRead: 0x0001,
+          uniform: 0x0040,
+          vertex: 0x0020,
+        } as const;
+        const textureUsage = {
+          copyDestination: 0x02,
+          copySource: 0x01,
+          renderAttachment: 0x10,
+          sampled: 0x04,
+        } as const;
+        const vertices = new Float32Array([
+          -1, -1, 0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1, 3, -1, 0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1, -1, 3,
+          0, 0, 0, 1, 0.5, 0.5, 1, 0, 0, 1,
+        ]);
+        const vertexBuffer = device.createBuffer({
+          label: 'Phase 3 indirect PBR vertices',
+          size: vertices.byteLength,
+          usage: bufferUsage.copyDestination | bufferUsage.vertex,
+        });
+        const uniformBuffer = device.createBuffer({
+          label: 'Phase 3 indirect PBR uniforms',
+          size: uniformValues.length * Float32Array.BYTES_PER_ELEMENT,
+          usage: bufferUsage.copyDestination | bufferUsage.uniform,
+        });
+        const baseColorTexture = device.createTexture({
+          format: 'rgba8unorm-srgb',
+          label: 'Phase 3 indirect PBR base color',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const linearTexture = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 indirect PBR linear fallback',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const normalTexture = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 indirect PBR flat Normal',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const occlusionTexture = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 indirect PBR Occlusion',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const diffuseTexture = device.createTexture({
+          format: 'rgba16float',
+          label: 'Phase 3 indirect PBR Diffuse Cube',
+          size: { depthOrArrayLayers: 6, height: 1, width: 1 },
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const specularTexture = device.createTexture({
+          format: 'rgba16float',
+          label: 'Phase 3 indirect PBR Specular Cube',
+          mipLevelCount: 2,
+          size: { depthOrArrayLayers: 6, height: 2, width: 2 },
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const brdfTexture = device.createTexture({
+          format: 'rg16float',
+          label: 'Phase 3 indirect PBR BRDF LUT',
+          size: [1, 1],
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
+        const target = device.createTexture({
+          format: 'rgba8unorm',
+          label: 'Phase 3 indirect PBR target',
+          size: [4, 4],
+          usage: textureUsage.copySource | textureUsage.renderAttachment,
+        });
+        const readback = device.createBuffer({
+          label: 'Phase 3 indirect PBR readback',
+          size: 256 * 4,
+          usage: bufferUsage.copyDestination | bufferUsage.mapRead,
+        });
+        try {
+          device.queue.writeBuffer(vertexBuffer, 0, vertices);
+          device.queue.writeBuffer(uniformBuffer, 0, new Float32Array(uniformValues));
+          const white = new Uint8Array([255, 255, 255, 255]);
+          device.queue.writeTexture(
+            { texture: baseColorTexture },
+            white,
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: linearTexture },
+            white,
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: normalTexture },
+            new Uint8Array([128, 128, 255, 255]),
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: occlusionTexture },
+            new Uint8Array([occlusion, 255, 255, 255]),
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: diffuseTexture },
+            new Uint16Array(diffuse),
+            { bytesPerRow: 8, rowsPerImage: 1 },
+            { depthOrArrayLayers: 6, height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { mipLevel: 0, texture: specularTexture },
+            new Uint16Array(specular0),
+            { bytesPerRow: 16, rowsPerImage: 2 },
+            { depthOrArrayLayers: 6, height: 2, width: 2 },
+          );
+          device.queue.writeTexture(
+            { mipLevel: 1, texture: specularTexture },
+            new Uint16Array(specular1),
+            { bytesPerRow: 8, rowsPerImage: 1 },
+            { depthOrArrayLayers: 6, height: 1, width: 1 },
+          );
+          device.queue.writeTexture(
+            { texture: brdfTexture },
+            new Uint16Array(brdf),
+            { bytesPerRow: 4, rowsPerImage: 1 },
+            { height: 1, width: 1 },
+          );
+
+          const pipeline = await device.createRenderPipelineAsync({
+            fragment: {
+              entryPoint: 'fragmentOpaque',
+              module,
+              targets: [{ format: 'rgba8unorm' }],
+            },
+            label: 'Phase 3 indirect PBR pipeline',
+            layout: 'auto',
+            primitive: { cullMode: 'none', topology: 'triangle-list' },
+            vertex: {
+              buffers: [
+                {
+                  arrayStride: 48,
+                  attributes: [
+                    { format: 'float32x3', offset: 0, shaderLocation: 0 },
+                    { format: 'float32x3', offset: 12, shaderLocation: 1 },
+                    { format: 'float32x2', offset: 24, shaderLocation: 2 },
+                    { format: 'float32x4', offset: 32, shaderLocation: 3 },
+                  ],
+                },
+              ],
+              entryPoint: 'vertexMain',
+              module,
+            },
+          });
+          const materialSampler = device.createSampler({
+            magFilter: 'nearest',
+            minFilter: 'nearest',
+          });
+          const cubeSampler = device.createSampler({
+            magFilter: 'nearest',
+            minFilter: 'nearest',
+            mipmapFilter: 'nearest',
+          });
+          const brdfSampler = device.createSampler({
+            magFilter: 'nearest',
+            minFilter: 'nearest',
+          });
+          const materialGroup = device.createBindGroup({
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: baseColorTexture.createView() },
+              { binding: 2, resource: materialSampler },
+              { binding: 3, resource: linearTexture.createView() },
+              { binding: 4, resource: materialSampler },
+              { binding: 5, resource: normalTexture.createView() },
+              { binding: 6, resource: materialSampler },
+              { binding: 7, resource: baseColorTexture.createView() },
+              { binding: 8, resource: materialSampler },
+              { binding: 9, resource: occlusionTexture.createView() },
+              { binding: 10, resource: materialSampler },
+            ],
+            layout: pipeline.getBindGroupLayout(0),
+          });
+          const environmentGroup = device.createBindGroup({
+            entries: [
+              { binding: 0, resource: diffuseTexture.createView({ dimension: 'cube' }) },
+              { binding: 1, resource: specularTexture.createView({ dimension: 'cube' }) },
+              { binding: 2, resource: cubeSampler },
+              { binding: 3, resource: brdfTexture.createView({ dimension: '2d' }) },
+              { binding: 4, resource: brdfSampler },
+            ],
+            layout: pipeline.getBindGroupLayout(1),
+          });
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                clearValue: { a: 0, b: 0, g: 0, r: 0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+                view: target.createView(),
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, materialGroup);
+          pass.setBindGroup(1, environmentGroup);
+          pass.setVertexBuffer(0, vertexBuffer);
+          pass.draw(3);
+          pass.end();
+          encoder.copyTextureToBuffer(
+            { texture: target },
+            { buffer: readback, bytesPerRow: 256, rowsPerImage: 4 },
+            { height: 4, width: 4 },
+          );
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(bufferUsage.mapRead);
+          const offset = 2 * 256 + 2 * 4;
+          const pixel = Array.from(
+            new Uint8Array(readback.getMappedRange()).slice(offset, offset + 4),
+          );
+          readback.unmap();
+          return { compilationMessages, pixel };
+        } finally {
+          vertexBuffer.destroy();
+          uniformBuffer.destroy();
+          baseColorTexture.destroy();
+          linearTexture.destroy();
+          normalTexture.destroy();
+          occlusionTexture.destroy();
+          diffuseTexture.destroy();
+          specularTexture.destroy();
+          brdfTexture.destroy();
+          target.destroy();
+          readback.destroy();
+          device.destroy();
+        }
+      },
+      {
+        brdf: Array.from(brdfPixels),
+        diffuse: Array.from(diffusePixels),
+        occlusion: occlusionByte,
+        source: PHASE_03_PBR_IBL_WGSL,
+        specular0: Array.from(specularMip0),
+        specular1: Array.from(specularMip1),
+        uniformValues: Array.from(uniforms),
+      },
+    );
+
+    const decode = (values: Uint16Array): readonly [number, number, number] =>
+      [0, 1, 2].map((index) =>
+        float16BitsToFloat32(values[index] as number),
+      ) as unknown as readonly [number, number, number];
+    const cpu = evaluateSplitSumIbl({
+      ambientOcclusion: 1 + occlusionStrength * (occlusionByte / 255 - 1),
+      baseColor,
+      brdfLut: [
+        float16BitsToFloat32(brdfPixels[0] as number),
+        float16BitsToFloat32(brdfPixels[1] as number),
+      ],
+      diffuseIrradiance: decode(diffusePixels.slice(4, 8)),
+      intensity: environmentIntensity,
+      metallic: 0.25,
+      prefilteredSpecular: decode(specularMip1.slice(4, 8)),
+    });
+    const direct = evaluateMetallicRoughnessBrdf({
+      baseColor,
+      metallic: 0.25,
+      nDotH: 1,
+      nDotL: 1,
+      nDotV: 1,
+      roughness: 1,
+      vDotH: 1,
+    });
+    const expectedPixel = [
+      ...cpu.total.map((channel, index) =>
+        Math.round((channel + (direct.total[index] as number) * directLightIntensity) * 255),
+      ),
+      255,
+    ];
+    expect(gpuResult.compilationMessages.filter((message) => message.type === 'error')).toEqual([]);
+    gpuResult.pixel.forEach((channel, index) => {
+      expect(
+        Math.abs(channel - (expectedPixel[index] as number)),
+        `indirect PBR channel ${index}: expected ${expectedPixel[index]}, received ${channel}`,
+      ).toBeLessThanOrEqual(2);
+    });
+
+    const runtimeDirectory = path.resolve('test-results/phase-03/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'pbr-ibl-renderer.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          phase: '03',
+          checkpoint: 'P3-08',
+          semantics: {
+            diffuse: 'physical irradiance E multiplied by diffuseColor/pi',
+            specular: 'prefilteredRadiance * (F0 * scale + bias)',
+            occlusion: 'strength-adjusted AO multiplies indirect lighting only',
+            rotation: '+pi/2 world-to-environment Y rotation selects negative-X cube face',
+          },
+          inputs: {
+            baseColor,
+            brdfLut,
+            directLightIntensity,
+            diffuseIrradiance,
+            environmentIntensity,
+            environmentRotation,
+            metallic: 0.25,
+            occlusionByte,
+            occlusionStrength,
+            prefilteredSpecular,
+            roughness: 1,
+          },
+          cpu,
+          direct,
+          compilationMessages: gpuResult.compilationMessages,
+          expectedPixel,
+          gpuPixel: gpuResult.pixel,
+          uniformByteLength: uniforms.byteLength,
           status: 'PASS',
         },
         null,
