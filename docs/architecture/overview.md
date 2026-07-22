@@ -27,7 +27,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                     | None                                                             |
 | `@kyxos/render-geometry`        | Immutable mesh data, bounds, primitives, and tangent generation        | Math                                                             |
 | `@kyxos/render-material-core`   | Color, texture semantics, UV transforms, and feature identities        | Core                                                             |
-| `@kyxos/render-material-pbr`    | Metallic-roughness material state and BRDF reference                   | Core, Material Core                                              |
+| `@kyxos/render-material-pbr`    | Metallic-roughness state plus direct BRDF and deterministic IBL refs   | Core, Material Core                                              |
 | `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds  | Core, Math                                                       |
 | `@kyxos/render-camera`          | Perspective matrices, scene framing, and DOM-free orbit state          | Core, Math, Scene                                                |
 | `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting       | Camera, Core, Geometry, Math, Scene                              |

@@ -49,7 +49,7 @@ export default defineConfig({
     {
       name: 'chromium-pbr',
       snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-03/{arg}{ext}',
-      testMatch: /phase-03-brdf\.spec\.ts/,
+      testMatch: /phase-03-(?:brdf|ibl)\.spec\.ts/,
       use: chromiumUse,
     },
   ],

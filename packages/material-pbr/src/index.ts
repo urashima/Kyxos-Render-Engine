@@ -13,6 +13,25 @@ export {
   type MetallicRoughnessColors,
 } from './brdf.js';
 export {
+  IBL_MAX_REFERENCE_SAMPLE_COUNT,
+  IBL_REFERENCE_INPUT,
+  IBL_REFERENCE_SAMPLE_COUNT,
+  convolveDiffuseIrradiance,
+  evaluateDeterministicIblReference,
+  hammersley2d,
+  integrateGgxBrdfLut,
+  prefilterGgxSpecular,
+  radicalInverseVdc,
+  sampleDeterministicIblEnvironment,
+  type BrdfLutReference,
+  type DeterministicIblReference,
+  type DiffuseIrradianceReference,
+  type GgxSpecularPrefilterReference,
+  type IblEnvironmentSampler,
+  type IblVec2,
+  type IblVec3,
+} from './ibl-reference.js';
+export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
   createPbrMaterialFeatureKey,

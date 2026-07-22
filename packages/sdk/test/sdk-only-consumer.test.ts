@@ -7,6 +7,7 @@ import {
   PbrTextureSource,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
+  evaluateDeterministicIblReference,
   srgbToLinearRgba,
 } from '../src/index.js';
 import type {
@@ -240,6 +241,16 @@ describe('SDK-only consumer', () => {
       roughnessFactor: 0.3,
     });
     material.dispose();
+  });
+
+  it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {
+    const reference = evaluateDeterministicIblReference();
+
+    expect(reference).toMatchObject({
+      brdfLut: { nDotV: 0.67, roughness: 0.38, sampleCount: 64 },
+      diffuse: { sampleCount: 64 },
+      specular: { roughness: 0.43, sampleCount: 64 },
+    });
   });
 
   it('registers immutable PBR Texture sources using only the public SDK entry point', () => {
