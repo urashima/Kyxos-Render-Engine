@@ -72,6 +72,8 @@ test.describe('Phase 3 fixed PBR material gallery', () => {
       writeFile(path.join(visualDirectory, 'current.png'), current),
       writeFile(path.join(visualDirectory, 'gallery.png'), gallery),
     ]);
+    expect(gallery).toMatchSnapshot('gallery.png', { maxDiffPixels: 0, threshold: 0.2 });
+    expect(current).toMatchSnapshot('reference.png', { maxDiffPixels: 0, threshold: 0.2 });
 
     const frameIndex = page.getByTestId('frame-index');
     const changeRange = async (control: string, value: string) => {
