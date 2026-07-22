@@ -396,7 +396,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             format: 'depth32float',
             label,
             size: { height: 1, width: viewportWidth },
-            usage: textureUsage.copyDestination | textureUsage.sampled,
+            usage: textureUsage.render | textureUsage.sampled,
           });
         const currentColorTexture = createColorTexture(
           'P4-07 Current Color',
@@ -425,6 +425,11 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           size: uniformValues.length * Float32Array.BYTES_PER_ELEMENT,
           usage: bufferUsage.copyDestination | bufferUsage.uniform,
         });
+        const historyDepthUniform = device.createBuffer({
+          label: 'P4-07 History Depth Values',
+          size: 4 * Float32Array.BYTES_PER_ELEMENT,
+          usage: bufferUsage.copyDestination | bufferUsage.uniform,
+        });
         const readback = device.createBuffer({
           label: 'P4-07 Resolve Readback',
           size: 256,
@@ -437,29 +442,61 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           minFilter: 'linear',
         });
         const module = device.createShaderModule({ code: source, label: 'P4-07 TAA Resolve' });
+        const depthModule = device.createShaderModule({
+          code: `
+            struct DepthValues {
+              values: vec4f,
+            }
+
+            struct VertexOutput {
+              @builtin(position) position: vec4f,
+            }
+
+            @group(0) @binding(0) var<uniform> depthValues: DepthValues;
+
+            @vertex
+            fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
+              let positions = array(
+                vec2f(-1.0, -1.0),
+                vec2f(3.0, -1.0),
+                vec2f(-1.0, 3.0),
+              );
+              var output: VertexOutput;
+              output.position = vec4f(positions[vertexIndex], 0.0, 1.0);
+              return output;
+            }
+
+            @fragment
+            fn fragmentMain(input: VertexOutput) -> @builtin(frag_depth) f32 {
+              let pixel = min(u32(input.position.x), 2u);
+              return depthValues.values[pixel];
+            }
+          `,
+          label: 'P4-07 Depth Fixture',
+        });
 
         try {
-          const compilation = await module.getCompilationInfo();
-          const compilationMessages = compilation.messages.map((message) => ({
+          const [compilation, depthCompilation] = await Promise.all([
+            module.getCompilationInfo(),
+            depthModule.getCompilationInfo(),
+          ]);
+          const compilationMessages = [
+            ...compilation.messages.map((message) => ({ message, shader: 'resolve' })),
+            ...depthCompilation.messages.map((message) => ({ message, shader: 'depth-fixture' })),
+          ].map(({ message, shader }) => ({
             line: message.lineNum,
             message: message.message,
+            shader,
             type: message.type,
           }));
           const errors = compilationMessages.filter((message) => message.type === 'error');
           if (errors.length > 0) throw new Error(JSON.stringify(errors));
           const colorLayout = { bytesPerRow: viewportWidth * 8, rowsPerImage: 1 };
-          const depthLayout = { bytesPerRow: viewportWidth * 4, rowsPerImage: 1 };
           const extent = { depthOrArrayLayers: 1, height: 1, width: viewportWidth };
           device.queue.writeTexture(
             { texture: currentColorTexture },
             new Uint16Array(currentColor),
             colorLayout,
-            extent,
-          );
-          device.queue.writeTexture(
-            { texture: currentDepthTexture },
-            new Float32Array(currentDepth),
-            depthLayout,
             extent,
           );
           device.queue.writeTexture(
@@ -475,18 +512,29 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             extent,
           );
           device.queue.writeTexture(
-            { texture: historyDepthTexture },
-            new Float32Array(historyDepth),
-            depthLayout,
-            extent,
-          );
-          device.queue.writeTexture(
             { texture: historyNormalTexture },
             new Uint16Array(historyNormal),
             colorLayout,
             extent,
           );
           device.queue.writeBuffer(uniformBuffer, 0, new Float32Array(uniformValues));
+          device.queue.writeBuffer(historyDepthUniform, 0, new Float32Array([...historyDepth, 0]));
+          const depthPipeline = await device.createRenderPipelineAsync({
+            depthStencil: {
+              depthCompare: 'always',
+              depthWriteEnabled: true,
+              format: 'depth32float',
+            },
+            fragment: { entryPoint: 'fragmentMain', module: depthModule, targets: [] },
+            label: 'P4-07 Depth Fixture Pipeline',
+            layout: 'auto',
+            primitive: { topology: 'triangle-list' },
+            vertex: { entryPoint: 'vertexMain', module: depthModule },
+          });
+          const depthBindGroup = device.createBindGroup({
+            entries: [{ binding: 0, resource: { buffer: historyDepthUniform } }],
+            layout: depthPipeline.getBindGroupLayout(0),
+          });
           const pipeline = await device.createRenderPipelineAsync({
             fragment: { entryPoint: 'fragmentMain', module, targets: [{ format: 'rgba16float' }] },
             label: 'P4-07 TAA Resolve Pipeline',
@@ -508,6 +556,29 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             layout: pipeline.getBindGroupLayout(0),
           });
           const encoder = device.createCommandEncoder();
+          const currentDepthPass = encoder.beginRenderPass({
+            colorAttachments: [],
+            depthStencilAttachment: {
+              depthClearValue: currentDepth[0] as number,
+              depthLoadOp: 'clear',
+              depthStoreOp: 'store',
+              view: currentDepthTexture.createView(),
+            },
+          });
+          currentDepthPass.end();
+          const historyDepthPass = encoder.beginRenderPass({
+            colorAttachments: [],
+            depthStencilAttachment: {
+              depthClearValue: 1,
+              depthLoadOp: 'clear',
+              depthStoreOp: 'store',
+              view: historyDepthTexture.createView(),
+            },
+          });
+          historyDepthPass.setPipeline(depthPipeline);
+          historyDepthPass.setBindGroup(0, depthBindGroup);
+          historyDepthPass.draw(3);
+          historyDepthPass.end();
           const pass = encoder.beginRenderPass({
             colorAttachments: [
               {
@@ -543,6 +614,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           historyNormalTexture.destroy();
           target.destroy();
           uniformBuffer.destroy();
+          historyDepthUniform.destroy();
           readback.destroy();
           device.destroy();
         }
