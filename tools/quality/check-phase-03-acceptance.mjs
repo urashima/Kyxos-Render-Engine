@@ -12,6 +12,12 @@ const sourceCiJob = 88914018637;
 const sourceArtifact = 8528484011;
 const sourceArtifactDigest =
   'sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250';
+const evidencePackCommit = 'bc3faa5ffac5d04837ba04f2382cc43bc5819d38';
+const evidencePackCiRun = 29918823067;
+const evidencePackCiJob = 88918945110;
+const evidencePackArtifact = 8529093758;
+const evidencePackArtifactDigest =
+  'sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6';
 const visualSourceCommit = '4f0e812cf0382777d407edf27f5eae0e8b095e8e';
 const visualSourceRun = 29916911020;
 const visualSourceArtifact = 8528332559;
@@ -104,7 +110,12 @@ if (
   automated?.remoteCi?.conclusion !== 'success' ||
   automated?.remoteCi?.artifactId !== sourceArtifact ||
   automated?.remoteCi?.artifactDigest !== sourceArtifactDigest ||
-  automated?.evidencePackCi?.status !== 'PENDING' ||
+  automated?.evidencePackCi?.runId !== evidencePackCiRun ||
+  automated?.evidencePackCi?.jobId !== evidencePackCiJob ||
+  automated?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  automated?.evidencePackCi?.conclusion !== 'success' ||
+  automated?.evidencePackCi?.artifactId !== evidencePackArtifact ||
+  automated?.evidencePackCi?.artifactDigest !== evidencePackArtifactDigest ||
   automated?.visualSource?.runId !== visualSourceRun ||
   automated?.visualSource?.sourceCommit !== visualSourceCommit ||
   automated?.visualSource?.artifactId !== visualSourceArtifact ||
@@ -116,9 +127,7 @@ if (
   automated?.gates?.length !== 13 ||
   automated.gates.some((gate) => gate.status !== 'PASS')
 ) {
-  failures.push(
-    'automated summary: source CI, gates, pending evidence CI, or deployment state is invalid',
-  );
+  failures.push('automated summary: source/evidence CI, gates, or deployment state is invalid');
 }
 
 const dependencies = await readJson('test-results/phase-03/dependency-graph.json');
@@ -262,15 +271,20 @@ if (
   technicalQa?.ci?.conclusion !== 'success' ||
   technicalQa?.ci?.artifactId !== sourceArtifact ||
   technicalQa?.ci?.artifactDigest !== sourceArtifactDigest ||
-  technicalQa?.evidencePackCi?.status !== 'PENDING' ||
+  technicalQa?.evidencePackCi?.runId !== evidencePackCiRun ||
+  technicalQa?.evidencePackCi?.jobId !== evidencePackCiJob ||
+  technicalQa?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  technicalQa?.evidencePackCi?.conclusion !== 'success' ||
+  technicalQa?.evidencePackCi?.artifactId !== evidencePackArtifact ||
+  technicalQa?.evidencePackCi?.artifactDigest !== evidencePackArtifactDigest ||
   Object.values(technicalQa?.checks ?? {}).some((status) => status !== 'PASS') ||
   Object.keys(technicalQa?.checks ?? {}).length !== 15 ||
   technicalQa?.deploymentGate?.status !== 'PENDING' ||
   technicalQa?.blockingDefects?.length !== 0 ||
-  technicalQa?.remainingGates?.length !== 6
+  technicalQa?.remainingGates?.length !== 5
 ) {
   failures.push(
-    'technical QA evidence: source, checks, pending CI, deployment, or defects are invalid',
+    'technical QA evidence: source, checks, evidence CI, deployment, or defects are invalid',
   );
 }
 
@@ -283,7 +297,13 @@ if (
   owner?.ci?.conclusion !== 'success' ||
   owner?.ci?.artifactId !== sourceArtifact ||
   owner?.ci?.artifactDigest !== sourceArtifactDigest ||
-  owner?.finalOwnerEvidenceCi?.status !== 'PENDING' ||
+  owner?.finalOwnerEvidenceCi?.runId !== evidencePackCiRun ||
+  owner?.finalOwnerEvidenceCi?.jobId !== evidencePackCiJob ||
+  owner?.finalOwnerEvidenceCi?.sourceCommit !== evidencePackCommit ||
+  owner?.finalOwnerEvidenceCi?.conclusion !== 'success' ||
+  owner?.finalOwnerEvidenceCi?.artifactId !== evidencePackArtifact ||
+  owner?.finalOwnerEvidenceCi?.artifactDigest !== evidencePackArtifactDigest ||
+  owner?.finalOwnerEvidenceCi?.browserTests !== 21 ||
   owner?.subjectiveReview?.status !== 'PASS' ||
   owner?.subjectiveReview?.defects?.length !== 0 ||
   Object.values(owner?.phaseOperations ?? {}).some((status) => status !== 'PASS') ||
@@ -293,10 +313,10 @@ if (
   !owner?.deploymentGate?.requiredRoutes?.includes('/latest/') ||
   !owner?.deploymentGate?.requiredRoutes?.includes('/phase-3/') ||
   owner?.blockingDefects?.length !== 0 ||
-  owner?.remainingGates?.length !== 6
+  owner?.remainingGates?.length !== 5
 ) {
   failures.push(
-    'owner evidence: checklist, direct review, pending CI, deployment, or defects are invalid',
+    'owner evidence: checklist, review, evidence CI, deployment, or defects are invalid',
   );
 }
 
@@ -330,7 +350,14 @@ if (
   visual.canonicalProvenance.fullPageAttemptHashes.some((hash) => hash !== fullPageHash) ||
   visual?.canonicalProvenance?.galleryAttemptHashes?.length !== 2 ||
   visual.canonicalProvenance.galleryAttemptHashes.some((hash) => hash !== galleryHash) ||
-  visual?.canonicalProvenance?.evidencePackCi?.status !== 'PENDING' ||
+  visual?.canonicalProvenance?.evidencePackCi?.runId !== evidencePackCiRun ||
+  visual?.canonicalProvenance?.evidencePackCi?.jobId !== evidencePackCiJob ||
+  visual?.canonicalProvenance?.evidencePackCi?.sourceCommit !== evidencePackCommit ||
+  visual?.canonicalProvenance?.evidencePackCi?.conclusion !== 'success' ||
+  visual?.canonicalProvenance?.evidencePackCi?.artifactId !== evidencePackArtifact ||
+  visual?.canonicalProvenance?.evidencePackCi?.artifactDigest !== evidencePackArtifactDigest ||
+  visual?.canonicalProvenance?.evidencePackCi?.fullPageHash !== fullPageHash ||
+  visual?.canonicalProvenance?.evidencePackCi?.galleryHash !== galleryHash ||
   visual?.subjectiveReview?.status !== 'PASS' ||
   visual?.subjectiveReview?.defects?.length !== 0
 ) {
@@ -360,6 +387,7 @@ try {
   for (const fragment of [
     'Owner Acceptance Passed — Deployment Pending',
     `GitHub Actions Run \`${sourceCiRun}\``,
+    `Evidence-pack Run \`${evidencePackCiRun}\``,
     'Phase 3 is not Accepted while this status remains pending.',
     '21 / 21',
     '0 differing pixels',

@@ -12,8 +12,12 @@
     "artifactDigest": "sha256:3de59e97312bf7f9432e04c0ac81f9a0a18f5ee12b33fcc8156b21cb1b22a250"
   },
   "evidencePackCi": {
-    "status": "PENDING",
-    "reason": "The evidence-pack commit has not yet completed its own GitHub Actions run."
+    "runId": 29918823067,
+    "jobId": 88918945110,
+    "sourceCommit": "bc3faa5ffac5d04837ba04f2382cc43bc5819d38",
+    "conclusion": "success",
+    "artifactId": 8529093758,
+    "artifactDigest": "sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6"
   },
   "checks": {
     "architectureBoundaries": "PASS",
@@ -39,7 +43,6 @@
   },
   "blockingDefects": [],
   "remainingGates": [
-    "Evidence-pack head CI",
     "Final provenance head CI",
     "Merge to main",
     "GitHub Pages deployment",

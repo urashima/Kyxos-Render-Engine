@@ -86,7 +86,16 @@
       "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967",
       "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967"
     ],
-    "evidencePackCi": { "status": "PENDING" }
+    "evidencePackCi": {
+      "runId": 29918823067,
+      "jobId": 88918945110,
+      "sourceCommit": "bc3faa5ffac5d04837ba04f2382cc43bc5819d38",
+      "conclusion": "success",
+      "artifactId": 8529093758,
+      "artifactDigest": "sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6",
+      "fullPageHash": "71c6dac046d44b8bc979a4063ad348ced19692e82c2599c250d4513b44e33151",
+      "galleryHash": "91885ac007899f5845193847b4637a836f56f8633e79cca8f8bef76e77a19967"
+    }
   },
   "subjectiveReview": {
     "status": "PASS",

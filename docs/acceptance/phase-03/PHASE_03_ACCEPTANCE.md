@@ -6,7 +6,7 @@
 - **Pull request:** [#5](https://github.com/urashima/Kyxos-Render-Engine/pull/5)
 - **Reviewed checkpoint:** `7e4abe7a625769cc830ee8db8d419fea8243c3ad`
 - **GitHub Actions Run `29917288982`:** PASS
-- **Evidence-pack Run:** PENDING on the first commit containing this fail-closed schema
+- **Evidence-pack Run:** [29918823067](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29918823067), job `88918945110` — PASS
 - **Evidence generated:** 2026-07-22 04:58 PDT
 
 This document preserves the pre-deployment Phase 3 candidate required by `DEVELOPMENT_PLAN.md` and
@@ -58,6 +58,9 @@ GitHub Actions Run `29917288982`, job `88914018637`, passed the complete source 
 `8528484011` was independently downloaded and inspected before freezing this evidence. The
 machine-readable summary is
 [`test-results/phase-03/automated-summary.json`](../../../test-results/phase-03/automated-summary.json).
+Evidence-pack Run `29918823067` then passed the same pipeline with the fail-closed Phase 3 Schema
+enabled; Artifact `8529093758` retained all ten Phase 3 numerical records and byte-identical
+Gallery visuals.
 
 | Gate                  | Result | Evidence                                                                |
 | --------------------- | ------ | ----------------------------------------------------------------------- |
@@ -193,6 +196,7 @@ Current deployment status: **PENDING**. Phase 3 is not Accepted while this statu
 
 Phase 3 passes source automated verification, technical QA, canonical visual review,
 performance/resource budgets, and autonomous owner evidence review at checkpoint
-`7e4abe7a625769cc830ee8db8d419fea8243c3ad`. Require the evidence-pack and final provenance Heads to
-pass, merge PR #5, deploy GitHub Pages, pass all public interactions, and verify
+`7e4abe7a625769cc830ee8db8d419fea8243c3ad`; evidence-pack Head
+`bc3faa5ffac5d04837ba04f2382cc43bc5819d38` also passed. Require the final provenance Head to pass,
+merge PR #5, deploy GitHub Pages, pass all public interactions, and verify
 `phase-03-accepted` before changing the Phase status to Accepted.

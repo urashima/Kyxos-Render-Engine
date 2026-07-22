@@ -1744,3 +1744,46 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Assemble P3-11 fail-closed technical and owner evidence, validate the canonical Gallery against
   the complete Phase 3 rubric, and prepare the public deployment gate without marking Phase 3
   Accepted.
+
+## 2026-07-22 05:18 PDT — P3-11 fail-closed acceptance evidence passed
+
+### Completed
+
+- Added the complete Phase 3 acceptance package: automated summary, dependency graph, Bundle
+  metrics, numerical/render metrics, lifecycle record, performance comparison, Technical QA,
+  autonomous Owner review, and canonical visual metadata.
+- Added explicit Full-page and Gallery Reference/Current/Difference triplets. Both Current images
+  were downloaded again from the authoritative GitHub Artifact; both pairs are byte-identical and
+  both absolute Difference images contain zero changed pixels.
+- Added `check-phase-03-acceptance.mjs` to the authoritative `pnpm verify` chain. The fail-closed
+  Schema verifies exact source/evidence CI provenance, 13 gate records, PBR/IBL/color/lifecycle
+  values, 27 required evidence files, six image hashes, deployment workflow safety, and contiguous
+  Phase 0–3 Pages candidate resolution.
+- Extended public Pages verification with the actual Phase 3 Owner sequence: 20-object diagnostics,
+  Metallic/Roughness, Exposure, HDRI rotation, Normal Y, AO, Tone Mapping, Orbit, Device Lost,
+  recovery, disposal, and recreation. Every continuous control must keep the resource baseline.
+- Kept Phase 3 at `Owner Acceptance Passed — Deployment Pending`. The evidence records cannot mark
+  the Phase Accepted before the final Head, merge, public deployment, online WebGPU sequence, and
+  immutable Tag succeed.
+
+### Validation
+
+- Evidence-pack commit `bc3faa5ffac5d04837ba04f2382cc43bc5819d38` has Git Tree
+  `081ea2173eef1fc56556d3513b317ec3edbde363`, identical to the locally verified tree. Run
+  `29918823067`, job `88918945110`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 45 unit files / 201 tests,
+  dependency and architecture gates, Phase 0–3 acceptance Schemas, seven exact Shader mirrors,
+  build, Bundle, isolated Pages, and all 21 Chromium/WebGPU browser cases.
+- Artifact `8529093758`, digest
+  `sha256:bd676c29b736395d8eba8a6c471ef720d57b5cb8d6f4f483975244ef0e9be3a6`, contains all ten Phase 3
+  numerical/runtime JSON files and byte-identical Full-page and Gallery captures.
+- The evidence-pack Run independently measured CPU p95/max 4.3 ms and Dirty-to-Sleep p95/max
+  175.5 ms, below 16.7 ms and 250 ms. The canonical source Run remains 3.9 ms and 168.1 ms; both
+  Runs retain 88 Handles, exact loss/recovery/disposal, and zero visual differences.
+- Owner evidence makes the deployment candidate resolve to contiguous Phases 0, 1, 2, and 3 with
+  `latest` at Phase 3. No Accepted Tag is created on the branch.
+
+### Next
+
+- Seal the final provenance Head, merge PR #5 without Head drift, pass main CI and public Phase 3
+  Pages verification, then freeze immutable `phase-03-accepted`.
