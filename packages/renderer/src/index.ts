@@ -36,6 +36,28 @@ export type {
 } from './renderer.js';
 export { KyxosRenderer } from './renderer.js';
 export {
+  PbrMaterialLibrary,
+  type PbrMaterialLibraryChangeEvent,
+  type PbrMaterialLibraryChangeKind,
+  type PbrMaterialLibraryDiagnostics,
+  type PbrMaterialLibraryEvents,
+  type PbrMaterialLibraryOptions,
+} from './pbr-material-library.js';
+export {
+  PBR_OBJECT_UNIFORM_LAYOUT,
+  createPbrDirectionalLight,
+  packPbrObjectUniforms,
+  type PackPbrObjectUniformsOptions,
+  type PbrDirectionalLight,
+  type PbrDirectionalLightDescriptor,
+} from './pbr-gpu-layout.js';
+export {
+  PBR_RENDER_FEATURE_ID,
+  PbrRenderFeature,
+  type PbrRenderFeatureDiagnostics,
+  type PbrRenderFeatureOptions,
+} from './pbr-render-feature.js';
+export {
   SCENE_RENDER_FEATURE_ID,
   SceneRenderFeature,
   type SceneRenderFeatureDiagnostics,

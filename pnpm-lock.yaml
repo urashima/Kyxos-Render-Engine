@@ -127,6 +127,12 @@ importers:
       '@kyxos/render-geometry':
         specifier: workspace:*
         version: link:../geometry
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
+      '@kyxos/render-material-pbr':
+        specifier: workspace:*
+        version: link:../material-pbr
       '@kyxos/render-math':
         specifier: workspace:*
         version: link:../math

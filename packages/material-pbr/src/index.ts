@@ -15,7 +15,9 @@ export {
 export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
+  createPbrMaterialFeatureKey,
   type PbrAlphaMode,
+  type PbrMaterialFeatureDescriptor,
   type PbrMaterialChangeEvent,
   type PbrMaterialChangeField,
   type PbrMaterialDescriptor,

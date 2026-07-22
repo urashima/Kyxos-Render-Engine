@@ -5,13 +5,23 @@ import {
   createMaterialTextureReference,
 } from '@kyxos/render-material-core';
 
-import { PbrMaterial } from '../src/index.js';
+import { PbrMaterial, createPbrMaterialFeatureKey } from '../src/index.js';
 
 function texture(id: string, transferFunction: 'linear' | 'srgb') {
   return createMaterialTextureReference({ id, transferFunction });
 }
 
 describe('PbrMaterial', () => {
+  it('exposes deterministic Renderer variant keys without constructing a material', () => {
+    expect(
+      createPbrMaterialFeatureKey({
+        alphaMode: 'mask',
+        doubleSided: true,
+        normalMap: false,
+      }),
+    ).toBe('pbr-metallic-roughness|alpha=mask|double-sided=1|normal-map=0');
+  });
+
   it('provides immutable glTF metallic-roughness defaults', () => {
     const material = new PbrMaterial();
     const state = material.snapshot();

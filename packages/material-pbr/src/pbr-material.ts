@@ -22,6 +22,11 @@ export const PBR_TEXTURE_SLOTS = [
 export type PbrTextureSlot = (typeof PBR_TEXTURE_SLOTS)[number];
 export type PbrAlphaMode = 'blend' | 'mask' | 'opaque';
 export type PbrTextureBindings = Readonly<Record<PbrTextureSlot, MaterialTextureBinding | null>>;
+export interface PbrMaterialFeatureDescriptor {
+  readonly alphaMode: PbrAlphaMode;
+  readonly doubleSided: boolean;
+  readonly normalMap: boolean;
+}
 export type PbrMaterialChangeField =
   | 'alphaCutoff'
   | 'alphaMode'
@@ -172,15 +177,15 @@ function createBindingKey(textures: PbrTextureBindings): string {
   );
 }
 
-function createFeatureKey(
-  alphaMode: PbrAlphaMode,
-  doubleSided: boolean,
-  textures: PbrTextureBindings,
-): string {
+export function createPbrMaterialFeatureKey(descriptor: PbrMaterialFeatureDescriptor): string {
+  const alphaMode = normalizeAlphaMode(descriptor.alphaMode);
+  if (typeof descriptor.doubleSided !== 'boolean' || typeof descriptor.normalMap !== 'boolean') {
+    invalid('PBR material feature flags must be boolean.');
+  }
   return createMaterialFeatureKey('pbr-metallic-roughness', {
     alpha: alphaMode,
-    'double-sided': doubleSided,
-    'normal-map': textures.normal !== null,
+    'double-sided': descriptor.doubleSided,
+    'normal-map': descriptor.normalMap,
   });
 }
 
@@ -209,7 +214,11 @@ function normalizeState(descriptor: PbrMaterialDescriptor, previous?: State): St
       descriptor.emissiveStrength ?? previous?.emissiveStrength ?? 1,
       'PBR emissiveStrength',
     ),
-    featureKey: createFeatureKey(alphaMode, doubleSided, textures),
+    featureKey: createPbrMaterialFeatureKey({
+      alphaMode,
+      doubleSided,
+      normalMap: textures.normal !== null,
+    }),
     metallicFactor: unitScalar(
       descriptor.metallicFactor ?? previous?.metallicFactor ?? 1,
       'PBR metallicFactor',

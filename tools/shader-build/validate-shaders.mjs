@@ -26,6 +26,13 @@ const generatedMirrors = new Map([
       path: 'packages/material-pbr/src/generated/phase-03-brdf-reference.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-03-pbr-direct.wgsl',
+    {
+      exportName: 'PHASE_03_PBR_DIRECT_WGSL',
+      path: 'packages/renderer/src/generated/phase-03-pbr-direct.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {
@@ -113,7 +120,8 @@ try {
     process.stdout.write(
       `${JSON.stringify(
         {
-          browserCompilerGate: 'tests/e2e/phase-01.spec.ts and phase-03-brdf.spec.ts',
+          browserCompilerGate:
+            'tests/e2e/phase-01.spec.ts and phase-03-brdf.spec.ts (BRDF compute + direct PBR render)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',

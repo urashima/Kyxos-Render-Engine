@@ -123,11 +123,13 @@ export {
 export {
   PBR_TEXTURE_SLOTS,
   PbrMaterial,
+  createPbrMaterialFeatureKey,
   type PbrAlphaMode,
   type PbrMaterialChangeEvent,
   type PbrMaterialChangeField,
   type PbrMaterialDescriptor,
   type PbrMaterialEvents,
+  type PbrMaterialFeatureDescriptor,
   type PbrMaterialPatch,
   type PbrMaterialSnapshot,
   type PbrTextureBindings,
@@ -137,6 +139,16 @@ export type {
   AssetDecoder,
   BasicGeometryPrimitive,
   MaterialExtension,
+  PackPbrObjectUniformsOptions,
+  PbrDirectionalLight,
+  PbrDirectionalLightDescriptor,
+  PbrMaterialLibraryChangeEvent,
+  PbrMaterialLibraryChangeKind,
+  PbrMaterialLibraryDiagnostics,
+  PbrMaterialLibraryEvents,
+  PbrMaterialLibraryOptions,
+  PbrRenderFeatureDiagnostics,
+  PbrRenderFeatureOptions,
   PreviewPreset,
   RenderFeature,
   RendererDiagnostics,
@@ -145,7 +157,16 @@ export type {
   SceneRenderFeatureDiagnostics,
   SceneRenderFeatureOptions,
 } from '@kyxos/render-renderer';
-export { KyxosRenderer, SceneRenderFeature } from '@kyxos/render-renderer';
+export {
+  PBR_OBJECT_UNIFORM_LAYOUT,
+  PBR_RENDER_FEATURE_ID,
+  KyxosRenderer,
+  PbrMaterialLibrary,
+  PbrRenderFeature,
+  SceneRenderFeature,
+  createPbrDirectionalLight,
+  packPbrObjectUniforms,
+} from '@kyxos/render-renderer';
 export {
   Scene,
   type CreateEntityOptions,

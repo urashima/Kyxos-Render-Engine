@@ -39,6 +39,8 @@ const allowedDependencies = new Map([
       '@kyxos/render-core',
       '@kyxos/render-frame-scheduler',
       '@kyxos/render-geometry',
+      '@kyxos/render-material-core',
+      '@kyxos/render-material-pbr',
       '@kyxos/render-math',
       '@kyxos/render-scene',
       '@kyxos/render-visibility',
