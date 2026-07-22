@@ -13,6 +13,7 @@ flowchart TD
   SDK --> Renderer[Renderer and feature modules]
   Renderer --> Backend[Graphics backend contract]
   Renderer --> Scheduler[Frame scheduler]
+  Scheduler --> Temporal[Temporal state contract]
   Backend --> WebGPU[WebGPU backend]
   Backend --> WebGL2[WebGL2 backend]
 ```
@@ -34,7 +35,8 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting        | Camera, Core, Geometry, Math, Scene                                           |
 | `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics       | Core                                                                          |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                             |
-| `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                       | Core                                                                          |
+| `@kyxos/render-temporal`        | Owner-scoped History Signatures and deterministic convergence state     | Core                                                                          |
+| `@kyxos/render-frame-scheduler` | Dirty-only and opt-in four-mode injected frame scheduling               | Core, Temporal                                                                |
 | `@kyxos/render-renderer`        | Renderer lifecycle, direct/IBL PBR, mapped resources, and GPU caches    | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Visibility |
 | `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry       | Public engine packages                                                        |
 | `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                             | Backend API, Core, Frame Scheduler                                            |
@@ -48,11 +50,18 @@ Every package exposes only its root entry. Runtime code may not import another w
 2. The renderer owns the selected backend and its scheduler.
 3. Backends own native GPU resources and expose only opaque handles plus immutable diagnostics.
 4. A dirty event requests at most one pending frame; multiple synchronous invalidations coalesce.
-5. With no new invalidation, the scheduler returns to `sleeping` and requests no further frame.
+5. The accepted dirty-only strategy returns directly to `sleeping`. An explicitly injected Temporal
+   Scheduler progresses through Interactive, Stabilizing, Accumulating, and Sleeping without a
+   permanent RAF.
 6. Device or context loss clears invalid resources and suspends pending work.
 7. `dispose()` is idempotent, cancels scheduled work, unregisters owned extensions, destroys resources, and returns diagnostics to the active-resource baseline.
 
 No global mutable engine singleton participates in this lifecycle.
+
+Dynamic and static histories are separate owner-scoped records. Their immutable signatures cover
+device, scene, camera, viewport, geometry, material, lighting, environment, and post-process
+revisions. Signature mismatch rejects reuse before sampling; GPU Textures remain owned and released
+by their Render Feature rather than by the CPU history contract.
 
 ## Backend policy
 

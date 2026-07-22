@@ -8,6 +8,8 @@ import {
   PbrMaterial,
   PbrTextureLibrary,
   PbrTextureSource,
+  TemporalFrameScheduler,
+  TemporalHistory,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   evaluateDeterministicIblReference,
@@ -251,6 +253,27 @@ describe('SDK-only consumer', () => {
       roughnessFactor: 0.3,
     });
     material.dispose();
+  });
+
+  it('constructs temporal state and scheduling using only the public SDK entry point', () => {
+    const frameDriver = new SdkOnlyFrameDriver();
+    const scheduler = new TemporalFrameScheduler({
+      convergence: { targetSamples: 2 },
+      driver: frameDriver,
+      stabilizationMs: 0,
+    });
+    const history = new TemporalHistory({ kind: 'static', ownerId: 'sdk-viewport' });
+
+    scheduler.invalidate('camera');
+    expect(scheduler.getDiagnostics()).toMatchObject({
+      historyGeneration: 1,
+      mode: 'interactive',
+      strategy: 'temporal',
+    });
+    expect(history.snapshot()).toMatchObject({ ownerId: 'sdk-viewport', valid: false });
+
+    scheduler.dispose();
+    history.dispose();
   });
 
   it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {

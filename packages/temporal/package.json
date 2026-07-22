@@ -1,8 +1,8 @@
 {
-  "name": "@kyxos/render-frame-scheduler",
+  "name": "@kyxos/render-temporal",
   "version": "0.0.0",
   "private": true,
-  "description": "Dirty-driven frame scheduling and sleep/wake lifecycle.",
+  "description": "Owner-scoped temporal history signatures and deterministic convergence state.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -21,7 +21,6 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@kyxos/render-core": "workspace:*",
-    "@kyxos/render-temporal": "workspace:*"
+    "@kyxos/render-core": "workspace:*"
   }
 }

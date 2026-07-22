@@ -46,7 +46,22 @@ export type {
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 export { BACKEND_RESOURCE_KINDS, createBackendCapabilityReport } from '@kyxos/render-backend-api';
-export type { DirtyFlag, FrameRequestDriver, RenderMode } from '@kyxos/render-frame-scheduler';
+export {
+  DEFAULT_TEMPORAL_HISTORY_RESET_FLAGS,
+  FRAME_ACTIVITIES,
+  TemporalFrameScheduler,
+  type DirtyFlag,
+  type FrameActivity,
+  type FrameRequestDriver,
+  type FrameSchedulerController,
+  type FrameSchedulerDiagnostics,
+  type RenderMode,
+  type ScheduledFrame,
+  type TemporalFrameMetadata,
+  type TemporalFrameSchedulerOptions,
+  type TemporalFrameSchedulerState,
+  type TemporalScheduledFrame,
+} from '@kyxos/render-frame-scheduler';
 export {
   OrbitController,
   PerspectiveCamera,
@@ -192,6 +207,27 @@ export {
   type SplitSumIblInput,
   type SplitSumIblResult,
 } from '@kyxos/render-material-pbr';
+export {
+  TEMPORAL_HISTORY_INVALIDATION_REASONS,
+  TEMPORAL_HISTORY_KINDS,
+  TEMPORAL_HISTORY_SIGNATURE_FIELDS,
+  TEMPORAL_PACKAGE_NAME,
+  TEMPORAL_SAMPLE_LIMIT,
+  TemporalConvergenceTracker,
+  TemporalHistory,
+  createTemporalHistorySignature,
+  temporalHistorySignaturesEqual,
+  type TemporalConvergenceOptions,
+  type TemporalConvergenceReason,
+  type TemporalConvergenceSnapshot,
+  type TemporalHistoryInvalidationReason,
+  type TemporalHistoryKind,
+  type TemporalHistoryOptions,
+  type TemporalHistorySignature,
+  type TemporalHistorySignatureDescriptor,
+  type TemporalHistorySignatureField,
+  type TemporalHistorySnapshot,
+} from '@kyxos/render-temporal';
 export type {
   AssetDecoder,
   BasicGeometryPrimitive,

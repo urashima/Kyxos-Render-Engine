@@ -31,7 +31,8 @@ Lower layers never import higher layers. Interfaces, opaque handles, immutable d
 | `render-visibility`      | `render-camera`, `render-core`, `render-geometry`, `render-math`, `render-scene`                     |
 | `render-backend-api`     | `render-core`                                                                                        |
 | `render-backend-webgpu`  | `render-backend-api`, `render-core`                                                                  |
-| `render-frame-scheduler` | `render-core`                                                                                        |
+| `render-temporal`        | `render-core`                                                                                        |
+| `render-frame-scheduler` | `render-core`, `render-temporal`                                                                     |
 | `render-renderer`        | Backend API, Camera, Core, Environment, Frame Scheduler, Geometry, Material, Math, Scene, Visibility |
 | `render-sdk`             | Public engine packages                                                                               |
 | `render-testing`         | `render-backend-api`, `render-core`, `render-frame-scheduler`                                        |

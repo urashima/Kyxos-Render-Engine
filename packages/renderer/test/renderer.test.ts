@@ -1,6 +1,8 @@
 import { ManualFrameDriver, MockBackend } from '@kyxos/render-testing';
 import { describe, expect, it, vi } from 'vitest';
 
+import { TemporalFrameScheduler } from '@kyxos/render-frame-scheduler';
+
 import { KyxosRenderer } from '../src/index.js';
 
 describe('KyxosRenderer foundation shell', () => {
@@ -110,6 +112,63 @@ describe('KyxosRenderer foundation shell', () => {
 
     await renderer.initialize();
     expect(renderer.state).toBe('ready');
+    renderer.dispose();
+  });
+
+  it('accepts an injected temporal scheduler and forwards immutable frame state', async () => {
+    const backend = new MockBackend();
+    const frameDriver = new ManualFrameDriver();
+    const frameScheduler = new TemporalFrameScheduler({
+      convergence: { targetSamples: 2 },
+      driver: frameDriver,
+      stabilizationMs: 0,
+    });
+    const render = vi.fn();
+    const renderer = new KyxosRenderer({ backend, frameScheduler });
+    renderer.registerRenderFeature({ id: 'temporal-probe', render });
+    await renderer.initialize();
+
+    renderer.invalidate('camera');
+    frameDriver.flush(0);
+    frameDriver.flush(16);
+    frameDriver.flush(32);
+    frameDriver.flush(48);
+
+    expect(render.mock.calls.map(([context]) => context.temporal)).toEqual([
+      {
+        historyGeneration: 1,
+        historyReset: true,
+        mode: 'interactive',
+        sampleIndex: 0,
+        targetSamples: 2,
+      },
+      {
+        historyGeneration: 1,
+        historyReset: false,
+        mode: 'stabilizing',
+        sampleIndex: 0,
+        targetSamples: 2,
+      },
+      {
+        historyGeneration: 1,
+        historyReset: false,
+        mode: 'accumulating',
+        sampleIndex: 1,
+        targetSamples: 2,
+      },
+      {
+        historyGeneration: 1,
+        historyReset: false,
+        mode: 'accumulating',
+        sampleIndex: 2,
+        targetSamples: 2,
+      },
+    ]);
+    expect(renderer.getDiagnostics()).toMatchObject({
+      frameIndex: 4,
+      renderMode: 'sleeping',
+      scheduler: { strategy: 'temporal' },
+    });
     renderer.dispose();
   });
 });
