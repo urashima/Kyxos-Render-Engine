@@ -2051,3 +2051,62 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-06 validated two-target offscreen MRT and expand Dynamic TAA GPU History to own one
   Current linear-HDR Color target plus ping-pong resolved Color/Depth/Normal target sets, preserving
   atomic Resize, Device Lost, and disposal without resolve/present integration.
+
+## 2026-07-22 08:19 PDT — P4-06 ordered MRT and Dynamic TAA target ownership passed
+
+### Completed
+
+- Replaced the Backend's single offscreen Color Attachment with a non-empty ordered attachment
+  list while preserving the mutually exclusive Canvas Surface path and pass-level default Clear
+  Color.
+- Added per-attachment finite Clear Color, load/store operations, selected 2D Mip/Layer validation,
+  device `maxColorAttachments` enforcement, distinct Texture identity, identical dimensions, and
+  exact ordered Draw Pipeline target-format matching.
+- Mirrored the contract in the browser WebGPU port and Mock Backend. The browser port now emits the
+  validated ordered native `GPURenderPassColorAttachment[]`; fragment-less/depth-only Pipelines
+  remain supported.
+- Expanded `DynamicTaaGpuHistory` to own one Current `rgba16float` linear-HDR Color target and two
+  atomic resolved target sets. Each set contains `rgba16float` Color, `depth32float` Depth, and
+  `rgba16float` Normal, with one shared linear clamp Sampler.
+- Changed `prepareFrame` to expose immutable Current, read, and write target roles. `commitFrame`
+  swaps Color/Depth/Normal as one set; Resize allocates all seven replacement Textures plus Sampler
+  before publishing them; Device Lost, rollback, and idempotent disposal retain complete ownership.
+- Froze the exact estimate at 48 bytes per pixel and recorded the W3C WebGPU MRT contract. Added
+  unit coverage for successful two-target passes plus count, duplicate, dimension, format-order,
+  Clear, rollback, Resize, Device Lost, and release failures.
+- Upgraded the pinned browser gate to compile a two-output WGSL fragment entry, submit real
+  `rgba16float` Current Color + Normal MRT with a `depth32float` attachment through initial and
+  resized owner resources, and record whole-set swap/replacement and resource counters.
+- Preserved the checkpoint boundary: P4-06 adds no sampled TAA Bind Group, resolve Pipeline, PBR
+  offscreen integration, Present pass, Render Graph resource, Phase 4 route, or acceptance claim.
+
+### Validation
+
+- Implementation commit `80d68c5357a2f0bc871e819564b449ff133ef472` has Git Tree
+  `80a39efdf95e223683d444284eb0998214830580`, identical to the complete locally verified Tree.
+- Local formatting, zero-warning Lint, strict TypeScript, 51 unit files / 243 tests,
+  package/architecture gates, Phase 0–3 frozen Schemas, nine Shader mirrors, build, Bundle, and
+  Pages passed. All 24 local browser cases stopped before execution only because pinned Chromium
+  v1228 is not installed in the workspace.
+- Run `29932421653`, job `88965308247`: PASS. The fixed Chromium/SwiftShader environment passed the
+  complete pipeline and all 24 browser/WebGPU cases, including the native P4-06 MRT case.
+- Artifact `8534720971`, digest
+  `sha256:5b020795de04074e60e62aa96469d7cc8b7fb7dff3721a338d4a516db43faa27`, contains
+  `test-results/phase-04/runtime/taa-history-gpu.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages. Initial 3×2 resources consume exactly 288
+  bytes and resized 5×4 resources consume 960 bytes. Both MRT submissions record one Draw / one
+  Triangle; Current Color stays stable within a generation, all three resolved targets swap
+  together, and Resize replaces every target.
+- Before History disposal the gate reports 20 created / 10 destroyed resources with seven active
+  Textures and one Sampler. Disposal reaches 20 / 18 and leaves only the caller-owned Shader and
+  Pipeline, with zero active owner Texture or Sampler Handles.
+- Unchanged Bundle thresholds pass with Phase 0 at 37,076 / 65,536, Phase 2 at
+  114,042 / 131,072, Phase 3 at 163,806 / 196,608, and total JavaScript at
+  305,612 / 327,680 raw bytes. Pages still contain only accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-07 sampled Dynamic TAA resolve GPU pass: reconstruct History UV from Current Depth,
+  sample prior Color/Depth/Normal, apply the frozen P4-03 rejection/clamp/weight math, and write
+  resolved linear-HDR Color into the write target without PBR offscreen or Present integration.
