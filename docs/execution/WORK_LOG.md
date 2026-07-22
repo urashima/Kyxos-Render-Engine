@@ -1787,3 +1787,41 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Seal the final provenance Head, merge PR #5 without Head drift, pass main CI and public Phase 3
   Pages verification, then freeze immutable `phase-03-accepted`.
+
+## 2026-07-22 05:35 PDT — P3-12 public deployment and immutable Phase 3 freeze passed
+
+### Completed
+
+- Updated PR #5 from its stale P3-06 description to the complete P3-01 through P3-11 scope,
+  evidence, declared boundaries, and post-merge deployment sequence. Confirmed no Reviews or
+  unresolved Threads, marked the PR Ready, and merged only with expected Head
+  `b5a83cb9721c90f743184f50228f102e0ec9a5be`.
+- PR #5 merged to `main` as `6b3331251fd1a20257aeebab26a72c2f26103f0a`. The merge source retained
+  the exact final PR Tree and all fail-closed evidence.
+- Allowed the repository's existing workflow chain to own acceptance: main verification, accepted
+  history build, Pages deployment, route reachability, public Chromium/WebGPU operations, and
+  post-deployment freeze. No manual Tag or bypass was used.
+- Observed `phase-03-accepted` only after that chain completed. The Tag resolves exactly to the
+  merge source `6b3331251fd1a20257aeebab26a72c2f26103f0a`.
+- Added a separate deployment-acceptance record so the frozen pre-deployment Technical QA and Owner
+  evidence remain immutable while Phase 3 advances from Deployment Pending to Phase Accepted.
+
+### Validation
+
+- Final PR-head Run `29919316277`, job `88920567713`: PASS on exact Head
+  `b5a83cb9721c90f743184f50228f102e0ec9a5be`.
+- The post-merge freeze workflow can create `phase-03-accepted` only when the `Deploy accepted
+Playgrounds` workflow succeeds on `main`. That deployment itself requires the exact verified main
+  source, Pages build and deploy, public route reachability, and the complete online Playwright
+  suite.
+- Public verification covers historical Phases 0–3 plus `latest=3`. The Phase 3 sequence asserts
+  exact Gallery diagnostics, all required material/environment/output controls, dirty-only Orbit,
+  Device Lost/recovery, disposal/recreation, stable ownership, and no browser errors.
+- Accepted Tags are now `phase-00-accepted`, `phase-01-accepted`, `phase-02-accepted`, and
+  `phase-03-accepted`. Four of fifteen Phases are accepted.
+
+### Next
+
+- Merge the green Phase 3 closure record, create `agent/phase-04-temporal` from updated `main`, and
+  begin P4-01 with the deterministic Renderer scheduling, Temporal History, and convergence state
+  contract before adding TAA or accumulation Shaders.
