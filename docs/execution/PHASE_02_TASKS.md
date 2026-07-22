@@ -2,17 +2,17 @@
 
 Phase 2 starts from accepted tag `phase-01-accepted` and branch base `1244a06f9c02b3aed3bdbbd6bd7e883ae8ecf72f`.
 
-| ID    | Task                                                                              | Depends on              | Verification                                                                      | Status         |
-| ----- | --------------------------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- | -------------- |
-| P2-01 | Implement math primitives, TRS matrices, AABB, spheres, and frusta                | Phase 1, ADR-002        | Reference-vector tests; finite guards; transform/projection/frustum invariants    | Completed      |
-| P2-02 | Implement immutable Mesh data, validation, bounds, and Plane/Cube/Sphere builders | P2-01                   | Geometry counts, winding, normals, bounds, 16/32-bit indices, invalid-input tests | Completed      |
-| P2-03 | Implement Entity Scene Graph, local/world Transform, hierarchy, and dirty flow    | P2-01                   | Parent/reparent/remove tests; deep dirty propagation; cycle and nonfinite guards  | Completed      |
-| P2-04 | Implement perspective Camera, Orbit Controller, and automatic framing             | P2-01,P2-03             | Projection/look tests; DOM-free orbit tests; fitted bounds coverage               | Completed      |
-| P2-05 | Implement layer/frustum visibility and opaque/transparent Render Queues           | P2-01,P2-02,P2-03       | Offscreen exclusion; stable opaque keys; predictable transparency ordering        | Completed      |
-| P2-06 | Connect Scene submission to Renderer and the public SDK                           | P2-02,P2-03,P2-04,P2-05 | Backend-neutral Draw List tests; no native GPU or private package exposure        | Completed      |
-| P2-07 | Add the independent `/acceptance/phase-02` Playground route                       | P2-06                   | Primitive, hierarchy, orbit/framing, culling, ordering, and diagnostic flows      | Completed      |
-| P2-08 | Add deterministic visual, behavior, performance, and lifecycle evidence           | P2-07                   | Reference/Current/Difference; draw/visible counts; Phase 1 budget comparison      | Completed      |
-| P2-09 | Complete CI, technical QA, autonomous owner review, PR, merge, and accepted tag   | P2-08                   | All gates green; `phase-02-accepted` resolves to the accepted merge               | In Development |
+| ID    | Task                                                                              | Depends on              | Verification                                                                      | Status    |
+| ----- | --------------------------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- | --------- |
+| P2-01 | Implement math primitives, TRS matrices, AABB, spheres, and frusta                | Phase 1, ADR-002        | Reference-vector tests; finite guards; transform/projection/frustum invariants    | Completed |
+| P2-02 | Implement immutable Mesh data, validation, bounds, and Plane/Cube/Sphere builders | P2-01                   | Geometry counts, winding, normals, bounds, 16/32-bit indices, invalid-input tests | Completed |
+| P2-03 | Implement Entity Scene Graph, local/world Transform, hierarchy, and dirty flow    | P2-01                   | Parent/reparent/remove tests; deep dirty propagation; cycle and nonfinite guards  | Completed |
+| P2-04 | Implement perspective Camera, Orbit Controller, and automatic framing             | P2-01,P2-03             | Projection/look tests; DOM-free orbit tests; fitted bounds coverage               | Completed |
+| P2-05 | Implement layer/frustum visibility and opaque/transparent Render Queues           | P2-01,P2-02,P2-03       | Offscreen exclusion; stable opaque keys; predictable transparency ordering        | Completed |
+| P2-06 | Connect Scene submission to Renderer and the public SDK                           | P2-02,P2-03,P2-04,P2-05 | Backend-neutral Draw List tests; no native GPU or private package exposure        | Completed |
+| P2-07 | Add the independent `/acceptance/phase-02` Playground route                       | P2-06                   | Primitive, hierarchy, orbit/framing, culling, ordering, and diagnostic flows      | Completed |
+| P2-08 | Add deterministic visual, behavior, performance, and lifecycle evidence           | P2-07                   | Reference/Current/Difference; draw/visible counts; Phase 1 budget comparison      | Completed |
+| P2-09 | Complete CI, technical QA, autonomous owner review, PR, merge, and accepted tag   | P2-08                   | All gates green; `phase-02-accepted` resolves to the accepted merge               | Completed |
 
 ## Required architecture boundaries
 
@@ -31,3 +31,10 @@ Phase 2 starts from accepted tag `phase-01-accepted` and branch base `1244a06f9c
 4. Camera projection, orbit behavior, and bounds framing.
 5. Frustum/layer selection and deterministic queue sorting.
 6. Renderer/SDK composition, acceptance route, and evidence.
+
+## Final acceptance
+
+- Accepted source: `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721`.
+- Main verification: Run `29856230009` — PASS.
+- Public Pages build, deployment, and online interaction verification: Run `29856517459` — PASS.
+- Immutable freeze: Run `29887031771` — PASS; `phase-02-accepted` resolves to the accepted source.

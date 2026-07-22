@@ -1193,3 +1193,72 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Commit only the final evidence-pack provenance and require that immutable PR head to pass the complete pipeline.
 - Mark PR #3 Ready, verify review state, merge the exact head, then require GitHub Pages deployment, public route interactions, and the immutable Phase 2 tag.
+
+## 2026-07-21 11:26 PDT — Phase 2 merge complete; Pages enablement blocker isolated
+
+### Completed
+
+- Required final PR-head commit `85888fdfa638b86e42c583ebd8543377615d88d3` to pass GitHub
+  Actions Run `29855919463` before merge.
+- Verified PR #3 was mergeable, Ready, unchanged at the verified head, and had no comments,
+  reviews, or unresolved review threads.
+- Merged PR #3 with head-SHA protection as main commit
+  `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721`.
+- Preserved the deployment gate: Phase 2 was not marked Accepted and no tag was created locally.
+- Probed the public root plus `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/`; all returned
+  GitHub Pages 404 responses after the release workflow's reasonable completion window.
+- Confirmed the official `actions/configure-pages@v6` contract defaults `enablement` to `false` and
+  requires a non-`GITHUB_TOKEN` administration credential to enable Pages programmatically.
+
+### Validation
+
+- Final PR-head Run `29855919463`, job `88720075863`: PASS.
+- Final diagnostic Artifact `8505336132`, digest
+  `sha256:070af987c2ea980d5239231208a036a3fb05bf9ff82af2ed4a3131c790cb6513`.
+- Phase 2 implementation gates remain green: 136 unit tests, 10/10 Chromium/WebGPU tests,
+  fail-closed acceptance schema, bundle budgets, lifecycle baseline, visual snapshots, and
+  architecture boundaries.
+- `phase-02-accepted`: absent, correctly reflecting the failed/unavailable public deployment.
+
+### Blocker
+
+- P2-B01: the repository's GitHub Pages site must be enabled with **GitHub Actions** as its build
+  source. The active connector has repository admin visibility but exposes no Pages settings
+  mutation and provides no eligible external administration token.
+
+### Next
+
+- Enable **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+- Resume from `agent/phase-02-pages-enablement`, pass its PR gate, merge, and require public route
+  plus online WebGPU verification before confirming `phase-02-accepted` and starting Phase 3.
+
+## 2026-07-21 20:04 PDT — Phase 2 public deployment accepted; blocker resolved
+
+### Completed
+
+- Re-verified the repository state after GitHub Pages was configured for GitHub Actions.
+- Confirmed main verification Run `29856230009` passed at merged Phase 2 source
+  `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721`.
+- Confirmed deployment Run `29856517459`, attempt 3, passed its isolated phase build, Pages deploy,
+  public reachability, and Chromium/WebGPU interaction jobs.
+- Probed the public root, `/phase-0/`, `/phase-1/`, `/phase-2/`, and `/latest/`; every route returned
+  HTTP 200 with the Kyxos Render Engine Playground entry document.
+- Confirmed Freeze Run `29887031771` created annotated tag `phase-02-accepted` and that the tag
+  resolves to the exact deployed main commit.
+- Reclassified P2-B01 as resolved, completed P2-09, and added the final deployment acceptance record
+  without rewriting the frozen pre-deployment visual, performance, or owner evidence.
+
+### Validation
+
+- Main verification Run `29856230009`: PASS.
+- Deployment Run `29856517459`: PASS; jobs `88819222231`, `88819288545`, and `88819343343` passed.
+- Pages artifact `8516826868`, digest
+  `sha256:3be8f012874f3ee72f8e630d5f702446677bdc1802e061d2bb49faf8554c0239`.
+- Freeze Run `29887031771`, job `88819568450`: PASS.
+- `phase-02-accepted^{}` = `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721`.
+
+### Next
+
+- Merge the green Phase 2 closure record in PR #4.
+- Create `agent/phase-03-pbr-ibl` from updated `main` and begin the first bounded Phase 3 PBR/IBL
+  contract checkpoint without changing the accepted Phase 2 implementation or baselines.

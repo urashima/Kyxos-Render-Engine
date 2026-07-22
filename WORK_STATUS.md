@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 2 — Scene, Camera, Geometry, and Basic Rendering                                  |
-| Current Branch      | `agent/phase-02-scene-camera`                                                           |
-| Current Commit      | `552474486100cb1fb683d86fbafa4b900b48dcb8` (evidence-pack checkpoint)                   |
-| Overall Progress    | 2 / 15 phases accepted; Phase 2 Owner Acceptance Passed, deployment pending             |
-| Current Task        | P2-09 — Evidence-pack CI, PR merge, Pages deployment, online verification, accepted tag |
-| Last Completed Task | P2-08 — Canonical visual, performance, lifecycle, technical, and owner evidence         |
-| Next Action         | Push final provenance, pass the immutable PR head, then merge and deploy public Pages   |
-| CI Status           | Evidence-pack Run 29855226827 PASS; fail-closed Phase 2 schema and 10/10 browser tests  |
-| Acceptance Status   | Phase 1 Accepted; Phase 2 Owner Passed — Deployment Pending                             |
-| Known Blockers      | No active blockers                                                                      |
-| Last Updated        | 2026-07-21 11:02 PDT                                                                    |
+| Field               | Value                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| Current Phase       | Phase 2 Accepted — Phase 3 handoff                                                               |
+| Current Branch      | `agent/phase-02-pages-enablement`                                                                |
+| Current Commit      | `a77ee9d8b3d0afbe8b2a649fd3b5a3a40cca5721` (deployed and immutable accepted source)              |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 is unblocked                                                     |
+| Current Task        | P2-10 — Record successful Pages deployment, online verification, and accepted tag                |
+| Last Completed Task | Public Run 29856517459 PASS; Freeze Run 29887031771 created `phase-02-accepted`                  |
+| Next Action         | Merge the green Phase 2 closure record, then create `agent/phase-03-pbr-ibl` from updated `main` |
+| CI Status           | Main Run 29856230009 PASS; Pages build/deploy/online WebGPU verification Run 29856517459 PASS    |
+| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted                                                           |
+| Known Blockers      | None                                                                                             |
+| Last Updated        | 2026-07-21 20:04 PDT                                                                             |
 
 ## Phase Progress
 
@@ -20,7 +20,7 @@
 | ----: | -------------- | ------------------------------------ | --- | ---- | -------------- | ------------------- |
 |    00 | Phase Accepted | `agent/phase-00-foundation`          | #1  | PASS | Phase Accepted | `phase-00-accepted` |
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
-|    02 | In Development | `agent/phase-02-scene-camera`        | #3  | PASS | Deploy Pending | —                   |
+|    02 | Phase Accepted | `agent/phase-02-scene-camera`        | #3  | PASS | Phase Accepted | `phase-02-accepted` |
 |    03 | Planned        | `agent/phase-03-pbr-ibl`             | —   | —    | Planned        | —                   |
 |    04 | Planned        | `agent/phase-04-temporal`            | —   | —    | Planned        | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —    | Planned        | —                   |
