@@ -26,6 +26,12 @@
       "path": "../geometry"
     },
     {
+      "path": "../material-core"
+    },
+    {
+      "path": "../material-pbr"
+    },
+    {
       "path": "../math"
     },
     {

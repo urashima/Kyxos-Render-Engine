@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BACKEND_RESOURCE_KINDS,
+  PbrMaterial,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
+  srgbToLinearRgba,
 } from '../src/index.js';
 import type {
   BackendBindGroupDescriptor,
@@ -207,5 +209,21 @@ describe('SDK-only consumer', () => {
     });
     renderer.dispose();
     expect(renderer.disposed).toBe(true);
+  });
+
+  it('creates PBR material state using only the public SDK entry point', () => {
+    const material = new PbrMaterial({
+      baseColorFactor: srgbToLinearRgba([0.5, 0.25, 0.75, 1]),
+      metallicFactor: 0.8,
+      roughnessFactor: 0.3,
+    });
+
+    expect(material.snapshot()).toMatchObject({
+      alphaMode: 'opaque',
+      metallicFactor: 0.8,
+      revision: 0,
+      roughnessFactor: 0.3,
+    });
+    material.dispose();
   });
 });

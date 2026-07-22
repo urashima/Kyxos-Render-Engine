@@ -27,6 +27,8 @@
     "@kyxos/render-core": "workspace:*",
     "@kyxos/render-frame-scheduler": "workspace:*",
     "@kyxos/render-geometry": "workspace:*",
+    "@kyxos/render-material-core": "workspace:*",
+    "@kyxos/render-material-pbr": "workspace:*",
     "@kyxos/render-math": "workspace:*",
     "@kyxos/render-renderer": "workspace:*",
     "@kyxos/render-scene": "workspace:*",

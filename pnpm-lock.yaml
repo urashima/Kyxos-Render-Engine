@@ -93,6 +93,21 @@ importers:
         specifier: workspace:*
         version: link:../math
 
+  packages/material-core:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/material-pbr:
+    dependencies:
+      '@kyxos/render-core':
+        specifier: workspace:*
+        version: link:../core
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
+
   packages/math: {}
 
   packages/renderer:
@@ -155,6 +170,12 @@ importers:
       '@kyxos/render-geometry':
         specifier: workspace:*
         version: link:../geometry
+      '@kyxos/render-material-core':
+        specifier: workspace:*
+        version: link:../material-core
+      '@kyxos/render-material-pbr':
+        specifier: workspace:*
+        version: link:../material-pbr
       '@kyxos/render-math':
         specifier: workspace:*
         version: link:../math

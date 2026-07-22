@@ -1,0 +1,27 @@
+{
+  "name": "@kyxos/render-material-pbr",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validated metallic-roughness PBR material state and cache keys.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@kyxos/render-core": "workspace:*",
+    "@kyxos/render-material-core": "workspace:*"
+  }
+}

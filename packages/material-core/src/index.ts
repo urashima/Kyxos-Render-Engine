@@ -1,0 +1,36 @@
+export {
+  createLinearRgb,
+  createLinearRgba,
+  linearChannelToSrgb,
+  linearToSrgbRgb,
+  linearToSrgbRgba,
+  srgbChannelToLinear,
+  srgbToLinearRgb,
+  srgbToLinearRgba,
+  type RgbColor,
+  type RgbaColor,
+} from './color.js';
+export {
+  createMaterialFeatureKey,
+  type MaterialFeatureSet,
+  type MaterialFeatureValue,
+} from './feature-key.js';
+export {
+  MATERIAL_TEXTURE_SEMANTICS,
+  createMaterialTextureBinding,
+  createMaterialTextureReference,
+  createUvTransform,
+  materialTextureBindingKey,
+  materialTextureSemanticInfo,
+  type MaterialTextureBinding,
+  type MaterialTextureBindingDescriptor,
+  type MaterialTextureReference,
+  type MaterialTextureReferenceDescriptor,
+  type MaterialTextureSemantic,
+  type MaterialTextureSemanticInfo,
+  type TextureChannelSelection,
+  type TextureTransferFunction,
+  type UvTransform,
+  type UvTransformDescriptor,
+  type Vec2,
+} from './texture.js';
