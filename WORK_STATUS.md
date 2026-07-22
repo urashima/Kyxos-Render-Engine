@@ -1,18 +1,16 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                                                                                                                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                                                                                                                                                                                           |
-| Current Branch      | `agent/phase-04-temporal`                                                                                                                                                                                                                                                                                          |
-| Current Commit      | `8656e8d3be0c8082c9f50eafcdbd9297333721d1` (P4-08 implementation verified; temporary repository patch tooling removed)                                                                                                                                                                                           |
-| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-08 complete                                                                                                                                                                                                                                           |
-| Current Task        | P4-09 — Final temporal Present pass and output transform                                                                                                                                                                                                                                                           |
-| Last Completed Task | P4-08 — Opt-in PBR linear-HDR Color + encoded Normal MRT with caller-owned `depth32float` Dynamic TAA targets, preserved accepted Surface path, native WebGPU evidence, and zero-resource disposal                                                                                                                  |
-| Next Action         | Add a dedicated final Present pass that samples resolved linear-HDR Dynamic TAA Color, applies the existing exposure / tone-mapping / linear-to-sRGB output contract exactly once, and writes to the Canvas Surface without taking ownership of History; retain the accepted direct Surface mode as the default path |
-| CI Status           | Run 29942780536 / job 89000570625 PASS; 250 unit tests + 26 Chromium/WebGPU cases; Artifact 8538971728                                                                                                                                                                                                             |
-| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                                                                                                                                                                                         |
-| Known Blockers      | None                                                                                                                                                                                                                                                                                                               |
-| Last Updated        | 2026-07-22 10:37 PDT                                                                                                                                                                                                                                                                                               |
+- **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
+- **Current Branch:** `agent/phase-04-temporal`
+- **Current Commit:** `0135499ba73b0fe8a3b1d83a899f719e6284e041`
+- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-08 complete; P4-09 implementation complete and under final native-browser verification
+- **Current Task:** P4-09 — Execute the final Present Surface and CPU/WGSL output-transform browser gates
+- **Last Completed Task:** P4-08 — PBR linear-HDR Color + encoded Normal MRT into caller-owned Dynamic TAA targets
+- **Next Action:** Run all 28 pinned Chromium/WebGPU cases, inspect `taa-present-surface.json` and `taa-present-reference.json`, then record P4-09 or fix the exact browser failure
+- **CI Status:** Run 29945442987 reached the standard gate but stopped at `WORK_STATUS.md` formatting before browser execution; no P4-09 runtime result was accepted
+- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development
+- **Known Blockers:** None
+- **Last Updated:** 2026-07-22 11:12 PDT
 
 ## Phase Progress
 
