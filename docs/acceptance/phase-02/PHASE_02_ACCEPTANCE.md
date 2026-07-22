@@ -1,7 +1,7 @@
 # Phase 02 Acceptance — Scene, Camera, Geometry, and Basic Rendering
 
 - **Evidence status:** Automated verification, technical QA, and autonomous owner evidence review complete
-- **Phase status:** Owner Acceptance Passed; GitHub Pages deployment and public verification pending
+- **Phase status:** Phase Accepted; post-deployment evidence is recorded in [`DEPLOYMENT_ACCEPTANCE.md`](./DEPLOYMENT_ACCEPTANCE.md)
 - **Branch:** `agent/phase-02-scene-camera`
 - **Pull request:** [#3](https://github.com/urashima/Kyxos-Render-Engine/pull/3)
 - **Reviewed checkpoint:** `390b1ecc3bfb1e94c5155470b6abec7b1fc4202c`
@@ -9,7 +9,7 @@
 - **Evidence-pack CI:** [29855226827](https://github.com/urashima/Kyxos-Render-Engine/actions/runs/29855226827) — PASS
 - **Evidence generated:** 2026-07-21 10:55 PDT
 
-This document proves the Phase 2 implementation scope defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. It deliberately does **not** claim `Phase Accepted`: the final provenance head must pass, PR #3 must merge, GitHub Pages must deploy, the public routes must pass Chromium/WebGPU interaction checks, and `phase-02-accepted` must resolve to that deployed main commit.
+This document preserves the immutable pre-deployment implementation and owner-evidence checkpoint defined by `DEVELOPMENT_PLAN.md` and `PHASE_ACCEPTANCE_PLAN.md`. At that checkpoint it deliberately did **not** claim `Phase Accepted`: the final provenance head had to pass, PR #3 had to merge, GitHub Pages had to deploy, the public routes had to pass Chromium/WebGPU interaction checks, and `phase-02-accepted` had to resolve to that deployed main commit. Those remaining gates subsequently passed and are frozen separately in [`DEPLOYMENT_ACCEPTANCE.md`](./DEPLOYMENT_ACCEPTANCE.md).
 
 ## Acceptance surface
 
