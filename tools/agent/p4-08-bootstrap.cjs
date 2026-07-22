@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs');
 
 const path = 'tools/agent/p4-08-apply.mjs';
