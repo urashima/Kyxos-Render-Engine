@@ -34,7 +34,7 @@ fn cameraUvInBounds(uv: vec2f) -> bool {
 }
 
 fn cameraScalarInvalid(value: f32) -> bool {
-  return value != value || abs(value) == bitcast<f32>(0x7f800000u);
+  return (bitcast<u32>(value) & 0x7f800000u) == 0x7f800000u;
 }
 
 fn cameraVectorInvalid(value: vec4f) -> bool {
