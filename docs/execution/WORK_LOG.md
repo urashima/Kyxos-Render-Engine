@@ -1578,3 +1578,60 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement P3-08 Renderer indirect IBL binding with Diffuse Irradiance, prefiltered GGX Specular,
   the BRDF LUT, indirect-only material AO, and explicit environment rotation/intensity controls.
+
+## 2026-07-22 03:51 PDT — P3-08 Renderer indirect IBL passed
+
+### Completed
+
+- Added a separate canonical PBR IBL Shader while retaining the prior direct-light Shader and its
+  P3-03 through P3-05 evidence unchanged.
+- Implemented physical Diffuse Irradiance as `E * diffuseColor / pi`, prefiltered GGX Specular as
+  `radiance * (F0 * scale + bias)`, BRDF LUT sampling at `N dot V / roughness`, and roughness-driven
+  selection across the complete Specular mip chain.
+- Added the matching public CPU runtime oracle and SDK-only consumer coverage so the Renderer pixel
+  equation does not rely only on Shader text.
+- Expanded the object Uniform contract to 448 bytes for Occlusion UV transform, environment
+  rotation, intensity, and maximum Specular LOD without changing the prior 48-byte vertex stream.
+- Bound the material Occlusion Texture/Sampler in Group 0 and applied
+  `mix(1, occlusion.r, strength)` only to indirect Diffuse plus Specular. Direct light and Emission
+  remain unoccluded.
+- Added Pipeline-specific Group 1 Bind Groups for Diffuse Cube, Specular Cube, shared Cube Sampler,
+  BRDF LUT, and LUT Sampler while keeping the existing 12 bounded alpha/sidedness/Normal variants.
+- Added a black environment fallback so an omitted environment preserves the prior direct-only
+  numerical result without another Pipeline variant.
+- Added atomic environment replacement and optional external cache sharing. Continuous
+  intensity/rotation changes update only Uniform data; source replacement creates the complete new
+  five-resource/12-Bind-Group set before releasing the previous one.
+- Preserved logical environment Leases across Device Lost and verified full reconstruction and
+  zero-Handle disposal.
+- Recorded the clean-room Khronos glTF/glTF IBL Sampler and W3C WebGPU/WGSL contract without
+  changing accepted Phase 0–2 implementations or budgets.
+
+### Validation
+
+- Remote implementation commit `2efafd6f827ef1140bc2cedb1436dbf4b5a24749` has Git Tree
+  `79d7932651792d7fd8706c8a995bc7d6c6c83f16`, identical to the locally verified implementation
+  commit. PR-head Run `29913267657`, job `88901018119`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 43 unit files / 195 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, six
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 17
+  Chromium/WebGPU browser cases.
+- Artifact `8526837761`, digest
+  `sha256:5b4133bc52d51a0320f1779903d3d5bca5f956451a887537416d9aedaed78e3b`, contains
+  `test-results/phase-03/runtime/pbr-ibl-renderer.json`. WGSL compilation messages are empty and the
+  448-byte Uniform is retained.
+- The browser gate uses a positive quarter-turn to select the negative-X Cube face, roughness one
+  to select the last Specular mip, nontrivial LUT/AO/intensity values, and nonzero direct light.
+  GPU pixel `[36, 31, 15, 255]` exactly matches the CPU result, proving AO applies only to the
+  indirect term.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 17 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-09 deterministic linear HDR Exposure, Filmic Tone Mapping, and sRGB output CPU/WGSL
+  parity before building the fixed Phase 3 material gallery.
