@@ -66,9 +66,10 @@ function manifestClosure(key, inheritedFiles = new Set(['index.html'])) {
   return files;
 }
 
-const phase0InitialFiles = manifestClosure('index.html');
+const initialShellFiles = manifestClosure('index.html');
+const phase0InitialFiles = manifestClosure('src/acceptance/phase-00/index.ts', initialShellFiles);
 function routeClosure(key) {
-  return manifestClosure(key, phase0InitialFiles);
+  return manifestClosure(key, initialShellFiles);
 }
 const phase1RouteFiles = routeClosure('src/acceptance/phase-01/index.ts');
 const phase2RouteFiles = routeClosure('src/acceptance/phase-02/index.ts');
@@ -102,6 +103,7 @@ function assertDynamicRoute(key) {
 assertDynamicRoute('src/acceptance/phase-01/index.ts');
 assertDynamicRoute('src/acceptance/phase-02/index.ts');
 assertDynamicRoute('src/acceptance/phase-03/index.ts');
+assertDynamicRoute('src/acceptance/phase-00/index.ts');
 
 for (const filePath of files) {
   const category = categoryFor(filePath);

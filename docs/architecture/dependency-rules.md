@@ -18,25 +18,25 @@ Lower layers never import higher layers. Interfaces, opaque handles, immutable d
 
 ## Current allowed edges
 
-| From                     | May import at runtime                                                                                |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `render-core`            | No engine package                                                                                    |
-| `render-math`            | No engine package                                                                                    |
-| `render-geometry`        | `render-math`                                                                                        |
-| `render-environment`     | `render-core`                                                                                        |
-| `render-material-core`   | `render-core`                                                                                        |
-| `render-material-pbr`    | `render-core`, `render-material-core`                                                                |
-| `render-scene`           | `render-core`, `render-math`                                                                         |
-| `render-camera`          | `render-core`, `render-math`, `render-scene`, `render-temporal`                                      |
-| `render-visibility`      | `render-camera`, `render-core`, `render-geometry`, `render-math`, `render-scene`                     |
-| `render-backend-api`     | `render-core`                                                                                        |
-| `render-backend-webgpu`  | `render-backend-api`, `render-core`                                                                  |
-| `render-temporal`        | `render-core`                                                                                        |
-| `render-frame-scheduler` | `render-core`, `render-temporal`                                                                     |
-| `render-renderer`        | Backend API, Camera, Core, Environment, Frame Scheduler, Geometry, Material, Math, Scene, Visibility |
-| `render-sdk`             | Public engine packages                                                                               |
-| `render-testing`         | `render-backend-api`, `render-core`, `render-frame-scheduler`                                        |
-| `render-playground`      | `render-sdk`, `render-testing`                                                                       |
+| From                     | May import at runtime                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `render-core`            | No engine package                                                                                              |
+| `render-math`            | No engine package                                                                                              |
+| `render-geometry`        | `render-math`                                                                                                  |
+| `render-environment`     | `render-core`                                                                                                  |
+| `render-material-core`   | `render-core`                                                                                                  |
+| `render-material-pbr`    | `render-core`, `render-material-core`                                                                          |
+| `render-scene`           | `render-core`, `render-math`                                                                                   |
+| `render-camera`          | `render-core`, `render-math`, `render-scene`, `render-temporal`                                                |
+| `render-visibility`      | `render-camera`, `render-core`, `render-geometry`, `render-math`, `render-scene`                               |
+| `render-backend-api`     | `render-core`                                                                                                  |
+| `render-backend-webgpu`  | `render-backend-api`, `render-core`                                                                            |
+| `render-temporal`        | `render-core`                                                                                                  |
+| `render-frame-scheduler` | `render-core`, `render-temporal`                                                                               |
+| `render-renderer`        | Backend API, Camera, Core, Environment, Frame Scheduler, Geometry, Material, Math, Scene, Temporal, Visibility |
+| `render-sdk`             | Public engine packages                                                                                         |
+| `render-testing`         | `render-backend-api`, `render-core`, `render-frame-scheduler`                                                  |
+| `render-playground`      | `render-sdk`, `render-testing`                                                                                 |
 
 `render-testing` is development support. A production engine package may use it only from tests or development-only dependencies; it must not enter a production source graph.
 

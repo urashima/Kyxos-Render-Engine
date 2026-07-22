@@ -32,7 +32,9 @@ import type {
   BackendSurfaceResize,
   BackendTextureData,
   BackendTextureDescriptor,
+  BackendTextureFormat,
   BackendTextureHandle,
+  BackendTextureViewDescriptor,
   BackendTextureWriteDescriptor,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
@@ -77,6 +79,7 @@ interface WebGpuTextureRecord {
 }
 
 interface WebGpuPipelineRecord {
+  readonly colorFormats: readonly BackendTextureFormat[];
   readonly depthFormat:
     Extract<BackendTextureDescriptor['format'], 'depth24plus' | 'depth32float'> | undefined;
   readonly pipeline: WebGpuPipelinePort;
@@ -95,6 +98,7 @@ interface WebGpuCommandEncoderRecord {
 }
 
 interface PreparedDraw {
+  readonly colorFormats: readonly BackendTextureFormat[];
   readonly depthFormat: WebGpuPipelineRecord['depthFormat'];
   readonly instances: number;
   readonly request: WebGpuDrawRequest;
@@ -174,6 +178,45 @@ function validateTextureDescriptor(
       `Texture mipLevelCount exceeds the maximum ${maximumMipLevels} for its dimensions.`,
     );
   }
+}
+
+function resolveRenderAttachmentView(
+  descriptor: BackendTextureDescriptor,
+  view: BackendTextureViewDescriptor | undefined,
+): Readonly<{
+  descriptor: BackendTextureViewDescriptor;
+  height: number;
+  width: number;
+}> {
+  const baseMipLevel = view?.baseMipLevel ?? 0;
+  const baseArrayLayer = view?.baseArrayLayer ?? 0;
+  const mipLevelCount = view?.mipLevelCount ?? 1;
+  const arrayLayerCount = view?.arrayLayerCount ?? 1;
+  const dimension = view?.dimension ?? '2d';
+  if (
+    !Number.isSafeInteger(baseMipLevel) ||
+    baseMipLevel < 0 ||
+    baseMipLevel >= (descriptor.mipLevelCount ?? 1) ||
+    !Number.isSafeInteger(baseArrayLayer) ||
+    baseArrayLayer < 0 ||
+    baseArrayLayer >= (descriptor.size.depthOrArrayLayers ?? 1) ||
+    mipLevelCount !== 1 ||
+    arrayLayerCount !== 1 ||
+    dimension !== '2d'
+  ) {
+    throw invalidArgument('Render attachment View must select one valid 2D mip and array layer.');
+  }
+  return Object.freeze({
+    descriptor: Object.freeze({
+      arrayLayerCount,
+      baseArrayLayer,
+      baseMipLevel,
+      dimension,
+      mipLevelCount,
+    }),
+    height: Math.max(1, Math.floor(descriptor.size.height / 2 ** baseMipLevel)),
+    width: Math.max(1, Math.floor(descriptor.size.width / 2 ** baseMipLevel)),
+  });
 }
 
 function estimateTextureBytes(descriptor: BackendTextureDescriptor): number {
@@ -535,6 +578,7 @@ export class WebGpuBackend implements GraphicsBackend {
         },
       });
       return this.#resources.register('pipeline', resourceAccounting(descriptor.label, 0), {
+        colorFormats: Object.freeze(descriptor.fragment?.targets.map(({ format }) => format) ?? []),
         depthFormat: descriptor.depthStencil?.format,
         pipeline,
         topology: descriptor.primitive?.topology ?? 'triangle-list',
@@ -879,19 +923,101 @@ export class WebGpuBackend implements GraphicsBackend {
     let vertices = 0;
     const renderPasses = submission.renderPasses.map((renderPass) => {
       requireFiniteClearColor(renderPass.clearColor);
-      const surface = this.#resources.resolve<'surface', WebGpuSurfaceRecord>(
-        renderPass.surface,
-        'surface',
-      );
-      if (surface.info.size.suspended) {
-        throw new KyxosEngineError('Cannot render to a suspended zero-area Canvas surface.', {
-          code: 'INVALID_STATE',
-          module: 'backend',
-          recoverable: true,
-          suggestedAction: 'Resize the Canvas to nonzero dimensions before rendering.',
+      if ((renderPass.colorAttachment === undefined) === (renderPass.surface === undefined)) {
+        throw invalidArgument(
+          'Render Pass requires exactly one Surface or Texture color attachment.',
+        );
+      }
+      let target:
+        | Readonly<{
+            format: BackendTextureFormat;
+            height: number;
+            kind: 'surface';
+            surface: WebGpuSurfacePort;
+            width: number;
+          }>
+        | Readonly<{
+            colorAttachment: {
+              readonly loadOp: 'clear' | 'load';
+              readonly storeOp: 'discard' | 'store';
+              readonly view: ReturnType<WebGpuTexturePort['createView']>;
+            };
+            format: BackendTextureFormat;
+            height: number;
+            kind: 'texture';
+            width: number;
+          }>;
+      if (renderPass.colorAttachment === undefined) {
+        const surface = this.#resources.resolve<'surface', WebGpuSurfaceRecord>(
+          renderPass.surface,
+          'surface',
+        );
+        if (surface.info.size.suspended) {
+          throw new KyxosEngineError('Cannot render to a suspended zero-area Canvas surface.', {
+            code: 'INVALID_STATE',
+            module: 'backend',
+            recoverable: true,
+            suggestedAction: 'Resize the Canvas to nonzero dimensions before rendering.',
+          });
+        }
+        target = Object.freeze({
+          format: surface.info.format,
+          height: surface.info.size.physicalHeight,
+          kind: 'surface',
+          surface: surface.surface,
+          width: surface.info.size.physicalWidth,
+        });
+      } else {
+        const loadOp = renderPass.colorAttachment.loadOp ?? 'clear';
+        const storeOp = renderPass.colorAttachment.storeOp ?? 'store';
+        if (
+          (loadOp !== 'clear' && loadOp !== 'load') ||
+          (storeOp !== 'discard' && storeOp !== 'store')
+        ) {
+          throw invalidArgument('Color attachment loadOp or storeOp is invalid.');
+        }
+        const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(
+          renderPass.colorAttachment.texture,
+          'texture',
+        );
+        if (
+          !record.descriptor.usage.includes('render-attachment') ||
+          record.descriptor.format === 'depth24plus' ||
+          record.descriptor.format === 'depth32float' ||
+          (record.descriptor.sampleCount ?? 1) !== 1
+        ) {
+          throw invalidArgument(
+            'Color attachment requires a single-sampled color Texture with render-attachment usage.',
+          );
+        }
+        const attachmentView = resolveRenderAttachmentView(
+          record.descriptor,
+          renderPass.colorAttachment.view,
+        );
+        target = Object.freeze({
+          colorAttachment: Object.freeze({
+            loadOp,
+            storeOp,
+            view: record.texture.createView(attachmentView.descriptor),
+          }),
+          format: record.descriptor.format,
+          height: attachmentView.height,
+          kind: 'texture',
+          width: attachmentView.width,
         });
       }
       const draws = (renderPass.draws ?? []).map((draw) => this.#prepareDraw(draw));
+      if (
+        draws.some(
+          ({ colorFormats }) =>
+            colorFormats.length > 1 ||
+            (colorFormats.length === 1 && colorFormats[0] !== target.format),
+        )
+      ) {
+        throw invalidArgument(
+          'Render Pipeline color target must match the Render Pass attachment.',
+        );
+      }
       let depthAttachment;
       if (renderPass.depthAttachment !== undefined) {
         const record = this.#resources.resolve<'texture', WebGpuTextureRecord>(
@@ -901,7 +1027,8 @@ export class WebGpuBackend implements GraphicsBackend {
         if (
           !record.descriptor.usage.includes('render-attachment') ||
           (record.descriptor.format !== 'depth24plus' &&
-            record.descriptor.format !== 'depth32float')
+            record.descriptor.format !== 'depth32float') ||
+          (record.descriptor.sampleCount ?? 1) !== 1
         ) {
           throw new KyxosEngineError(
             'Depth attachment requires a depth Texture with render-attachment usage.',
@@ -913,10 +1040,10 @@ export class WebGpuBackend implements GraphicsBackend {
           );
         }
         if (
-          record.descriptor.size.width !== surface.info.size.physicalWidth ||
-          record.descriptor.size.height !== surface.info.size.physicalHeight
+          record.descriptor.size.width !== target.width ||
+          record.descriptor.size.height !== target.height
         ) {
-          throw new KyxosEngineError('Depth attachment dimensions must match the render surface.', {
+          throw new KyxosEngineError('Depth attachment dimensions must match the color target.', {
             code: 'INVALID_ARGUMENT',
             module: 'backend',
             recoverable: false,
@@ -973,13 +1100,15 @@ export class WebGpuBackend implements GraphicsBackend {
           });
         }
       }
-      return {
+      const prepared = {
         clearColor: renderPass.clearColor,
         depthAttachment,
         draws: draws.map((draw) => draw.request),
         label: renderPass.label,
-        surface: surface.surface,
       };
+      return target.kind === 'surface'
+        ? { ...prepared, surface: target.surface }
+        : { ...prepared, colorAttachment: target.colorAttachment };
     });
 
     try {
@@ -1348,6 +1477,7 @@ export class WebGpuBackend implements GraphicsBackend {
       });
     }
     return {
+      colorFormats: pipeline.colorFormats,
       depthFormat: pipeline.depthFormat,
       instances: instanceCount,
       request: {

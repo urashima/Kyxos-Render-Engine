@@ -295,6 +295,36 @@ describe('browser WebGPU platform port', () => {
     expect(nativeRenderPass.setVertexBuffer).toHaveBeenCalledWith(0, nativeBuffer, 0);
     expect(nativeRenderPass.draw).toHaveBeenCalledWith(3, 1, 0, 0);
     expect(nativeRenderPass.end).toHaveBeenCalledTimes(1);
+
+    commandEncoder.encodeRenderPass({
+      clearColor: { a: 0, b: 0, g: 0, r: 0 },
+      colorAttachment: {
+        loadOp: 'load',
+        storeOp: 'discard',
+        view: texture.createView({
+          arrayLayerCount: 1,
+          baseArrayLayer: 0,
+          baseMipLevel: 0,
+          dimension: '2d',
+          mipLevelCount: 1,
+        }),
+      },
+      depthAttachment: undefined,
+      draws: [],
+      label: 'offscreen-pass',
+    });
+    expect(nativeCommandEncoder.beginRenderPass).toHaveBeenNthCalledWith(2, {
+      colorAttachments: [
+        {
+          clearValue: { a: 0, b: 0, g: 0, r: 0 },
+          loadOp: 'load',
+          storeOp: 'discard',
+          view: nativeDepthTextureView,
+        },
+      ],
+      label: 'offscreen-pass',
+    });
+    expect(nativeRenderPass.end).toHaveBeenCalledTimes(2);
     const commandBuffer = commandEncoder.finish();
     device.queue.submit([commandBuffer]);
     expect(queue.submit).toHaveBeenCalledExactlyOnceWith([nativeCommandBuffer]);

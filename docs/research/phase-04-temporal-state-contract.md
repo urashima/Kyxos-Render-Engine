@@ -53,6 +53,19 @@ WebGPU float32 values must agree within the frozen `0.000001` absolute tolerance
 coordinates, Motion Vectors, History Textures, Render Graph resources, and Renderer integration
 remain deferred.
 
+P4-04 adds the first GPU-owned part of that contract without wiring a TAA resolve Render Feature.
+Backend Render Passes now select exactly one Canvas Surface or offscreen Texture Color Attachment.
+An offscreen target must be a single-sampled, non-depth Texture created with `render-attachment`
+usage; its View selects exactly one valid 2D Mip and Array Layer. Draw Pipeline Color Formats must
+match the attachment, and an optional Depth Texture must match its selected dimensions. Explicit
+`loadOp` and `storeOp` values pass unchanged through the native WebGPU port.
+
+The validation and usage model follows the [W3C WebGPU
+specification](https://www.w3.org/TR/webgpu/), specifically `GPUTextureUsage`,
+`GPUTextureViewDescriptor`, and `GPURenderPassColorAttachment`. Kyxos deliberately narrows that
+general API to one Color Attachment and one 2D subresource in this checkpoint. This keeps the
+Backend contract deterministic before a later Render Graph introduces multi-target passes.
+
 ## Scheduling invariants
 
 1. No strategy owns a global or unconditional RAF loop. Both strategies use an injected frame
@@ -84,9 +97,21 @@ Any mismatch clears validity before the new sample is recorded. Explicit invalid
 stable cause such as Camera, Material, Texture, Viewport, or Device. Dynamic and Static records do
 not share sample counts or validity.
 
-The CPU record owns no GPU object. A future Temporal Render Feature will own History Textures,
-Motion/Depth inputs, Bind Groups, loss recovery, and disposal while using this signature contract to
-decide whether sampling is legal.
+The CPU record owns no GPU object. P4-04 adds a separate `DynamicTaaGpuHistory` owner in Renderer:
+
+- each non-empty Owner ID has exactly two `rgba16float` Textures with `render-attachment` and
+  `sampled` usage plus one clamp-to-edge linear Sampler;
+- `prepareFrame` returns immutable read/write roles and fail-closed signature validity;
+  `commitFrame` records the signature and swaps roles, while cancellation does neither;
+- Resize creates the complete replacement set before publishing it, resets the read role, and
+  invalidates the Viewport signature before releasing the old set;
+- Device Lost discards already-invalid Handles without destroying them, invalidates Device history,
+  and restores fresh Handles only after the caller restores the same Backend;
+- idempotent disposal releases only owner-created Handles and never disposes the caller Backend.
+
+The two Textures consume exactly `width × height × 8 × 2` estimated bytes. No Motion/Depth input,
+Bind Group, resolve Pipeline, Renderer frame submission, or Render Graph resource is added by
+P4-04.
 
 ## Renderer boundary
 
@@ -107,6 +132,12 @@ isolation, signature mismatch, and Renderer metadata forwarding. Package-boundar
 ```text
 Temporal → Core
 Frame Scheduler → Core + Temporal
-Renderer → Frame Scheduler
+Renderer → Frame Scheduler + Temporal
 SDK → public engine packages
 ```
+
+Unit tests cover Backend target/view/format validation, native port translation, ping-pong roles,
+signature mismatch, atomic Resize, partial-allocation rollback, Device Lost recovery, and complete
+release. The pinned Chromium/SwiftShader gate dynamically loads the public WebGPU Backend and
+Renderer modules, submits real `rgba16float` offscreen passes through both initial and resized
+History resources, and records the owner/resource diagnostics in the Phase 4 Artifact.

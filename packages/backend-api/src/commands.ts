@@ -4,6 +4,7 @@ import type {
   BackendCommandEncoderHandle,
   BackendPipelineHandle,
   BackendTextureHandle,
+  BackendTextureViewDescriptor,
 } from './resources.js';
 import type { BackendSurfaceHandle } from './surface.js';
 
@@ -44,6 +45,14 @@ export interface BackendDepthAttachment {
   readonly texture: BackendTextureHandle;
 }
 
+export interface BackendColorAttachment {
+  readonly loadOp?: 'clear' | 'load';
+  readonly storeOp?: 'discard' | 'store';
+  readonly texture: BackendTextureHandle;
+  /** Render attachments select exactly one 2D mip and array layer. */
+  readonly view?: BackendTextureViewDescriptor;
+}
+
 export interface BackendDrawCommand {
   readonly bindGroups?: readonly BackendBindGroupBinding[];
   readonly firstIndex?: number;
@@ -57,13 +66,25 @@ export interface BackendDrawCommand {
   readonly vertexCount?: number;
 }
 
-export interface BackendRenderPassDescriptor {
+interface BackendRenderPassBase {
   readonly clearColor: BackendClearColor;
   readonly draws?: readonly BackendDrawCommand[];
   readonly depthAttachment?: BackendDepthAttachment;
   readonly label?: string;
+}
+
+export interface BackendSurfaceRenderPassDescriptor extends BackendRenderPassBase {
+  readonly colorAttachment?: never;
   readonly surface: BackendSurfaceHandle;
 }
+
+export interface BackendTextureRenderPassDescriptor extends BackendRenderPassBase {
+  readonly colorAttachment: BackendColorAttachment;
+  readonly surface?: never;
+}
+
+export type BackendRenderPassDescriptor =
+  BackendSurfaceRenderPassDescriptor | BackendTextureRenderPassDescriptor;
 
 export interface BackendRenderPassStatistics {
   readonly drawCalls: number;

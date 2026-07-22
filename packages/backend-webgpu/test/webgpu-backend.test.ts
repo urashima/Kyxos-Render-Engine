@@ -603,6 +603,107 @@ describe('WebGpuBackend device lifecycle', () => {
     backend.dispose();
   });
 
+  it('renders to one validated offscreen color subresource and rejects incompatible targets', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'rgba16float' }],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const target = backend.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    const view = {
+      arrayLayerCount: 1,
+      baseArrayLayer: 0,
+      baseMipLevel: 1,
+      dimension: '2d' as const,
+      mipLevelCount: 1,
+    };
+
+    expect(
+      backend.executeFrame({
+        commandEncoder: backend.createCommandEncoder(),
+        renderPasses: [
+          {
+            clearColor: { a: 0, b: 0, g: 0, r: 0 },
+            colorAttachment: { loadOp: 'load', storeOp: 'discard', texture: target, view },
+            draws: [{ pipeline, vertexCount: 3 }],
+          },
+        ],
+      }),
+    ).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
+    expect(device.textures[0]?.createView).toHaveBeenCalledExactlyOnceWith(view);
+    expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledExactlyOnceWith({
+      clearColor: { a: 0, b: 0, g: 0, r: 0 },
+      colorAttachment: {
+        loadOp: 'load',
+        storeOp: 'discard',
+        view: { kind: 'texture-view' },
+      },
+      depthAttachment: undefined,
+      draws: [expect.objectContaining({ pipeline: expect.any(Object), vertexCount: 3 })],
+      label: undefined,
+    });
+
+    const incompatible = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'bgra8unorm' }],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const incompatibleEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: incompatibleEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachment: { texture: target },
+            draws: [{ pipeline: incompatible, vertexCount: 3 }],
+          },
+        ],
+      }),
+    ).toThrow('color target must match');
+    expect(backend.destroyResource(incompatibleEncoder)).toBe(true);
+
+    const invalidViewEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: invalidViewEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachment: {
+              texture: target,
+              view: { dimension: '2d', mipLevelCount: 2 },
+            },
+            draws: [],
+          },
+        ],
+      }),
+    ).toThrow('one valid 2D mip');
+    expect(backend.destroyResource(invalidViewEncoder)).toBe(true);
+    backend.dispose();
+  });
+
   it('records indexed Draws and rejects reads outside the bound Index Buffer range', async () => {
     const surfacePort = new FakeSurface();
     const device = new FakeDevice([surfacePort]);

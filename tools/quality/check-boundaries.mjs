@@ -51,6 +51,7 @@ const allowedDependencies = new Map([
       '@kyxos/render-material-pbr',
       '@kyxos/render-math',
       '@kyxos/render-scene',
+      '@kyxos/render-temporal',
       '@kyxos/render-visibility',
     ]),
   ],

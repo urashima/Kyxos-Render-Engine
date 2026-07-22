@@ -13,6 +13,7 @@ flowchart TD
   SDK --> Renderer[Renderer and feature modules]
   Renderer --> Backend[Graphics backend contract]
   Renderer --> Scheduler[Frame scheduler]
+  Renderer --> Temporal[Temporal state contract]
   Scheduler --> Temporal[Temporal state contract]
   Backend --> WebGPU[WebGPU backend]
   Backend --> WebGL2[WebGL2 backend]
@@ -22,25 +23,25 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 
 ## Accepted and active package graph
 
-| Package                         | Responsibility                                                          | Runtime dependencies                                                          |
-| ------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                   | None                                                                          |
-| `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                      | None                                                                          |
-| `@kyxos/render-geometry`        | Immutable mesh data, bounds, primitives, and tangent generation         | Math                                                                          |
-| `@kyxos/render-environment`     | Immutable prefiltered HDR cube/LUT identities and caller-owned registry | Core                                                                          |
-| `@kyxos/render-material-core`   | Color, texture semantics, UV transforms, and feature identities         | Core                                                                          |
-| `@kyxos/render-material-pbr`    | Metallic-roughness state plus direct, reference, and runtime IBL math   | Core, Material Core                                                           |
-| `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds   | Core, Math                                                                    |
-| `@kyxos/render-camera`          | Perspective, Jittered Previous/Current matrices, framing, and orbit     | Core, Math, Scene, Temporal                                                   |
-| `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting        | Camera, Core, Geometry, Math, Scene                                           |
-| `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics       | Core                                                                          |
-| `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                             |
-| `@kyxos/render-temporal`        | History, convergence, Jitter, and deterministic Dynamic TAA resolve     | Core                                                                          |
-| `@kyxos/render-frame-scheduler` | Dirty-only and opt-in four-mode injected frame scheduling               | Core, Temporal                                                                |
-| `@kyxos/render-renderer`        | Renderer lifecycle, direct/IBL PBR, mapped resources, and GPU caches    | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Visibility |
-| `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry       | Public engine packages                                                        |
-| `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                             | Backend API, Core, Frame Scheduler                                            |
-| `@kyxos/render-playground`      | Independent acceptance and development application                      | SDK, Testing                                                                  |
+| Package                         | Responsibility                                                          | Runtime dependencies                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                   | None                                                                                    |
+| `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                      | None                                                                                    |
+| `@kyxos/render-geometry`        | Immutable mesh data, bounds, primitives, and tangent generation         | Math                                                                                    |
+| `@kyxos/render-environment`     | Immutable prefiltered HDR cube/LUT identities and caller-owned registry | Core                                                                                    |
+| `@kyxos/render-material-core`   | Color, texture semantics, UV transforms, and feature identities         | Core                                                                                    |
+| `@kyxos/render-material-pbr`    | Metallic-roughness state plus direct, reference, and runtime IBL math   | Core, Material Core                                                                     |
+| `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds   | Core, Math                                                                              |
+| `@kyxos/render-camera`          | Perspective, Jittered Previous/Current matrices, framing, and orbit     | Core, Math, Scene, Temporal                                                             |
+| `@kyxos/render-visibility`      | Mesh Renderer components, culling, Draw Lists, and queue sorting        | Camera, Core, Geometry, Math, Scene                                                     |
+| `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics       | Core                                                                                    |
+| `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                                       |
+| `@kyxos/render-temporal`        | History, convergence, Jitter, and deterministic Dynamic TAA resolve     | Core                                                                                    |
+| `@kyxos/render-frame-scheduler` | Dirty-only and opt-in four-mode injected frame scheduling               | Core, Temporal                                                                          |
+| `@kyxos/render-renderer`        | Renderer lifecycle, direct/IBL PBR, mapped resources, and GPU caches    | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Temporal, Visibility |
+| `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry       | Public engine packages                                                                  |
+| `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                             | Backend API, Core, Frame Scheduler                                                      |
+| `@kyxos/render-playground`      | Independent acceptance and development application                      | SDK, Testing                                                                            |
 
 Every package exposes only its root entry. Runtime code may not import another workspace's private source path.
 
@@ -61,7 +62,8 @@ No global mutable engine singleton participates in this lifecycle.
 Dynamic and static histories are separate owner-scoped records. Their immutable signatures cover
 device, scene, camera, viewport, geometry, material, lighting, environment, and post-process
 revisions. Signature mismatch rejects reuse before sampling; GPU Textures remain owned and released
-by their Render Feature rather than by the CPU history contract.
+by a dedicated Renderer owner, which a later Temporal Render Feature may compose, rather than by the
+CPU history contract.
 
 ## Backend policy
 

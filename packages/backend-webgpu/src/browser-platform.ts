@@ -246,8 +246,21 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
   }
 
   encodeRenderPass(request: WebGpuRenderPassRequest): void {
-    if (!(request.surface instanceof BrowserWebGpuSurface)) {
-      throw new Error('Render Pass Surface belongs to another WebGPU device port.');
+    let colorView: GPUTextureView;
+    let colorLoadOp: GPULoadOp = 'clear';
+    let colorStoreOp: GPUStoreOp = 'store';
+    if (request.colorAttachment === undefined) {
+      if (!(request.surface instanceof BrowserWebGpuSurface)) {
+        throw new Error('Render Pass Surface belongs to another WebGPU device port.');
+      }
+      colorView = request.surface.createCurrentTextureView();
+    } else {
+      if (!(request.colorAttachment.view instanceof BrowserWebGpuTextureView)) {
+        throw new Error('Render Pass color Texture belongs to another WebGPU device port.');
+      }
+      colorView = request.colorAttachment.view.native;
+      colorLoadOp = request.colorAttachment.loadOp;
+      colorStoreOp = request.colorAttachment.storeOp;
     }
     let depthStencilAttachment: GPURenderPassDepthStencilAttachment | undefined;
     if (request.depthAttachment !== undefined) {
@@ -265,9 +278,9 @@ class BrowserWebGpuCommandEncoder implements WebGpuCommandEncoderPort {
       colorAttachments: [
         {
           clearValue: request.clearColor,
-          loadOp: 'clear',
-          storeOp: 'store',
-          view: request.surface.createCurrentTextureView(),
+          loadOp: colorLoadOp,
+          storeOp: colorStoreOp,
+          view: colorView,
         },
       ],
       ...(depthStencilAttachment === undefined ? {} : { depthStencilAttachment }),

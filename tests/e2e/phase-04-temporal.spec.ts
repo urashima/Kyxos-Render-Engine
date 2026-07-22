@@ -12,6 +12,20 @@ import {
 } from '../../packages/temporal/src/index.js';
 
 const absoluteTolerance = 0.000001;
+const backendModuleUrl = `/@fs${path.resolve('packages/backend-webgpu/src/index.ts')}`;
+const rendererModuleUrl = `/@fs${path.resolve('packages/renderer/src/index.ts')}`;
+
+const historySignature = {
+  camera: 1,
+  device: 1,
+  environment: 1,
+  geometry: 1,
+  lighting: 1,
+  materials: 1,
+  postProcess: 1,
+  scene: 1,
+  viewport: 1,
+} as const;
 
 test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
   test('matches accepted, Depth-rejected, and Normal-rejected CPU results through WebGPU readback', async ({
@@ -130,6 +144,189 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
         null,
         2,
       )}\n`,
+    );
+  });
+
+  test('submits Backend offscreen passes through owner-scoped rgba16float History resources', async ({
+    page,
+  }) => {
+    const runtimeErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') runtimeErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
+    await page.goto('/acceptance/phase-01');
+
+    const result = await page.evaluate(
+      async ({ backendUrl, rendererUrl, signature }) => {
+        const { createWebGpuBackend } = (await import(
+          /* @vite-ignore */ backendUrl
+        )) as typeof import('../../packages/backend-webgpu/src/index.js');
+        const { DynamicTaaGpuHistory } = (await import(
+          /* @vite-ignore */ rendererUrl
+        )) as typeof import('../../packages/renderer/src/index.js');
+        const backend = createWebGpuBackend({ label: 'phase-04-offscreen-gate' });
+        const history = new DynamicTaaGpuHistory({
+          height: 2,
+          ownerId: 'phase-04-offscreen-gate',
+          width: 3,
+        });
+        let shader: ReturnType<typeof backend.createShaderModule> | undefined;
+        let pipeline: Awaited<ReturnType<typeof backend.createRenderPipeline>> | undefined;
+        try {
+          await backend.initialize();
+          history.initialize(backend);
+          shader = backend.createShaderModule({
+            code: `
+              @vertex
+              fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> @builtin(position) vec4f {
+                let positions = array<vec2f, 3>(
+                  vec2f(-1.0, -1.0),
+                  vec2f(3.0, -1.0),
+                  vec2f(-1.0, 3.0)
+                );
+                return vec4f(positions[vertexIndex], 0.0, 1.0);
+              }
+
+              @fragment
+              fn fragmentMain() -> @location(0) vec4f {
+                return vec4f(0.25, 0.5, 1.0, 1.0);
+              }
+            `,
+            label: 'phase-04-offscreen-shader',
+            language: 'wgsl',
+          });
+          const compilation = await backend.getShaderCompilationInfo(shader);
+          if (!compilation.valid) throw new Error(JSON.stringify(compilation.messages));
+          pipeline = await backend.createRenderPipeline({
+            fragment: {
+              entryPoint: 'fragmentMain',
+              module: shader,
+              targets: [{ format: 'rgba16float' }],
+            },
+            label: 'phase-04-offscreen-pipeline',
+            vertex: { entryPoint: 'vertexMain', module: shader },
+          });
+
+          const first = history.prepareFrame(signature);
+          const firstStats = backend.executeFrame({
+            commandEncoder: backend.createCommandEncoder({ label: 'phase-04-offscreen-first' }),
+            renderPasses: [
+              {
+                clearColor: { a: 1, b: 0, g: 0, r: 0 },
+                colorAttachment: {
+                  loadOp: 'clear',
+                  storeOp: 'store',
+                  texture: first.writeTexture,
+                },
+                draws: [{ pipeline, vertexCount: 3 }],
+                label: 'phase-04-offscreen-first',
+              },
+            ],
+          });
+          await backend.waitForIdle();
+          const committed = history.commitFrame();
+          const second = history.prepareFrame(signature);
+          history.cancelFrame();
+
+          const resized = history.resize(5, 4);
+          const third = history.prepareFrame({ ...signature, viewport: 2 });
+          const resizedStats = backend.executeFrame({
+            commandEncoder: backend.createCommandEncoder({ label: 'phase-04-offscreen-resized' }),
+            renderPasses: [
+              {
+                clearColor: { a: 1, b: 0.25, g: 0.5, r: 1 },
+                colorAttachment: { texture: third.writeTexture },
+                draws: [{ pipeline, vertexCount: 3 }],
+                label: 'phase-04-offscreen-resized',
+              },
+            ],
+          });
+          await backend.waitForIdle();
+          const resizedCommitted = history.commitFrame();
+          const resourcesBeforeHistoryDispose = backend.getResourceStatistics();
+          history.dispose();
+          const resourcesAfterHistoryDispose = backend.getResourceStatistics();
+
+          return {
+            checkpoint: 'P4-04',
+            compilationMessages: compilation.messages,
+            first: {
+              historyValid: first.historyValid,
+              statistics: firstStats,
+            },
+            firstCommit: committed,
+            second: {
+              historyValid: second.historyValid,
+              swapped:
+                second.readTexture === first.writeTexture &&
+                second.writeTexture === first.readTexture,
+            },
+            resize: {
+              committed: resizedCommitted,
+              preparedHistoryValid: third.historyValid,
+              state: resized,
+              statistics: resizedStats,
+            },
+            resourcesAfterHistoryDispose,
+            resourcesBeforeHistoryDispose,
+            status: 'PASS',
+          };
+        } finally {
+          history.dispose();
+          if (pipeline !== undefined) backend.destroyResource(pipeline);
+          if (shader !== undefined) backend.destroyResource(shader);
+          backend.dispose();
+        }
+      },
+      { backendUrl: backendModuleUrl, rendererUrl: rendererModuleUrl, signature: historySignature },
+    );
+
+    expect(result.compilationMessages).toEqual([]);
+    expect(result.first).toEqual({
+      historyValid: false,
+      statistics: { drawCalls: 1, instances: 1, triangles: 1, vertices: 3 },
+    });
+    expect(result.firstCommit).toMatchObject({
+      estimatedGpuBytes: 96,
+      history: { sampleCount: 1, valid: true },
+      resourceGeneration: 1,
+      state: 'ready',
+    });
+    expect(result.second).toEqual({ historyValid: true, swapped: true });
+    expect(result.resize).toMatchObject({
+      committed: {
+        estimatedGpuBytes: 320,
+        history: { sampleCount: 1, valid: true },
+        resourceGeneration: 2,
+      },
+      preparedHistoryValid: false,
+      state: {
+        history: { lastInvalidation: 'viewport', sampleCount: 0, valid: false },
+        size: { height: 4, width: 5 },
+      },
+      statistics: { drawCalls: 1, instances: 1, triangles: 1, vertices: 3 },
+    });
+    expect(result.resourcesBeforeHistoryDispose).toMatchObject({
+      activeCount: 5,
+      byKind: {
+        pipeline: { activeCount: 1 },
+        sampler: { activeCount: 1 },
+        'shader-module': { activeCount: 1 },
+        texture: { activeCount: 2, activeEstimatedBytes: 320 },
+      },
+    });
+    expect(result.resourcesAfterHistoryDispose).toMatchObject({
+      activeCount: 2,
+      byKind: { sampler: { activeCount: 0 }, texture: { activeCount: 0 } },
+    });
+    expect(runtimeErrors).toEqual([]);
+
+    const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
+    await mkdir(runtimeDirectory, { recursive: true });
+    await writeFile(
+      path.join(runtimeDirectory, 'taa-history-gpu.json'),
+      `${JSON.stringify({ schemaVersion: 1, phase: '04', ...result }, null, 2)}\n`,
     );
   });
 });

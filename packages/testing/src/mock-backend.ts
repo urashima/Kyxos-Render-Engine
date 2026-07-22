@@ -32,6 +32,7 @@ import type {
   BackendSurfaceResize,
   BackendTextureData,
   BackendTextureDescriptor,
+  BackendTextureFormat,
   BackendTextureHandle,
   BackendTextureViewDescriptor,
   BackendTextureWriteDescriptor,
@@ -146,6 +147,31 @@ function validateTextureView(
     (dimension !== '2d' || arrayLayerCount === 1) &&
     (dimension !== 'cube' || (arrayLayerCount === 6 && texture.size.width === texture.size.height))
   );
+}
+
+function renderAttachmentSize(
+  view: BackendTextureViewDescriptor | undefined,
+  texture: BackendTextureDescriptor,
+): Readonly<{ height: number; width: number }> | undefined {
+  const baseMipLevel = view?.baseMipLevel ?? 0;
+  const baseArrayLayer = view?.baseArrayLayer ?? 0;
+  if (
+    !Number.isSafeInteger(baseMipLevel) ||
+    baseMipLevel < 0 ||
+    baseMipLevel >= (texture.mipLevelCount ?? 1) ||
+    !Number.isSafeInteger(baseArrayLayer) ||
+    baseArrayLayer < 0 ||
+    baseArrayLayer >= (texture.size.depthOrArrayLayers ?? 1) ||
+    (view?.mipLevelCount ?? 1) !== 1 ||
+    (view?.arrayLayerCount ?? 1) !== 1 ||
+    (view?.dimension ?? '2d') !== '2d'
+  ) {
+    return undefined;
+  }
+  return Object.freeze({
+    height: Math.max(1, Math.floor(texture.size.height / 2 ** baseMipLevel)),
+    width: Math.max(1, Math.floor(texture.size.width / 2 ** baseMipLevel)),
+  });
 }
 
 export class MockBackend implements GraphicsBackend {
@@ -560,13 +586,46 @@ export class MockBackend implements GraphicsBackend {
     let triangles = 0;
     let vertices = 0;
     for (const renderPass of submission.renderPasses) {
-      const surface = this.getSurfaceInfo(renderPass.surface);
-      if (surface.size.suspended) {
-        throw new KyxosEngineError('Mock Surface is suspended.', {
-          code: 'INVALID_STATE',
-          module: 'backend',
-          recoverable: true,
+      if ((renderPass.colorAttachment === undefined) === (renderPass.surface === undefined)) {
+        throw invalidArgument('Mock Render Pass requires exactly one color target.');
+      }
+      let target: Readonly<{ format: BackendTextureFormat; height: number; width: number }>;
+      if (renderPass.colorAttachment === undefined) {
+        const surface = this.getSurfaceInfo(renderPass.surface);
+        if (surface.size.suspended) {
+          throw new KyxosEngineError('Mock Surface is suspended.', {
+            code: 'INVALID_STATE',
+            module: 'backend',
+            recoverable: true,
+          });
+        }
+        target = Object.freeze({
+          format: surface.format,
+          height: surface.size.physicalHeight,
+          width: surface.size.physicalWidth,
         });
+      } else {
+        const loadOp = renderPass.colorAttachment.loadOp ?? 'clear';
+        const storeOp = renderPass.colorAttachment.storeOp ?? 'store';
+        if (
+          (loadOp !== 'clear' && loadOp !== 'load') ||
+          (storeOp !== 'discard' && storeOp !== 'store')
+        ) {
+          throw invalidArgument('Mock color attachment loadOp or storeOp is invalid.');
+        }
+        const texture = this.#textures.get(renderPass.colorAttachment.texture);
+        const size = texture && renderAttachmentSize(renderPass.colorAttachment.view, texture);
+        if (
+          texture === undefined ||
+          size === undefined ||
+          !texture.usage.includes('render-attachment') ||
+          texture.format === 'depth24plus' ||
+          texture.format === 'depth32float' ||
+          (texture.sampleCount ?? 1) !== 1
+        ) {
+          throw invalidArgument('Mock color attachment is invalid.');
+        }
+        target = Object.freeze({ format: texture.format, ...size });
       }
       const depthTexture =
         renderPass.depthAttachment === undefined
@@ -577,14 +636,22 @@ export class MockBackend implements GraphicsBackend {
         (depthTexture === undefined ||
           !depthTexture.usage.includes('render-attachment') ||
           (depthTexture.format !== 'depth24plus' && depthTexture.format !== 'depth32float') ||
-          depthTexture.size.width !== surface.size.physicalWidth ||
-          depthTexture.size.height !== surface.size.physicalHeight)
+          (depthTexture.sampleCount ?? 1) !== 1 ||
+          depthTexture.size.width !== target.width ||
+          depthTexture.size.height !== target.height)
       )
         throw invalidArgument('Mock depth attachment is invalid.');
       for (const draw of renderPass.draws ?? []) {
         const pipeline = this.#pipelines.get(draw.pipeline);
         if (pipeline === undefined) {
           throw invalidArgument('Mock Pipeline Handle is stale or foreign.');
+        }
+        const colorFormats = pipeline.fragment?.targets.map(({ format }) => format) ?? [];
+        if (
+          colorFormats.length > 1 ||
+          (colorFormats.length === 1 && colorFormats[0] !== target.format)
+        ) {
+          throw invalidArgument('Mock Pipeline color target is incompatible.');
         }
         if (
           (pipeline.depthStencil !== undefined && depthTexture === undefined) ||

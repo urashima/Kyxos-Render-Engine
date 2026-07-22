@@ -154,6 +154,9 @@ importers:
       '@kyxos/render-scene':
         specifier: workspace:*
         version: link:../scene
+      '@kyxos/render-temporal':
+        specifier: workspace:*
+        version: link:../temporal
       '@kyxos/render-visibility':
         specifier: workspace:*
         version: link:../visibility
