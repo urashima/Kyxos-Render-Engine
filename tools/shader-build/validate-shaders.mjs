@@ -54,6 +54,34 @@ const generatedMirrors = new Map([
       path: 'packages/renderer/src/generated/phase-03-pbr-tonemapped.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-04-pbr-temporal-output.wgsl',
+    {
+      exportName: 'PHASE_04_PBR_TEMPORAL_OUTPUT_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-pbr-temporal-output.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-04-camera-reprojection-reference.wgsl',
+    {
+      exportName: 'PHASE_04_CAMERA_REPROJECTION_REFERENCE_WGSL',
+      path: 'packages/camera/src/generated/phase-04-camera-reprojection-reference.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-04-taa-reference.wgsl',
+    {
+      exportName: 'PHASE_04_TAA_REFERENCE_WGSL',
+      path: 'packages/temporal/src/generated/phase-04-taa-reference.wgsl.ts',
+    },
+  ],
+  [
+    'webgpu/phase-04-taa-resolve.wgsl',
+    {
+      exportName: 'PHASE_04_TAA_RESOLVE_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-taa-resolve.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {
@@ -142,7 +170,7 @@ try {
       `${JSON.stringify(
         {
           browserCompilerGate:
-            'tests/e2e/phase-01.spec.ts and phase-03-* specs (BRDF/IBL compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT sampling)',
+            'tests/e2e/phase-01.spec.ts plus phase-03-* and phase-04-* specs (BRDF/IBL/TAA/Camera reprojection compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT/Dynamic TAA sampling)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',

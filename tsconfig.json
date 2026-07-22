@@ -13,6 +13,7 @@
     { "path": "packages/visibility" },
     { "path": "packages/backend-api" },
     { "path": "packages/backend-webgpu" },
+    { "path": "packages/temporal" },
     { "path": "packages/frame-scheduler" },
     { "path": "packages/renderer" },
     { "path": "packages/sdk" },

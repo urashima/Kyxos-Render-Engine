@@ -1825,3 +1825,391 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Merge the green Phase 3 closure record, create `agent/phase-04-temporal` from updated `main`, and
   begin P4-01 with the deterministic Renderer scheduling, Temporal History, and convergence state
   contract before adding TAA or accumulation Shaders.
+
+## 2026-07-22 06:09 PDT — P4-01 temporal scheduling and history state contract passed
+
+### Completed
+
+- Merged Phase 3 closure PR #6 as `a3b3c4f2ca113db78c9ce42f026e7c2fabad16c4`, confirmed
+  `phase-03-accepted` remained immutable at deployed source
+  `6b3331251fd1a20257aeebab26a72c2f26103f0a`, and created `agent/phase-04-temporal` from the new
+  `main`.
+- Added independent `@kyxos/render-temporal` with immutable nine-revision History Signatures,
+  owner-isolated Dynamic/Static records, explicit invalidation causes, fixed Sample Limits, and
+  consecutive Error-Threshold convergence.
+- Added opt-in `TemporalFrameScheduler` implementing Interactive → Stabilizing → Accumulating →
+  Sleeping over the injected Frame Driver. Dirty Events coalesce, one History Generation is issued
+  per reset batch, active interaction/animation/upload/compilation prevents convergence, and
+  Selection-only work may retain converged samples.
+- Added Renderer scheduler injection and immutable per-frame Temporal metadata: Mode, Sample Index,
+  Target Samples, History Generation, and reset state. Render Features and the public SDK receive
+  this contract without native GPU objects.
+- Preserved the Phase 0–3 default `FrameScheduler` as dirty-only. P4-01 creates no Jitter, TAA,
+  reprojection, accumulation Shader, Motion Vector, or GPU History resource and does not claim
+  visual Temporal acceptance.
+- Added architecture and state-contract records and extended the mechanical boundary gate to enforce
+  `Temporal → Core` and `Frame Scheduler → Core + Temporal` without cycles.
+
+### Validation
+
+- Implementation commit `8760566cb92fb935b13ba2a7380b3a4dab29b7f6` has Git Tree
+  `409e2af0419ffe1197082c2088c43e14f64d7f80`, identical to the complete locally verified Tree.
+- Run `29922302477`, job `88930549175`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  47 unit files / 215 tests, package/architecture gates, Phase 0–3 frozen Schemas, seven Shader
+  mirrors, build, Bundle, Pages, and all 21 pinned Chromium/WebGPU cases passed.
+- Artifact `8530517987`, digest
+  `sha256:cae3ef1d0d579175429e2e74de4d8283adac6d951fabe3bb2e3e12c886f084cf`, is bound to the exact
+  implementation Head and retains the complete historical browser diagnostics.
+- The Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,745 / 131,072 bytes. Pages still contain only contiguous accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, public route, deployment, or
+  Accepted Tag yet.
+
+### Next
+
+- Implement P4-02 deterministic Halton Jitter, pixel-to-NDC projection offsets, and explicit
+  Current/Previous Camera matrices without creating GPU History or TAA Shaders.
+
+## 2026-07-22 06:27 PDT — P4-02 deterministic Jitter and Camera matrix contract passed
+
+### Completed
+
+- Added the frozen one-based Halton base-2/base-3 sequence for all supported 1–256 samples. Each
+  immutable sample retains its unit-square point and centered top-left Raster offset.
+- Added exact Raster-pixel to canonical +Y-up NDC conversion with positive safe-integer Viewport
+  validation and fail-closed rejection of inconsistent caller-provided samples.
+- Added an immutable Projection Jitter operation that preserves the Camera's canonical unjittered
+  Projection and Frustum while producing the exact clip-space offset required by the selected
+  sample.
+- Added `TemporalCameraMatrixTracker` for Current/Previous jittered View-Projection matrices,
+  unjittered matrices, Viewport, Camera revisions, current/previous Jitter, and History Generation.
+  First use plus Generation, Projection, Viewport, and explicit resets set Previous equal to Current;
+  Camera pose movement in one Generation retains the true previous frame.
+- Kept ownership explicit: the tracker owns no caller Camera and no GPU resource. P4-02 creates no
+  History Texture, TAA Shader, Motion Vector, Render Feature, or Phase 4 visual acceptance claim.
+- Extended Camera/Temporal architecture boundaries and exposed the complete contract through the
+  public SDK without changing accepted Phase 0–3 route behavior.
+
+### Validation
+
+- Implementation commit `04beab4ff66885973b5ddaed95cb9d79442db98d` has Git Tree
+  `3d1732cb50e8df0181f1ebdac70493e2f27dbc29`, identical to the complete locally verified Tree.
+- Run `29923625893`, job `88935055961`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  48 unit files / 223 tests, package/architecture gates, Phase 0–3 frozen Schemas, seven Shader
+  mirrors, build, Bundle, Pages, and all 21 pinned Chromium/WebGPU cases passed.
+- Artifact `8531067149`, digest
+  `sha256:bb430c33c7a0ec1107bb847e4b81dfd3851208ac6e5d6607d93c717bb23ac5b8`, is bound to the exact
+  implementation Head and retains the complete historical browser diagnostics.
+- The Phase 2 route remains below its unchanged raw JavaScript budget at
+  130,745 / 131,072 bytes. Pages still contain only contiguous accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no GPU History, Owner Acceptance, public route,
+  deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-03 deterministic Dynamic TAA resolve parity for depth/normal rejection,
+  neighborhood clamp, responsive history weighting, and CPU/WGSL float32 outputs before creating
+  GPU History Textures or integrating a Temporal Render Feature.
+
+## 2026-07-22 06:46 PDT — P4-03 deterministic Dynamic TAA resolve parity passed
+
+### Completed
+
+- Added a backend-neutral Dynamic TAA resolve contract for a current linear-HDR pixel and History
+  Color, Depth, and Normal already sampled at a caller-provided reprojected coordinate.
+- Added exact component-wise 3×3 current-neighborhood bounds and clamps History RGB before blending;
+  current-frame Alpha is retained rather than accumulated.
+- Added fail-closed History validity, absolute/relative Depth disocclusion, normalized Normal cosine,
+  and explicit rejection reasons. Accepted History uses a frozen base weight reduced monotonically
+  by a unit-range responsive mask.
+- Added three immutable deterministic cases covering accepted/clamped History, Depth rejection, and
+  Normal rejection, plus a 60-field diagnostic encoding shared by CPU and WebGPU evidence.
+- Added the Phase 4 WGSL reference and exact generated mirror, a dedicated `chromium-temporal`
+  Playwright project, and CI upload coverage for Phase 4 runtime diagnostics.
+- Preserved the checkpoint boundary: P4-03 creates no Motion Vector, reprojection coordinate,
+  History Texture, Bind Group, Render Feature, or Renderer integration.
+- Recorded the clean-room inputs from published Karis and Playdead TAA materials and W3C WGSL.
+
+### Validation
+
+- Implementation commit `1c472c2dffcc1d664bf885fbe96decccc352a7c8` has Git Tree
+  `222b7b16765b2411161c1bff12ba4c41caebbe94`, identical to the complete locally verified Tree.
+- Run `29925092901`, job `88940086798`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  49 unit files / 230 tests, package/architecture gates, Phase 0–3 frozen Schemas, eight Shader
+  mirrors, build, Bundle, Pages, and all 22 pinned Chromium/WebGPU cases passed.
+- Artifact `8531662609`, digest
+  `sha256:f0d16aac64e07079b2359da33d25d66c40d1a6d1d3048658f8643b76a45f2935`, contains
+  `test-results/phase-04/runtime/taa-resolve-reference.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages, all 60 CPU/GPU fields passing, maximum
+  absolute difference `2.384185793236071e-8` against the `0.000001` threshold, and maximum tolerance
+  occupancy `0.02384185793236071`.
+- The Phase 2 and Phase 3 route sizes remain unchanged at 130,745 / 131,072 and
+  180,509 / 196,608 raw JavaScript bytes. Pages still contain only accepted Phases 0–3.
+- Draft PR #7 remains In Development. Phase 4 has no GPU History integration, Owner Acceptance,
+  public route, deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-04 validated offscreen Texture Color Attachments in the Backend and owner-scoped
+  rgba16float Dynamic TAA ping-pong History allocation, resize/signature invalidation, Device Lost
+  recovery, and disposal without integrating the Renderer resolve pass.
+
+## 2026-07-22 07:22 PDT — P4-04 offscreen target and Dynamic TAA GPU History passed
+
+### Completed
+
+- Extended Backend Render Passes to select exactly one Canvas Surface or offscreen Texture Color
+  Attachment with explicit load/store operations and an optional single-2D-subresource View.
+- Added WebGPU and Mock validation for attachment usage, non-depth and single-sample formats,
+  Pipeline Color Format compatibility, selected Mip dimensions, and matching Depth attachments.
+- Added `DynamicTaaGpuHistory`, an owner-scoped pair of sampled/renderable `rgba16float` Textures
+  plus one linear clamp Sampler. Explicit prepare/commit/cancel operations preserve read/write roles
+  and reuse History only for an exact immutable signature.
+- Added create-before-publish Resize, partial-allocation rollback, Viewport/signature invalidation,
+  Device Lost detachment and same-Backend restoration, and idempotent release without disposing the
+  caller-owned Backend.
+- Exposed the contract through the public SDK and added the explicit
+  `Renderer → Temporal` dependency edge without a cycle.
+- Made the already accepted Phase 0 Playground route lazy like Phases 1–3. The Bundle gate still
+  counts its complete route closure while accepted WebGPU routes no longer download Mock Backend
+  code; no budget was increased and no visual baseline changed.
+- Preserved the checkpoint boundary: P4-04 adds no Motion/Depth/Normal History, reprojection math,
+  Bind Group, resolve Pipeline, Renderer frame submission, Render Graph resource, Phase 4 route, or
+  acceptance claim.
+
+### Validation
+
+- Implementation commit `39570032ecf0cdc33d98bf12d90615e54b7259b4` has Git Tree
+  `06e3848f704aa6c6f275f2cef57d77740f2c1d6f`, identical to the complete locally verified Tree.
+- Run `29927804583`, job `88949367501`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  50 unit files / 236 tests, package/architecture gates, Phase 0–3 frozen Schemas, eight Shader
+  mirrors, build, Bundle, Pages, and all 23 pinned Chromium/WebGPU cases passed.
+- Artifact `8532801681`, digest
+  `sha256:2eea5575ad9fb1abf7cc609650aaa2fdfa6ab31367d37746b28b12d24845f3bb`, contains
+  `test-results/phase-04/runtime/taa-history-gpu.json` bound to the exact Head.
+- The Artifact reports zero Shader compilation messages. Both initial and resized native WebGPU
+  offscreen submissions record one Draw / one Triangle; the second frame confirms read/write swap
+  and reusable History, while Resize invalidates reuse and increments resource generation 1 → 2.
+- The History pair reports exactly 96 bytes at 3×2 and 320 bytes at 5×4. Owner disposal reduces the
+  active resources from five to the two caller-owned Shader/Pipeline resources, leaving zero owner
+  Texture or Sampler Handles.
+- The unchanged Bundle thresholds pass with Phase 0 at 36,225 / 65,536, Phase 2 at
+  113,130 / 131,072, and Phase 3 at 162,894 / 196,608 raw JavaScript bytes. Pages still contain only
+  accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Resolve Render Feature, Owner Acceptance,
+  deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-05 deterministic Camera-motion reprojection from Current Depth through inverse
+  Current and Previous jittered View-Projection matrices, including UV/out-of-bounds validity and
+  CPU/WGSL float32 parity, without Skinned/Morph Motion Vectors or Renderer resolve integration.
+
+## 2026-07-22 07:53 PDT — P4-05 deterministic Camera-motion reprojection passed
+
+### Completed
+
+- Added a general finite 4×4 inverse to Math with singular rejection and affine/perspective inverse
+  tests, then exposed the inverse Current jittered View-Projection from
+  `TemporalCameraMatrixTracker` without changing its Previous-matrix reset rules.
+- Added the Camera-layer float32 reprojection contract from top-left Current Raster UV and canonical
+  `[0, 1]` Depth through inverse Current and Previous jittered View-Projection matrices.
+- Froze Motion as `Current UV - History UV`, so History sampling uses
+  `History UV = Current UV - Motion UV` and includes both Camera movement and Jitter difference.
+- Added fail-closed background, homogeneous-W, Previous-camera, Previous-depth, and Previous-UV
+  validity reasons with immutable diagnostic results and public SDK exports.
+- Added a byte-exact WGSL mirror plus four deterministic branches: stationary, Camera motion plus
+  Jitter, Previous UV rejection, and background rejection. The compute gate reads 64 float32 values.
+- Recorded the W3C WebGPU/WGSL clean-room coordinate, depth, matrix, storage, and float32 inputs.
+- Preserved the checkpoint boundary: P4-05 creates no Renderer resolve/present Pass, sampled TAA
+  Bind Group, Depth/Normal History Texture, Skinned/Morph Motion Vector, or Phase 4 route.
+
+### Validation
+
+- Initial implementation commit `b6b20c13d4386189792d522be6608a7a8d8eb70f` has Git Tree
+  `a09f23c5dcc54aaaa0187a2946fc2db3e31cc72e`, identical to the complete locally verified Tree.
+- Run `29929857878` proved all prior 23 browser cases but rejected a Shader-creation-time Infinity
+  constant in the finite-value guard. Commit `10f639f5f7ab466b72550801cec887eb24b5c539`
+  replaced only that guard with a runtime float32 exponent-bit test; its Git Tree is
+  `0725be3887748ed4110e719e672fc32e86396450` and no algorithm, vector, or tolerance changed.
+- Final Run `29930318354`, job `88958014722`: PASS. Formatting, zero-warning Lint, strict
+  TypeScript, 51 unit files / 243 tests, package/architecture gates, Phase 0–3 frozen Schemas, nine
+  Shader mirrors, build, Bundle, Pages, and all 24 pinned Chromium/WebGPU cases passed.
+- Artifact `8533845081`, digest
+  `sha256:2851a611573aa76a5524e5143881f51bc3793c233623ce7183fbcf196fa374c0`, contains
+  `test-results/phase-04/runtime/camera-reprojection.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages. All 64 CPU/GPU values are exactly equal,
+  maximum absolute difference and tolerance occupancy are both `0`, and the frozen absolute
+  tolerance remains `0.00001`.
+- The unchanged Bundle thresholds pass with Phase 0 at 36,225 / 65,536, Phase 2 at
+  113,130 / 131,072, Phase 3 at 162,894 / 196,608, and total JavaScript at
+  303,849 / 327,680 raw bytes. Pages still contain only accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-06 validated two-target offscreen MRT and expand Dynamic TAA GPU History to own one
+  Current linear-HDR Color target plus ping-pong resolved Color/Depth/Normal target sets, preserving
+  atomic Resize, Device Lost, and disposal without resolve/present integration.
+
+## 2026-07-22 08:19 PDT — P4-06 ordered MRT and Dynamic TAA target ownership passed
+
+### Completed
+
+- Replaced the Backend's single offscreen Color Attachment with a non-empty ordered attachment
+  list while preserving the mutually exclusive Canvas Surface path and pass-level default Clear
+  Color.
+- Added per-attachment finite Clear Color, load/store operations, selected 2D Mip/Layer validation,
+  device `maxColorAttachments` enforcement, distinct Texture identity, identical dimensions, and
+  exact ordered Draw Pipeline target-format matching.
+- Mirrored the contract in the browser WebGPU port and Mock Backend. The browser port now emits the
+  validated ordered native `GPURenderPassColorAttachment[]`; fragment-less/depth-only Pipelines
+  remain supported.
+- Expanded `DynamicTaaGpuHistory` to own one Current `rgba16float` linear-HDR Color target and two
+  atomic resolved target sets. Each set contains `rgba16float` Color, `depth32float` Depth, and
+  `rgba16float` Normal, with one shared linear clamp Sampler.
+- Changed `prepareFrame` to expose immutable Current, read, and write target roles. `commitFrame`
+  swaps Color/Depth/Normal as one set; Resize allocates all seven replacement Textures plus Sampler
+  before publishing them; Device Lost, rollback, and idempotent disposal retain complete ownership.
+- Froze the exact estimate at 48 bytes per pixel and recorded the W3C WebGPU MRT contract. Added
+  unit coverage for successful two-target passes plus count, duplicate, dimension, format-order,
+  Clear, rollback, Resize, Device Lost, and release failures.
+- Upgraded the pinned browser gate to compile a two-output WGSL fragment entry, submit real
+  `rgba16float` Current Color + Normal MRT with a `depth32float` attachment through initial and
+  resized owner resources, and record whole-set swap/replacement and resource counters.
+- Preserved the checkpoint boundary: P4-06 adds no sampled TAA Bind Group, resolve Pipeline, PBR
+  offscreen integration, Present pass, Render Graph resource, Phase 4 route, or acceptance claim.
+
+### Validation
+
+- Implementation commit `80d68c5357a2f0bc871e819564b449ff133ef472` has Git Tree
+  `80a39efdf95e223683d444284eb0998214830580`, identical to the complete locally verified Tree.
+- Local formatting, zero-warning Lint, strict TypeScript, 51 unit files / 243 tests,
+  package/architecture gates, Phase 0–3 frozen Schemas, nine Shader mirrors, build, Bundle, and
+  Pages passed. All 24 local browser cases stopped before execution only because pinned Chromium
+  v1228 is not installed in the workspace.
+- Run `29932421653`, job `88965308247`: PASS. The fixed Chromium/SwiftShader environment passed the
+  complete pipeline and all 24 browser/WebGPU cases, including the native P4-06 MRT case.
+- Artifact `8534720971`, digest
+  `sha256:5b020795de04074e60e62aa96469d7cc8b7fb7dff3721a338d4a516db43faa27`, contains
+  `test-results/phase-04/runtime/taa-history-gpu.json` bound to the exact Head.
+- The Artifact reports zero WGSL compilation messages. Initial 3×2 resources consume exactly 288
+  bytes and resized 5×4 resources consume 960 bytes. Both MRT submissions record one Draw / one
+  Triangle; Current Color stays stable within a generation, all three resolved targets swap
+  together, and Resize replaces every target.
+- Before History disposal the gate reports 20 created / 10 destroyed resources with seven active
+  Textures and one Sampler. Disposal reaches 20 / 18 and leaves only the caller-owned Shader and
+  Pipeline, with zero active owner Texture or Sampler Handles.
+- Unchanged Bundle thresholds pass with Phase 0 at 37,076 / 65,536, Phase 2 at
+  114,042 / 131,072, Phase 3 at 163,806 / 196,608, and total JavaScript at
+  305,612 / 327,680 raw bytes. Pages still contain only accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Owner Acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-07 sampled Dynamic TAA resolve GPU pass: reconstruct History UV from Current Depth,
+  sample prior Color/Depth/Normal, apply the frozen P4-03 rejection/clamp/weight math, and write
+  resolved linear-HDR Color into the write target without PBR offscreen or Present integration.
+
+## 2026-07-22 08:59 PDT — P4-07 sampled Dynamic TAA resolve passed
+
+### Completed
+
+- Added an independent `DynamicTaaResolvePass` with an exact 176-byte Uniform for inverse Current
+  View-Projection, Previous View-Projection, Viewport, History validity, responsive mask, and the
+  frozen P4-03 resolve options.
+- Bound Current Color plus Current write Depth/Normal and prior read Color/Depth/Normal through one
+  role-specific Bind Group. Extended Backend and Mock validation to permit single-sampled sampled
+  Depth Textures without weakening usage, View, or sample-count validation.
+- Added a byte-exact full-screen WGSL mirror that reconstructs History UV with the P4-05 fail-closed
+  rules, loads a 3×3 Current neighborhood, samples prior Color/Normal, loads prior Depth, applies
+  P4-03 rejection/clamp/responsive weighting, preserves Current Alpha, and writes resolved HDR.
+- Added owner identity validation, generation-scoped Bind Group reuse and resize cleanup, Device
+  Lost detachment/reinitialization, failed-initialization rollback, and complete idempotent release.
+- Upgraded the native owner lifecycle gate to execute real scene MRT and Resolve submissions before
+  and after Resize. Added an independent three-pixel native WebGPU gate for accepted, Depth-rejected,
+  and Normal-rejected History using render-produced `depth32float` fixtures.
+- Preserved the checkpoint boundary: P4-07 adds no PBR offscreen output, Present pass, Render Graph
+  scheduling, Static Accumulation, Phase 4 route, deployment, or acceptance claim.
+
+### Validation
+
+- Implementation commit `bf232a38386368bd1a3219fd0de79337eb33ee00` has Git Tree
+  `6fc563c0617537b521aea9940340ff23504362ef`, identical to the complete locally verified Tree.
+- Local formatting, zero-warning Lint, strict TypeScript, 52 unit files / 249 tests,
+  package/architecture gates, Phase 0–3 frozen Schemas, ten Shader mirrors, build, Bundle, and Pages
+  passed. Playwright discovered all 25 browser cases; local execution stopped before launch only
+  because pinned Chromium v1228 is unavailable in the workspace.
+- Initial Run `29934814481`, job `88973535766`, passed the existing 24 browser cases and the
+  integrated P4-07 owner lifecycle gate. Its only failure was the new raw gate's direct
+  `queue.writeTexture` Depth fixture, whose middle `depth32float` texel was not observed as written.
+  Trace evidence isolated the fixture; the Resolve Shader, thresholds, and algorithm were unchanged.
+- Commit `a8b7014f9214fe581fb6683b02b3ac75d6ecff6e` replaced only that fixture with a depth-only Render
+  Pass matching production depth generation. Its Git Tree is
+  `d9c895497a3fed20b194c56d803ec64f18d9d0e8`, identical to the locally verified Tree.
+- Final Run `29935537307`, job `88976018352`: PASS. The fixed Chromium/SwiftShader environment passed
+  the complete pipeline and all 25 browser/WebGPU cases.
+- Artifact `8536030918`, digest
+  `sha256:6609391d009456e6c7fb313b8c973914980895463f681fb124512c03fc581519`, contains
+  `test-results/phase-04/runtime/taa-resolve-gpu.json` and `taa-history-gpu.json` bound to the exact
+  Head. WGSL compilation messages are empty.
+- Accepted, Depth-rejected, and Normal-rejected GPU pixels match the half-float-aware CPU oracle.
+  Maximum absolute difference is `0.00010742187500001332` against the unchanged `0.001` threshold;
+  both rejection outputs are exact.
+- Two initial/Resize scene MRT and Resolve submissions each record one Draw / one Triangle. Resolve
+  disposal reduces active resources from 14 to the ten History/caller resources; History disposal
+  leaves only the caller-owned Shader/Pipeline, with zero owner Texture, Sampler, Buffer, or Bind
+  Group Handles.
+- Unchanged Bundle thresholds pass with Phase 0 at 37,023 / 65,536, Phase 1 at
+  74,983 / 98,304, Phase 2 at 113,976 / 131,072, and Phase 3 at 163,740 / 196,608 raw JavaScript
+  bytes. Pages still contain only accepted Phases 0–3.
+- Draft PR #7 remains In Development. Phase 4 has no public route, deployment, or Accepted Tag.
+
+### Next
+
+- Add an opt-in PBR temporal offscreen mode that writes linear-HDR Current Color plus encoded Normal
+  MRT with `depth32float` into a prepared `DynamicTaaGpuFrame`, while preserving the accepted surface
+  path; defer final Present, Static Accumulation, and Phase 4 route/acceptance integration.
+
+## 2026-07-22 10:39 PDT — P4-08 PBR temporal offscreen output passed
+
+### Completed
+
+- Added an explicit `PbrDynamicTaaOutput` contract whose `acquireFrame()` returns one caller-prepared
+  `DynamicTaaGpuFrame`. The PBR Feature validates physical extent and non-empty Owner identity but
+  never commits, cancels, swaps, resizes, or disposes caller-owned History resources.
+- Preserved the accepted Phase 3 direct Surface path without changing its tone-mapped Shader,
+  `rgba8unorm` target, owned `depth24plus` Texture, Pipeline variants, or default SDK behavior.
+- Added a separate temporal PBR Shader and twelve Pipeline variants that write linear-HDR
+  `rgba16float` Current Color plus encoded world-space Normal MRT and use the History-owned
+  `depth32float` write attachment. Output transform is intentionally deferred to final Present.
+- Added SDK composition and public type exports, diagnostics for output target and temporal Owner,
+  strict mismatch/fail-closed behavior, unit coverage, exact Shader mirror validation, and a native
+  WebGPU cube submission gate.
+- Removed all temporary repository patch tooling after the verified implementation commit and
+  restored standard CI to read-only `contents: read` permissions.
+
+### Validation
+
+- Implementation commit `9579f6da965fb3d16996e613eb38929ed422a4a7` contains the P4-08 runtime,
+  Shader, SDK, tests, and research contract. Cleaned checkpoint Head
+  `8656e8d3be0c8082c9f50eafcdbd9297333721d1` contains no temporary patch workflow or script.
+- Run `29942780536`, job `89000570625`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  53 unit files / 250 tests, package and architecture gates, frozen Phase 0–3 Schemas, eleven exact
+  Shader mirrors, build, Bundle, Pages, and all 26 pinned Chromium/WebGPU cases passed.
+- Artifact `8538971728`, digest
+  `sha256:10adf2f25e8174cc74f9e1c0edfd1cc96122e00357c741fd91d6a893d5794334`, contains
+  `test-results/phase-04/runtime/pbr-temporal-output.json` bound to the cleaned checkpoint Head.
+- Native evidence records one cube Draw, 36 Vertices, 12 Triangles, twelve temporal PBR Pipelines,
+  thirteen active Textures before cleanup, exact 48 created / 48 destroyed resources, and zero
+  active Texture, Buffer, Sampler, Bind Group, Pipeline, Shader, Surface, or Encoder resources after
+  PBR Feature, History, and Backend disposal.
+- Phase 0–3 public routes and acceptance evidence remain frozen. Phase 4 still has no public route,
+  owner acceptance, deployment, or Accepted Tag.
+
+### Next
+
+- Implement P4-09 as a dedicated final Present pass that samples resolved linear-HDR Dynamic TAA
+  Color, applies exposure, Khronos PBR Neutral tone mapping, and linear-to-sRGB exactly once, and
+  writes to the Canvas Surface without taking ownership of History. Preserve direct Surface mode as
+  the default and defer Static Accumulation plus Phase 4 route/acceptance integration.

@@ -603,6 +603,233 @@ describe('WebGpuBackend device lifecycle', () => {
     backend.dispose();
   });
 
+  it('renders to ordered offscreen MRT subresources and rejects incompatible targets', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'rgba16float' }, { format: 'rgba16float' }],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const target = backend.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    const normalTarget = backend.createTexture({
+      format: 'rgba16float',
+      mipLevelCount: 2,
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    const view = {
+      arrayLayerCount: 1,
+      baseArrayLayer: 0,
+      baseMipLevel: 1,
+      dimension: '2d' as const,
+      mipLevelCount: 1,
+    };
+
+    expect(
+      backend.executeFrame({
+        commandEncoder: backend.createCommandEncoder(),
+        renderPasses: [
+          {
+            clearColor: { a: 0, b: 0, g: 0, r: 0 },
+            colorAttachments: [
+              { loadOp: 'load', storeOp: 'discard', texture: target, view },
+              {
+                clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+                texture: normalTarget,
+                view,
+              },
+            ],
+            draws: [{ pipeline, vertexCount: 3 }],
+          },
+        ],
+      }),
+    ).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
+    expect(device.textures[0]?.createView).toHaveBeenCalledExactlyOnceWith(view);
+    expect(device.textures[1]?.createView).toHaveBeenCalledExactlyOnceWith(view);
+    expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledExactlyOnceWith({
+      clearColor: { a: 0, b: 0, g: 0, r: 0 },
+      colorAttachments: [
+        {
+          clearColor: { a: 0, b: 0, g: 0, r: 0 },
+          loadOp: 'load',
+          storeOp: 'discard',
+          view: { kind: 'texture-view' },
+        },
+        {
+          clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+          loadOp: 'clear',
+          storeOp: 'store',
+          view: { kind: 'texture-view' },
+        },
+      ],
+      depthAttachment: undefined,
+      draws: [expect.objectContaining({ pipeline: expect.any(Object), vertexCount: 3 })],
+      label: undefined,
+    });
+
+    const incompatible = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'bgra8unorm' }],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const incompatibleEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: incompatibleEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [{ texture: target }],
+            draws: [{ pipeline: incompatible, vertexCount: 3 }],
+          },
+        ],
+      }),
+    ).toThrow('color targets must exactly match');
+    expect(backend.destroyResource(incompatibleEncoder)).toBe(true);
+
+    const invalidViewEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: invalidViewEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [
+              {
+                texture: target,
+                view: { dimension: '2d', mipLevelCount: 2 },
+              },
+            ],
+            draws: [],
+          },
+        ],
+      }),
+    ).toThrow('one valid 2D mip');
+    expect(backend.destroyResource(invalidViewEncoder)).toBe(true);
+
+    const duplicateEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: duplicateEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [{ texture: target }, { texture: target }],
+          },
+        ],
+      }),
+    ).toThrow('must use distinct Textures');
+    expect(backend.destroyResource(duplicateEncoder)).toBe(true);
+
+    const smallerTarget = backend.createTexture({
+      format: 'rgba16float',
+      size: { height: 4, width: 4 },
+      usage: ['render-attachment'],
+    });
+    const dimensionsEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: dimensionsEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [{ texture: target }, { texture: smallerTarget }],
+          },
+        ],
+      }),
+    ).toThrow('dimensions must match');
+    expect(backend.destroyResource(dimensionsEncoder)).toBe(true);
+
+    const limitEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: limitEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: Array.from({ length: 5 }, () => ({ texture: target })),
+          },
+        ],
+      }),
+    ).toThrow('count exceeds the Backend limit');
+    expect(backend.destroyResource(limitEncoder)).toBe(true);
+    await expect(
+      backend.createRenderPipeline({
+        fragment: {
+          entryPoint: 'fragmentMain',
+          module: shader,
+          targets: Array.from({ length: 5 }, () => ({ format: 'rgba16float' as const })),
+        },
+        vertex: { entryPoint: 'vertexMain', module: shader },
+      }),
+    ).rejects.toThrow('color target count exceeds the Backend limit');
+
+    const clearEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: clearEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [
+              { clearColor: { a: 1, b: 0, g: 0, r: Number.NaN }, texture: target },
+            ],
+          },
+        ],
+      }),
+    ).toThrow('Clear color channel r must be finite');
+    expect(backend.destroyResource(clearEncoder)).toBe(true);
+
+    const packedTarget = backend.createTexture({
+      format: 'rgba8unorm',
+      size: { height: 4, width: 8 },
+      usage: ['render-attachment'],
+    });
+    const orderedPipeline = await backend.createRenderPipeline({
+      fragment: {
+        entryPoint: 'fragmentMain',
+        module: shader,
+        targets: [{ format: 'rgba16float' }, { format: 'rgba8unorm' }],
+      },
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const orderEncoder = backend.createCommandEncoder();
+    expect(() =>
+      backend.executeFrame({
+        commandEncoder: orderEncoder,
+        renderPasses: [
+          {
+            clearColor: { a: 1, b: 0, g: 0, r: 0 },
+            colorAttachments: [{ texture: packedTarget }, { texture: target }],
+            draws: [{ pipeline: orderedPipeline, vertexCount: 3 }],
+          },
+        ],
+      }),
+    ).toThrow('must exactly match the ordered Render Pass attachments');
+    expect(backend.destroyResource(orderEncoder)).toBe(true);
+    backend.dispose();
+  });
+
   it('records indexed Draws and rejects reads outside the bound Index Buffer range', async () => {
     const surfacePort = new FakeSurface();
     const device = new FakeDevice([surfacePort]);
@@ -860,6 +1087,41 @@ describe('WebGpuBackend device lifecycle', () => {
         pipeline,
       }),
     ).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
+    backend.dispose();
+  });
+
+  it('binds a single-sampled Depth Texture for sampled reprojection reads', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const depth = backend.createTexture({
+      format: 'depth32float',
+      size: { height: 2, width: 3 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(
+      backend.createBindGroup({
+        entries: [{ binding: 0, resource: { texture: depth } }],
+        group: 0,
+        pipeline,
+      }),
+    ).toEqual(expect.objectContaining({ kind: 'backend:bind-group' }));
+    expect(device.createBindGroup).toHaveBeenCalledWith({
+      entries: [{ binding: 0, kind: 'texture', view: expect.any(Object) }],
+      group: 0,
+      label: undefined,
+      pipeline: expect.any(Object),
+    });
     backend.dispose();
   });
 

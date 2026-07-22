@@ -1,0 +1,134 @@
+name: Verify P4-09 final Present
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-p4-09-verify.yml
+      - packages/renderer/src/dynamic-taa-present-pass.ts
+      - packages/renderer/test/dynamic-taa-present-pass.test.ts
+      - shaders/webgpu/phase-04-taa-present.wgsl
+      - packages/renderer/src/generated/phase-04-taa-present.wgsl.ts
+      - tests/e2e/phase-04-present.spec.ts
+
+permissions:
+  contents: write
+
+concurrency:
+  group: agent-p4-09-verify
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+    steps:
+      - name: Check out Phase 4 branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Integrate SDK exports and Shader mirror
+        shell: bash
+        run: |
+          cat > /tmp/p4-09-integrate.mjs <<'EOF'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          function replaceOnce(source, search, replacement, label) {
+            const index = source.indexOf(search);
+            if (index < 0) throw new Error(`P4-09 integration anchor not found: ${label}`);
+            if (source.indexOf(search, index + search.length) >= 0) {
+              throw new Error(`P4-09 integration anchor is not unique: ${label}`);
+            }
+            return source.slice(0, index) + replacement + source.slice(index + search.length);
+          }
+
+          const sdkPath = 'packages/sdk/src/index.ts';
+          let sdk = await readFile(sdkPath, 'utf8');
+          sdk = replaceOnce(
+            sdk,
+            '  DynamicTaaGpuHistorySize,\n  DynamicTaaResolvePassDiagnostics,',
+            '  DynamicTaaGpuHistorySize,\n  DynamicTaaPresentPassDiagnostics,\n  DynamicTaaPresentPassInput,\n  DynamicTaaPresentPassOptions,\n  DynamicTaaResolvePassDiagnostics,',
+            'SDK Present type exports',
+          );
+          sdk = replaceOnce(
+            sdk,
+            '  DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,\n  PBR_OBJECT_UNIFORM_LAYOUT,',
+            '  DYNAMIC_TAA_PRESENT_UNIFORM_LAYOUT,\n  DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,\n  PBR_OBJECT_UNIFORM_LAYOUT,',
+            'SDK Present uniform export',
+          );
+          sdk = replaceOnce(
+            sdk,
+            '  DynamicTaaGpuHistory,\n  DynamicTaaResolvePass,',
+            '  DynamicTaaGpuHistory,\n  DynamicTaaPresentPass,\n  DynamicTaaResolvePass,',
+            'SDK Present class export',
+          );
+          sdk = replaceOnce(
+            sdk,
+            '  packPbrObjectUniforms,\n  packDynamicTaaResolveUniforms,',
+            '  packPbrObjectUniforms,\n  packDynamicTaaPresentUniforms,\n  packDynamicTaaResolveUniforms,',
+            'SDK Present packer export',
+          );
+          await writeFile(sdkPath, sdk);
+
+          const validatorPath = 'tools/shader-build/validate-shaders.mjs';
+          let validator = await readFile(validatorPath, 'utf8');
+          validator = replaceOnce(
+            validator,
+            "  [\n    'webgpu/phase-04-taa-resolve.wgsl',",
+            "  [\n    'webgpu/phase-04-taa-present.wgsl',\n    {\n      exportName: 'PHASE_04_TAA_PRESENT_WGSL',\n      path: 'packages/renderer/src/generated/phase-04-taa-present.wgsl.ts',\n    },\n  ],\n  [\n    'webgpu/phase-04-taa-resolve.wgsl',",
+            'P4-09 Shader mirror',
+          );
+          await writeFile(validatorPath, validator);
+          EOF
+          node /tmp/p4-09-integrate.mjs
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format repository
+        run: pnpm format
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run complete verification pipeline
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/p4-09-verify.log
+
+      - name: Commit verified integration and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/agent-p4-09-verify.yml
+          git add packages/renderer packages/sdk shaders tests tools/shader-build
+          git commit -m "feat(temporal): integrate final TAA present pass"
+          git push origin HEAD:agent/phase-04-temporal
+
+      - name: Upload P4-09 diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: p4-09-present-diagnostics-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/phase-04/runtime/
+          if-no-files-found: ignore
+          retention-days: 7

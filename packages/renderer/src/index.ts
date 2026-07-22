@@ -4,6 +4,29 @@ export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
 export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
 export {
+  DynamicTaaGpuHistory,
+  type DynamicTaaGpuFrame,
+  type DynamicTaaGpuHistoryDiagnostics,
+  type DynamicTaaGpuHistoryOptions,
+  type DynamicTaaGpuHistorySize,
+} from './dynamic-taa-gpu-history.js';
+export {
+  DYNAMIC_TAA_PRESENT_UNIFORM_LAYOUT,
+  DynamicTaaPresentPass,
+  packDynamicTaaPresentUniforms,
+  type DynamicTaaPresentPassDiagnostics,
+  type DynamicTaaPresentPassInput,
+  type DynamicTaaPresentPassOptions,
+} from './dynamic-taa-present-pass.js';
+export {
+  DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,
+  DynamicTaaResolvePass,
+  packDynamicTaaResolveUniforms,
+  type DynamicTaaResolvePassDiagnostics,
+  type DynamicTaaResolvePassInput,
+  type DynamicTaaResolvePassOptions,
+} from './dynamic-taa-resolve-pass.js';
+export {
   EnvironmentGpuCache,
   EnvironmentGpuLease,
   type EnvironmentGpuCacheDiagnostics,
@@ -61,6 +84,7 @@ export {
 export {
   PBR_RENDER_FEATURE_ID,
   PbrRenderFeature,
+  type PbrDynamicTaaOutput,
   type PbrEnvironmentDescriptor,
   type PbrEnvironmentState,
   type PbrRenderFeatureDiagnostics,

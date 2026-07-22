@@ -10,11 +10,12 @@ import { createWebGpuBackend } from '@kyxos/render-backend-webgpu';
 import type { WebGpuPowerPreference } from '@kyxos/render-backend-webgpu';
 import { OrbitController, PerspectiveCamera } from '@kyxos/render-camera';
 import type { OrbitControllerOptions, PerspectiveCameraOptions } from '@kyxos/render-camera';
-import type { FrameRequestDriver } from '@kyxos/render-frame-scheduler';
+import type { FrameRequestDriver, FrameSchedulerController } from '@kyxos/render-frame-scheduler';
 import type { PbrOutputTransformDescriptor } from '@kyxos/render-material-pbr';
 import { PbrMaterialLibrary, PbrRenderFeature, PbrTextureLibrary } from '@kyxos/render-renderer';
 import type {
   PbrDirectionalLightDescriptor,
+  PbrDynamicTaaOutput,
   PbrEnvironmentDescriptor,
 } from '@kyxos/render-renderer';
 import { Scene } from '@kyxos/render-scene';
@@ -35,9 +36,11 @@ export interface CreateKyxosPbrRendererOptions {
   readonly cssHeight?: number;
   readonly cssWidth?: number;
   readonly devicePixelRatio?: number;
+  readonly dynamicTaaOutput?: PbrDynamicTaaOutput;
   readonly environment?: PbrEnvironmentDescriptor;
   readonly forceFallbackAdapter?: boolean;
   readonly frameDriver?: FrameRequestDriver;
+  readonly frameScheduler?: FrameSchedulerController;
   readonly frustumCulling?: boolean;
   readonly label?: string;
   readonly light?: PbrDirectionalLightDescriptor;
@@ -91,6 +94,9 @@ function composePbrRenderer(options: CreateKyxosPbrRendererOptions): KyxosPbrCan
     camera,
     ...(options.cameraLayerMask === undefined ? {} : { cameraLayerMask: options.cameraLayerMask }),
     ...(options.clearColor === undefined ? {} : { clearColor: options.clearColor }),
+    ...(options.dynamicTaaOutput === undefined
+      ? {}
+      : { dynamicTaaOutput: options.dynamicTaaOutput }),
     ...(options.environment === undefined ? {} : { environment: options.environment }),
     ...(options.frustumCulling === undefined ? {} : { frustumCulling: options.frustumCulling }),
     ...(options.light === undefined ? {} : { light: options.light }),
@@ -112,11 +118,15 @@ function composePbrRenderer(options: CreateKyxosPbrRendererOptions): KyxosPbrCan
     },
     textures,
   });
+  const scheduling =
+    options.frameScheduler === undefined
+      ? { frameDriver: options.frameDriver ?? createBrowserFrameDriver() }
+      : { frameScheduler: options.frameScheduler };
   return new KyxosPbrCanvasRenderer({
     backend,
     camera,
     feature,
-    frameDriver: options.frameDriver ?? createBrowserFrameDriver(),
+    ...scheduling,
     materials,
     meshRenderers,
     orbitController,

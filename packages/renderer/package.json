@@ -31,6 +31,7 @@
     "@kyxos/render-material-pbr": "workspace:*",
     "@kyxos/render-math": "workspace:*",
     "@kyxos/render-scene": "workspace:*",
+    "@kyxos/render-temporal": "workspace:*",
     "@kyxos/render-visibility": "workspace:*"
   },
   "devDependencies": {

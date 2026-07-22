@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 Accepted — Phase 4 handoff                                                                                                     |
-| Current Branch      | `agent/phase-03-pages-enablement`                                                                                                      |
-| Current Commit      | `6b3331251fd1a20257aeebab26a72c2f26103f0a` (deployed and immutable accepted source)                                                    |
-| Overall Progress    | 4 / 15 phases accepted; Phase 4 is unblocked                                                                                           |
-| Current Task        | P3-12 — Record successful public Pages verification and immutable Phase 3 freeze                                                       |
-| Last Completed Task | PR #5 merged; public Phase 0–3/Latest Chromium-WebGPU verification passed; `phase-03-accepted` targets the merge source                |
-| Next Action         | Merge the green Phase 3 closure record, create `agent/phase-04-temporal` from updated `main`, and begin P4-01 scheduler state contract |
-| CI Status           | Final PR Run 29919316277 PASS; main/deploy/public/freeze workflow chain PASS; accepted Tag targets `6b333125`                          |
-| Acceptance Status   | Phase 0, Phase 1, Phase 2, and Phase 3 Accepted                                                                                        |
-| Known Blockers      | None                                                                                                                                   |
-| Last Updated        | 2026-07-22 05:35 PDT                                                                                                                   |
+| Field               | Value                                                                                                                                                                                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Current Phase       | Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)                                                                                                                                                                                                                                           |
+| Current Branch      | `agent/phase-04-temporal`                                                                                                                                                                                                                                                                                          |
+| Current Commit      | `8656e8d3be0c8082c9f50eafcdbd9297333721d1` (P4-08 implementation verified; temporary repository patch tooling removed)                                                                                                                                                                                           |
+| Overall Progress    | 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-08 complete                                                                                                                                                                                                                                           |
+| Current Task        | P4-09 — Final temporal Present pass and output transform                                                                                                                                                                                                                                                           |
+| Last Completed Task | P4-08 — Opt-in PBR linear-HDR Color + encoded Normal MRT with caller-owned `depth32float` Dynamic TAA targets, preserved accepted Surface path, native WebGPU evidence, and zero-resource disposal                                                                                                                  |
+| Next Action         | Add a dedicated final Present pass that samples resolved linear-HDR Dynamic TAA Color, applies the existing exposure / tone-mapping / linear-to-sRGB output contract exactly once, and writes to the Canvas Surface without taking ownership of History; retain the accepted direct Surface mode as the default path |
+| CI Status           | Run 29942780536 / job 89000570625 PASS; 250 unit tests + 26 Chromium/WebGPU cases; Artifact 8538971728                                                                                                                                                                                                             |
+| Acceptance Status   | Phase 0–3 Accepted; Phase 4 In Development                                                                                                                                                                                                                                                                         |
+| Known Blockers      | None                                                                                                                                                                                                                                                                                                               |
+| Last Updated        | 2026-07-22 10:37 PDT                                                                                                                                                                                                                                                                                               |
 
 ## Phase Progress
 
@@ -22,7 +22,7 @@
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
 |    02 | Phase Accepted | `agent/phase-02-scene-camera`        | #3  | PASS | Phase Accepted | `phase-02-accepted` |
 |    03 | Phase Accepted | `agent/phase-03-pbr-ibl`             | #5  | PASS | Phase Accepted | `phase-03-accepted` |
-|    04 | Planned        | `agent/phase-04-temporal`            | —   | —    | Planned        | —                   |
+|    04 | In Development | `agent/phase-04-temporal`            | #7  | PASS | In Development | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —    | Planned        | —                   |
 |    06 | Planned        | `agent/phase-06-assets`              | —   | —    | Planned        | —                   |
 |    07 | Planned        | `agent/phase-07-animation`           | —   | —    | Planned        | —                   |

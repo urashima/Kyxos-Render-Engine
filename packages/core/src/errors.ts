@@ -24,6 +24,7 @@ export type EngineModule =
   | 'scene'
   | 'scheduler'
   | 'sdk'
+  | 'temporal'
   | 'unknown'
   | 'visibility';
 
