@@ -331,8 +331,6 @@ export class MockBackend implements GraphicsBackend {
         if (
           texture === undefined ||
           !texture.usage.includes('sampled') ||
-          texture.format === 'depth24plus' ||
-          texture.format === 'depth32float' ||
           (texture.sampleCount ?? 1) !== 1 ||
           !validateTextureView(entry.resource.view, texture)
         )

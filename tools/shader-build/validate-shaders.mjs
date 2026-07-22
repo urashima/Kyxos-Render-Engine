@@ -68,6 +68,13 @@ const generatedMirrors = new Map([
       path: 'packages/temporal/src/generated/phase-04-taa-reference.wgsl.ts',
     },
   ],
+  [
+    'webgpu/phase-04-taa-resolve.wgsl',
+    {
+      exportName: 'PHASE_04_TAA_RESOLVE_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-taa-resolve.wgsl.ts',
+    },
+  ],
 ]);
 
 async function collectShaders(directory) {
@@ -156,7 +163,7 @@ try {
       `${JSON.stringify(
         {
           browserCompilerGate:
-            'tests/e2e/phase-01.spec.ts plus phase-03-* and phase-04-* specs (BRDF/IBL/TAA/Camera reprojection compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT sampling)',
+            'tests/e2e/phase-01.spec.ts plus phase-03-* and phase-04-* specs (BRDF/IBL/TAA/Camera reprojection compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT/Dynamic TAA sampling)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',

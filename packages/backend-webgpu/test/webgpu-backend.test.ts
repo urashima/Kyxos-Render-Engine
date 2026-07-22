@@ -1090,6 +1090,41 @@ describe('WebGpuBackend device lifecycle', () => {
     backend.dispose();
   });
 
+  it('binds a single-sampled Depth Texture for sampled reprojection reads', async () => {
+    const device = new FakeDevice();
+    const backend = createWebGpuBackendForPlatform(
+      {},
+      new FakePlatform(true, [new FakeAdapter([], [device])]),
+    );
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn vertexMain() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      vertex: { entryPoint: 'vertexMain', module: shader },
+    });
+    const depth = backend.createTexture({
+      format: 'depth32float',
+      size: { height: 2, width: 3 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(
+      backend.createBindGroup({
+        entries: [{ binding: 0, resource: { texture: depth } }],
+        group: 0,
+        pipeline,
+      }),
+    ).toEqual(expect.objectContaining({ kind: 'backend:bind-group' }));
+    expect(device.createBindGroup).toHaveBeenCalledWith({
+      entries: [{ binding: 0, kind: 'texture', view: expect.any(Object) }],
+      group: 0,
+      label: undefined,
+      pipeline: expect.any(Object),
+    });
+    backend.dispose();
+  });
+
   it('rejects invalid typed resource descriptors and foreign Shader handles', async () => {
     const firstDevice = new FakeDevice();
     const secondDevice = new FakeDevice();

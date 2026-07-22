@@ -661,11 +661,9 @@ export class WebGpuBackend implements GraphicsBackend {
         );
         if (
           !texture.descriptor.usage.includes('sampled') ||
-          texture.descriptor.format === 'depth24plus' ||
-          texture.descriptor.format === 'depth32float' ||
           (texture.descriptor.sampleCount ?? 1) !== 1
         ) {
-          throw invalidArgument('Bind Group Texture must be sampled color data.');
+          throw invalidArgument('Bind Group Texture must be single-sampled sampled data.');
         }
         sampledTextureCount += 1;
         resourceHandles.push(entry.resource.texture);

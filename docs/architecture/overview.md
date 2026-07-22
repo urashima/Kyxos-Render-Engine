@@ -38,7 +38,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1  | Backend API, Core                                                                       |
 | `@kyxos/render-temporal`        | History, convergence, Jitter, and deterministic Dynamic TAA resolve     | Core                                                                                    |
 | `@kyxos/render-frame-scheduler` | Dirty-only and opt-in four-mode injected frame scheduling               | Core, Temporal                                                                          |
-| `@kyxos/render-renderer`        | Renderer lifecycle, direct/IBL PBR, mapped resources, and GPU caches    | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Temporal, Visibility |
+| `@kyxos/render-renderer`        | Renderer lifecycle, PBR, Dynamic TAA resources/resolve, and GPU caches  | Backend API, Camera, Core, Environment, Geometry, Material, Scene, Temporal, Visibility |
 | `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry       | Public engine packages                                                                  |
 | `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                             | Backend API, Core, Frame Scheduler                                                      |
 | `@kyxos/render-playground`      | Independent acceptance and development application                      | SDK, Testing                                                                            |
@@ -63,8 +63,10 @@ Dynamic and static histories are separate owner-scoped records. Their immutable 
 device, scene, camera, viewport, geometry, material, lighting, environment, and post-process
 revisions. Signature mismatch rejects reuse before sampling. Dynamic TAA GPU Textures remain owned
 and released by a dedicated Renderer owner: one Current linear-HDR Color target plus paired resolved
-Color/Depth/Normal sets that swap atomically. A later Temporal Render Feature may compose those
-opaque Handles; the CPU history contract and Backend never infer ownership from attachment use.
+Color/Depth/Normal sets that swap atomically. A separate resolve owner composes those opaque Handles
+through its own Shader, Pipeline, Uniform, and Bind Groups; it never swaps History implicitly. The
+caller orders scene MRT, resolve, and commit, while the CPU history contract and Backend never infer
+ownership from attachment or Bind Group use.
 
 ## Backend policy
 

@@ -11,6 +11,14 @@ export {
   type DynamicTaaGpuHistorySize,
 } from './dynamic-taa-gpu-history.js';
 export {
+  DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,
+  DynamicTaaResolvePass,
+  packDynamicTaaResolveUniforms,
+  type DynamicTaaResolvePassDiagnostics,
+  type DynamicTaaResolvePassInput,
+  type DynamicTaaResolvePassOptions,
+} from './dynamic-taa-resolve-pass.js';
+export {
   EnvironmentGpuCache,
   EnvironmentGpuLease,
   type EnvironmentGpuCacheDiagnostics,

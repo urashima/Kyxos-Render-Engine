@@ -230,6 +230,31 @@ describe('MockBackend', () => {
     backend.dispose();
   });
 
+  it('accepts a single-sampled sampled Depth Texture in a Bind Group', async () => {
+    const backend = new MockBackend();
+    await backend.initialize();
+    const shader = backend.createShaderModule({
+      code: '@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }',
+      language: 'wgsl',
+    });
+    const pipeline = await backend.createRenderPipeline({
+      vertex: { entryPoint: 'main', module: shader },
+    });
+    const depth = backend.createTexture({
+      format: 'depth32float',
+      size: { height: 2, width: 3 },
+      usage: ['render-attachment', 'sampled'],
+    });
+    expect(
+      backend.createBindGroup({
+        entries: [{ binding: 0, resource: { texture: depth } }],
+        group: 0,
+        pipeline,
+      }),
+    ).toEqual(expect.objectContaining({ kind: 'backend:bind-group' }));
+    backend.dispose();
+  });
+
   it('validates ordered offscreen MRT attachments and Pipeline target formats', async () => {
     const backend = new MockBackend();
     await backend.initialize();

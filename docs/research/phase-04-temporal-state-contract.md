@@ -98,7 +98,7 @@ stable cause such as Camera, Material, Texture, Viewport, or Device. Dynamic and
 not share sample counts or validity.
 
 The CPU record owns no GPU object. P4-04 added a separate `DynamicTaaGpuHistory` owner in Renderer;
-P4-06 expands it to the complete frame-target identity needed by a later resolve pass:
+P4-06 expanded it to the complete frame-target identity consumed by the P4-07 resolve pass:
 
 - each non-empty Owner ID has one Current `rgba16float` linear-HDR Color Texture;
 - it also has two resolved target sets, each containing `rgba16float` Color, `depth32float` Depth,
@@ -173,6 +173,31 @@ deliberately excludes multisampled resolves, sparse/null attachment slots, dupli
 subresources, and mixed attachment dimensions until a Render Graph checkpoint defines their
 ownership and scheduling semantics.
 
+## Sampled Dynamic TAA resolve pass
+
+P4-07 adds an independent `DynamicTaaResolvePass` without transferring ownership of the
+`DynamicTaaGpuHistory` targets. Its 176-byte Uniform contains inverse Current and Previous
+View-Projection matrices, Viewport size, History validity, responsive mask, and the frozen P4-03
+resolve options. One Bind Group maps Current Color, Current write Depth and Normal, prior read
+Color/Depth/Normal, and the History Sampler. The Backend therefore permits single-sampled sampled
+Depth Textures in Bind Groups while retaining usage, view-subresource, and sample-count validation.
+
+The full-screen WGSL pass reconstructs History UV from Current Depth with the P4-05 fail-closed
+rules, loads a clamped 3×3 Current Color neighborhood, samples prior linear-HDR Color and encoded
+Normal at the reprojected coordinate, and loads the corresponding prior Depth texel. Normals decode
+from `[0, 1]` to `[-1, 1]` and normalize before the P4-03 Depth/Normal rejection, neighborhood clamp,
+and responsive weighting. The result preserves Current Alpha and writes linear-HDR RGB into the
+History write Color target.
+
+The pass owns only one Shader, one Pipeline, one Uniform Buffer, and role-specific Bind Groups. It
+reuses Bind Groups within a resource generation, releases stale groups before binding a resized
+generation, forgets invalid Handles on Device Lost, rebuilds after restoration, and releases its
+resources before the caller disposes History. The caller remains responsible for the order
+`scene MRT → resolve → History commit`; execution never commits or swaps History implicitly.
+
+P4-07 deliberately excludes PBR offscreen/MRT output, final Present, Skinned/Morph Motion Vectors,
+Render Graph scheduling, Static Accumulation, a Phase 4 public route, and an acceptance claim.
+
 ## Renderer boundary
 
 `KyxosRenderer` continues to construct the dirty-only scheduler unless a caller explicitly injects a
@@ -196,11 +221,14 @@ Renderer → Frame Scheduler + Temporal
 SDK → public engine packages
 ```
 
-Unit tests cover Backend target/view/count/dimension/format-order validation, native ordered port
-translation, whole-set ping-pong roles, signature mismatch, atomic Resize, partial-allocation
-rollback, Device Lost recovery, complete release, general matrix inversion, Camera reprojection
-direction, and every fail-closed projection branch. The pinned Chromium/SwiftShader gate
+Unit tests cover Backend target/view/count/dimension/format-order validation, sampled Depth binding,
+native ordered port translation, whole-set ping-pong roles, signature mismatch, atomic Resize,
+partial-allocation rollback, Device Lost recovery, complete release, general matrix inversion,
+Camera reprojection direction, every fail-closed projection branch, exact 176-byte Uniform packing,
+role-cache reuse/replacement, and resolve ownership. The pinned Chromium/SwiftShader gate
 dynamically loads the public WebGPU Backend and Renderer modules, submits real two-target
-`rgba16float` MRT passes with `depth32float` through both initial and resized History resources, and
-records those owner/resource diagnostics plus the deterministic Camera reprojection float32
-readback in the Phase 4 Artifact.
+`rgba16float` MRT passes with `depth32float`, executes the sampled resolve through both initial and
+resized History resources, and records the resource diagnostics. A separate native WebGPU gate
+reads three `rgba16float` output pixels for accepted, Depth-rejected, and Normal-rejected History,
+compares them with the half-float-aware CPU oracle, and stores the result with the deterministic
+Camera reprojection reference in the Phase 4 Artifact.
