@@ -1,4 +1,5 @@
 import type {
+  BackendBindGroupResource,
   BackendFeature,
   BackendLimits,
   BackendLossInfo,
@@ -101,11 +102,13 @@ class FakeDevice implements WebGpuDevicePort {
     onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
     submit: vi.fn<(commandBuffers: readonly WebGpuCommandBufferPort[]) => void>(),
     writeBuffer: vi.fn<WebGpuDevicePort['queue']['writeBuffer']>(),
+    writeTexture: vi.fn<WebGpuDevicePort['queue']['writeTexture']>(),
   });
   readonly createSurface = vi.fn<(request: WebGpuSurfaceRequest) => WebGpuSurfacePort>();
   readonly buffers: FakeBuffer[] = [];
   readonly textures: FakeTexture[] = [];
   readonly shaders: FakeShaderModule[] = [];
+  readonly samplers: WebGpuSamplerPort[] = [];
   readonly encoders: FakeCommandEncoder[] = [];
   readonly createBuffer = vi.fn<
     (descriptor: Parameters<WebGpuDevicePort['createBuffer']>[0]) => WebGpuBufferPort
@@ -124,7 +127,11 @@ class FakeDevice implements WebGpuDevicePort {
   });
   readonly createSampler = vi.fn<
     (descriptor: Parameters<WebGpuDevicePort['createSampler']>[0]) => WebGpuSamplerPort
-  >(() => ({ kind: 'sampler' }));
+  >(() => {
+    const sampler = { kind: 'sampler' as const };
+    this.samplers.push(sampler);
+    return sampler;
+  });
   readonly createShaderModule = vi.fn<
     (descriptor: Parameters<WebGpuDevicePort['createShaderModule']>[0]) => WebGpuShaderModulePort
   >(() => {
@@ -394,7 +401,7 @@ describe('WebGpuBackend device lifecycle', () => {
       format: 'rgba8unorm',
       mipLevelCount: 2,
       size: { height: 4, width: 4 },
-      usage: ['render-attachment', 'sampled'],
+      usage: ['copy-dst', 'render-attachment', 'sampled'],
     });
     backend.createSampler({ magFilter: 'linear', minFilter: 'linear' });
     const shader = backend.createShaderModule({
@@ -433,6 +440,9 @@ describe('WebGpuBackend device lifecycle', () => {
       target: { getContext: () => ({}), height: 0, width: 0 },
     });
     backend.writeBuffer(buffer, new Float32Array(16));
+    backend.writeTexture(texture, new Uint8Array(4 * 4 * 4), {
+      size: { height: 4, width: 4 },
+    });
     const commandEncoder = backend.createCommandEncoder({ label: 'frame' });
     const frame = backend.executeFrame({
       commandEncoder,
@@ -466,6 +476,17 @@ describe('WebGpuBackend device lifecycle', () => {
       device.buffers[0],
       0,
       expect.any(Float32Array),
+    );
+    expect(device.queue.writeTexture).toHaveBeenCalledExactlyOnceWith(
+      {
+        bytesPerRow: 16,
+        mipLevel: 0,
+        origin: { x: 0, y: 0, z: 0 },
+        rowsPerImage: 4,
+        size: { depthOrArrayLayers: 1, height: 4, width: 4 },
+        texture: device.textures[0],
+      },
+      expect.any(Uint8Array),
     );
     expect(frame).toEqual({ drawCalls: 1, instances: 1, triangles: 1, vertices: 3 });
     expect(device.encoders[0]?.encodeRenderPass).toHaveBeenCalledWith(
@@ -631,8 +652,38 @@ describe('WebGpuBackend device lifecycle', () => {
       size: 144,
       usage: ['copy-dst', 'uniform'],
     });
+    const sampled = backend.createTexture({
+      format: 'rgba8unorm',
+      size: { height: 1, width: 1 },
+      usage: ['copy-dst', 'sampled'],
+    });
+    backend.writeTexture(sampled, new Uint8Array([255, 255, 255, 255]), {
+      size: { height: 1, width: 1 },
+    });
+    expect(() =>
+      backend.writeTexture(sampled, new Uint8Array(3), {
+        size: { height: 1, width: 1 },
+      }),
+    ).toThrow('source data is smaller');
+    const sampler = backend.createSampler({ minFilter: 'linear' });
+    expect(() =>
+      backend.createBindGroup({
+        entries: [
+          {
+            binding: 0,
+            resource: { sampler, texture: sampled } as unknown as BackendBindGroupResource,
+          },
+        ],
+        group: 0,
+        pipeline,
+      }),
+    ).toThrow('exactly one');
     const bindGroup = backend.createBindGroup({
-      entries: [{ binding: 0, resource: { buffer: uniform, size: 144 } }],
+      entries: [
+        { binding: 0, resource: { buffer: uniform, size: 144 } },
+        { binding: 1, resource: { texture: sampled } },
+        { binding: 2, resource: { sampler } },
+      ],
       group: 0,
       pipeline,
     });
@@ -680,7 +731,11 @@ describe('WebGpuBackend device lifecycle', () => {
       }),
     );
     expect(device.createBindGroup).toHaveBeenCalledWith({
-      entries: [{ binding: 0, buffer: device.buffers[0], offset: 0, size: 144 }],
+      entries: [
+        { binding: 0, buffer: device.buffers[0], kind: 'buffer', offset: 0, size: 144 },
+        { binding: 1, kind: 'texture', view: expect.any(Object) },
+        { binding: 2, kind: 'sampler', sampler: device.samplers[0] },
+      ],
       group: 0,
       label: undefined,
       pipeline: expect.any(Object),
@@ -696,6 +751,7 @@ describe('WebGpuBackend device lifecycle', () => {
       }),
     );
     expect(device.textures[0]?.createView).toHaveBeenCalledTimes(1);
+    expect(device.textures[1]?.createView).toHaveBeenCalledTimes(1);
 
     const missingDepthEncoder = backend.createCommandEncoder();
     expect(() =>

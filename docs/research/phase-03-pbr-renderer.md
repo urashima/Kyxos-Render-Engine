@@ -2,6 +2,9 @@
 
 Status: Implemented checkpoint (Phase 3 remains In Development)
 
+This document freezes the P3-03 boundary. P3-04 subsequently implements the deferred factor-map
+path in [phase-03-pbr-textures.md](./phase-03-pbr-textures.md); the P3-03 evidence remains unchanged.
+
 ## Scope
 
 P3-03 connects the factor-only metallic/roughness material contract to the backend-neutral Renderer. It adds an independent `PbrRenderFeature`; the accepted Phase 2 `SceneRenderFeature` and its visual baselines are unchanged.

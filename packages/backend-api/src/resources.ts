@@ -81,6 +81,22 @@ export interface BackendTextureDescriptor {
 
 export type BackendTextureHandle = BackendResourceHandle<'texture'>;
 
+export type BackendTextureData = ArrayBuffer | ArrayBufferView;
+
+export interface BackendTextureOrigin {
+  readonly x?: number;
+  readonly y?: number;
+  readonly z?: number;
+}
+
+export interface BackendTextureWriteDescriptor {
+  readonly bytesPerRow?: number;
+  readonly mipLevel?: number;
+  readonly origin?: BackendTextureOrigin;
+  readonly rowsPerImage?: number;
+  readonly size: BackendTextureSize;
+}
+
 export type BackendAddressMode = 'clamp-to-edge' | 'mirror-repeat' | 'repeat';
 export type BackendFilterMode = 'linear' | 'nearest';
 export type BackendMipmapFilterMode = BackendFilterMode;
@@ -214,9 +230,20 @@ export interface BackendBindGroupBufferBinding {
   readonly size?: number;
 }
 
+export interface BackendBindGroupSamplerBinding {
+  readonly sampler: BackendSamplerHandle;
+}
+
+export interface BackendBindGroupTextureBinding {
+  readonly texture: BackendTextureHandle;
+}
+
+export type BackendBindGroupResource =
+  BackendBindGroupBufferBinding | BackendBindGroupSamplerBinding | BackendBindGroupTextureBinding;
+
 export interface BackendBindGroupEntry {
   readonly binding: number;
-  readonly resource: BackendBindGroupBufferBinding;
+  readonly resource: BackendBindGroupResource;
 }
 
 export interface BackendBindGroupDescriptor {

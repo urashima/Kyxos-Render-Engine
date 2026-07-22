@@ -16,6 +16,8 @@ import {
   PBR_OBJECT_UNIFORM_LAYOUT,
   PbrMaterialLibrary,
   PbrRenderFeature,
+  PbrTextureLibrary,
+  PbrTextureSource,
   createPbrDirectionalLight,
   packPbrObjectUniforms,
 } from '../src/index.js';
@@ -32,7 +34,7 @@ function expectFloatTuple(actual: ArrayLike<number>, expected: readonly number[]
 }
 
 describe('PBR GPU layout', () => {
-  it('packs a stable 304-byte world-space material and lighting contract', () => {
+  it('packs a stable 352-byte world-space material, lighting, and UV contract', () => {
     const material = new PbrMaterial({
       alphaCutoff: 0.35,
       baseColorFactor: [0.8, 0.3, 0.1, 0.7],
@@ -42,6 +44,26 @@ describe('PBR GPU layout', () => {
       normalScale: -1,
       occlusionStrength: 0.45,
       roughnessFactor: 0.42,
+      textures: {
+        'base-color': createMaterialTextureBinding({
+          offset: [0.25, 0.5],
+          rotation: Math.PI / 2,
+          scale: [2, 3],
+          texture: createMaterialTextureReference({
+            id: 'base-color-layout',
+            transferFunction: 'srgb',
+          }),
+        }),
+        'metallic-roughness': createMaterialTextureBinding({
+          offset: [-0.25, 0.125],
+          rotation: Math.PI,
+          scale: [0.5, 0.75],
+          texture: createMaterialTextureReference({
+            id: 'metallic-roughness-layout',
+            transferFunction: 'linear',
+          }),
+        }),
+      },
     });
     const light = createPbrDirectionalLight({
       color: [0.9, 0.8, 0.7],
@@ -56,15 +78,18 @@ describe('PBR GPU layout', () => {
       worldMatrix: identityMat4(),
     });
 
-    expect(packed).toHaveLength(76);
+    expect(packed).toHaveLength(88);
     expect(packed.byteLength).toBe(PBR_OBJECT_UNIFORM_LAYOUT.byteLength);
     expectFloatTuple(packed.slice(48, 52), [0.8, 0.3, 0.1, 0.7]);
     expectFloatTuple(packed.slice(52, 56), [0.1, 0.2, 0.3, 4]);
     expectFloatTuple(packed.slice(56, 60), [0.65, 0.42, 0.35, 0]);
-    expectFloatTuple(packed.slice(60, 64), [-1, 0.45, 0, 0]);
+    expectFloatTuple(packed.slice(60, 64), [-1, 0.45, 1, 1]);
     expectFloatTuple(packed.slice(64, 68), [1, 2, 3, 1]);
     expectFloatTuple(packed.slice(68, 72), [0, 0, 1, 2]);
     expectFloatTuple(packed.slice(72, 76), [0.9, 0.8, 0.7, 0]);
+    expectFloatTuple(packed.slice(76, 80), [0.25, 0.5, 2, 3]);
+    expectFloatTuple(packed.slice(80, 84), [-0.25, 0.125, 0.5, 0.75]);
+    expectFloatTuple(packed.slice(84, 88), [0, 1, -1, 0]);
   });
 });
 
@@ -163,14 +188,15 @@ describe('PbrRenderFeature', () => {
       visibility: { opaqueCount: 3, transparentCount: 1, visibleCount: 4 },
     });
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 19,
+      activeCount: 22,
       byKind: {
         'bind-group': { activeCount: 4 },
         buffer: { activeCount: 6 },
         pipeline: { activeCount: 6 },
         'shader-module': { activeCount: 1 },
         surface: { activeCount: 1 },
-        texture: { activeCount: 1 },
+        sampler: { activeCount: 1 },
+        texture: { activeCount: 3 },
       },
     });
     expect(
@@ -180,7 +206,7 @@ describe('PbrRenderFeature', () => {
     ).toHaveProperty('size', 3);
     const objectUniforms = writeBuffer.mock.calls
       .map(([, data]) => data)
-      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 76);
+      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 88);
     expect(objectUniforms).toHaveLength(4);
     expect(
       objectUniforms
@@ -223,7 +249,7 @@ describe('PbrRenderFeature', () => {
       fallbackDrawCount: 0,
       objectBindingCount: 3,
     });
-    expect(backend.getResourceStatistics().activeCount).toBe(17);
+    expect(backend.getResourceStatistics().activeCount).toBe(20);
 
     renderer.dispose();
     expect(backend.getResourceStatistics().activeCount).toBe(0);
@@ -252,7 +278,7 @@ describe('PbrRenderFeature', () => {
     await renderer.initialize();
     renderer.invalidate('geometry');
     frameDriver.flush(16);
-    expect(backend.getResourceStatistics().activeCount).toBe(13);
+    expect(backend.getResourceStatistics().activeCount).toBe(16);
 
     backend.simulateLoss({ message: 'PBR feature loss' });
     expect(renderer.state).toBe('lost');
@@ -265,26 +291,55 @@ describe('PbrRenderFeature', () => {
       lastFrameStatistics: { drawCalls: 1, triangles: 12, vertices: 36 },
       state: 'ready',
     });
-    expect(backend.getResourceStatistics().activeCount).toBe(13);
+    expect(backend.getResourceStatistics().activeCount).toBe(16);
 
     renderer.dispose();
     expect(backend.getResourceStatistics().activeCount).toBe(0);
     expect(fallback.disposed).toBe(true);
   });
 
-  it('reports textured materials as an explicit deferred Backend capability', async () => {
+  it('uploads, samples, replaces, and releases base-color plus metallic-roughness maps', async () => {
     const backend = new MockBackend();
+    const createBindGroup = vi.spyOn(backend, 'createBindGroup');
+    const writeTexture = vi.spyOn(backend, 'writeTexture');
     await backend.initialize();
     const scene = new Scene();
     const camera = new PerspectiveCamera();
     const meshRenderers = new MeshRendererStore(scene);
     const materials = new PbrMaterialLibrary();
+    const textures = new PbrTextureLibrary();
+    const baseColor = new PbrTextureSource({
+      height: 1,
+      id: 'base-color',
+      pixels: new Uint8Array([128, 64, 32, 255]),
+      sampler: { magFilter: 'nearest', minFilter: 'nearest' },
+      transferFunction: 'srgb',
+      width: 1,
+    });
+    const metallicRoughness = new PbrTextureSource({
+      height: 1,
+      id: 'metallic-roughness',
+      pixels: new Uint8Array([0, 128, 64, 255]),
+      transferFunction: 'linear',
+      width: 1,
+    });
+    textures.set(baseColor);
+    textures.set(metallicRoughness);
     const textured = new PbrMaterial({
       textures: {
         'base-color': createMaterialTextureBinding({
+          offset: [0.25, 0.5],
+          rotation: Math.PI / 4,
           texture: createMaterialTextureReference({
-            id: 'deferred-base-color',
+            id: 'base-color',
             transferFunction: 'srgb',
+          }),
+        }),
+        'metallic-roughness': createMaterialTextureBinding({
+          scale: [2, 2],
+          texture: createMaterialTextureReference({
+            id: 'metallic-roughness',
+            transferFunction: 'linear',
           }),
         }),
       },
@@ -298,20 +353,78 @@ describe('PbrRenderFeature', () => {
       meshRenderers,
       scene,
       surface: { cssHeight: 100, cssWidth: 100, devicePixelRatio: 1, target },
+      textures,
     });
     await feature.initialize({ backend });
 
-    expect(() =>
+    expect(
       feature.render({
         backend,
         dirtyFlags: ['material'],
         frameIndex: 1,
         timestamp: 0,
       }),
-    ).toThrow('does not yet bind PBR textures');
+    ).toEqual({ drawCalls: 1, instances: 1, triangles: 12, vertices: 36 });
+    expect(feature.getDiagnostics()).toMatchObject({
+      gpuTextureSourceCount: 2,
+      objectBindingCount: 1,
+      textureSourceCount: 2,
+    });
+    expect(writeTexture).toHaveBeenCalledTimes(4);
+    expect(createBindGroup).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        entries: [
+          expect.objectContaining({
+            binding: 0,
+            resource: expect.objectContaining({ buffer: expect.any(Object) }),
+          }),
+          expect.objectContaining({
+            binding: 1,
+            resource: expect.objectContaining({ texture: expect.any(Object) }),
+          }),
+          expect.objectContaining({
+            binding: 2,
+            resource: expect.objectContaining({ sampler: expect.any(Object) }),
+          }),
+          expect.objectContaining({
+            binding: 3,
+            resource: expect.objectContaining({ texture: expect.any(Object) }),
+          }),
+          expect.objectContaining({
+            binding: 4,
+            resource: expect.objectContaining({ sampler: expect.any(Object) }),
+          }),
+        ],
+      }),
+    );
+    const beforeReplacement = backend.getResourceStatistics();
+    textures.set(
+      new PbrTextureSource({
+        height: 1,
+        id: 'base-color',
+        pixels: new Uint8Array([32, 64, 128, 255]),
+        transferFunction: 'srgb',
+        width: 1,
+      }),
+    );
+    feature.render({
+      backend,
+      dirtyFlags: ['material'],
+      frameIndex: 2,
+      timestamp: 16,
+    });
+    const afterReplacement = backend.getResourceStatistics();
+    expect(afterReplacement.activeCount).toBe(beforeReplacement.activeCount);
+    expect(afterReplacement.byKind).toEqual(beforeReplacement.byKind);
+    expect(afterReplacement.createdTotal).toBe(beforeReplacement.createdTotal + 4);
+    expect(afterReplacement.destroyedTotal).toBe(beforeReplacement.destroyedTotal + 4);
+    expect(writeTexture).toHaveBeenCalledTimes(5);
 
     feature.dispose();
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    expect(textures.disposed).toBe(false);
     backend.dispose();
     materials.dispose();
+    textures.dispose();
   });
 });

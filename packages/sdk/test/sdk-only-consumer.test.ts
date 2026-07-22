@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   BACKEND_RESOURCE_KINDS,
   PbrMaterial,
+  PbrTextureLibrary,
+  PbrTextureSource,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
   srgbToLinearRgba,
@@ -34,8 +36,10 @@ import type {
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureWriteDescriptor,
   FrameRequestDriver,
   GraphicsBackend,
 } from '../src/index.js';
@@ -110,6 +114,17 @@ class SdkOnlyBackend implements GraphicsBackend {
     void data;
     void offset;
     throw new Error('The SDK-only foundation fixture does not allocate buffers.');
+  }
+
+  writeTexture(
+    handle: BackendTextureHandle,
+    data: BackendTextureData,
+    descriptor: BackendTextureWriteDescriptor,
+  ): void {
+    void handle;
+    void data;
+    void descriptor;
+    throw new Error('The SDK-only foundation fixture does not allocate textures.');
   }
 
   executeFrame(submission: BackendFrameSubmission): BackendRenderPassStatistics {
@@ -225,5 +240,25 @@ describe('SDK-only consumer', () => {
       roughnessFactor: 0.3,
     });
     material.dispose();
+  });
+
+  it('registers immutable PBR Texture sources using only the public SDK entry point', () => {
+    const source = new PbrTextureSource({
+      height: 1,
+      id: 'sdk-base-color',
+      pixels: new Uint8Array([255, 255, 255, 255]),
+      transferFunction: 'srgb',
+      width: 1,
+    });
+    const library = new PbrTextureLibrary();
+    library.set(source);
+
+    expect(library.diagnostics()).toEqual({
+      revision: 1,
+      textureCount: 1,
+      textureIds: ['sdk-base-color'],
+    });
+    library.dispose();
+    expect([...source.copyPixels()]).toEqual([255, 255, 255, 255]);
   });
 });

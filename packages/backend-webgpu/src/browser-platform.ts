@@ -159,18 +159,18 @@ class BrowserWebGpuBuffer implements WebGpuBufferPort {
 }
 
 class BrowserWebGpuTexture implements WebGpuTexturePort {
-  readonly #texture: GPUTexture;
+  readonly native: GPUTexture;
 
   constructor(texture: GPUTexture) {
-    this.#texture = texture;
+    this.native = texture;
   }
 
   createView(): WebGpuTextureViewPort {
-    return new BrowserWebGpuTextureView(this.#texture.createView());
+    return new BrowserWebGpuTextureView(this.native.createView());
   }
 
   destroy(): void {
-    this.#texture.destroy();
+    this.native.destroy();
   }
 }
 
@@ -388,6 +388,25 @@ class BrowserWebGpuQueue implements WebGpuQueuePort {
     }
     this.#queue.writeBuffer(buffer.native, offset, data);
   }
+
+  writeTexture(
+    request: Parameters<WebGpuQueuePort['writeTexture']>[0],
+    data: Parameters<WebGpuQueuePort['writeTexture']>[1],
+  ): void {
+    if (!(request.texture instanceof BrowserWebGpuTexture)) {
+      throw new Error('Queue write Texture belongs to another WebGPU device port.');
+    }
+    this.#queue.writeTexture(
+      {
+        mipLevel: request.mipLevel,
+        origin: request.origin,
+        texture: request.texture.native,
+      },
+      data,
+      { bytesPerRow: request.bytesPerRow, rowsPerImage: request.rowsPerImage },
+      request.size,
+    );
+  }
 }
 
 function requireBrowserShaderModule(module: WebGpuShaderModulePort): GPUShaderModule {
@@ -440,17 +459,29 @@ class BrowserWebGpuDevice implements WebGpuDevicePort {
     return new BrowserWebGpuBindGroup(
       this.#device.createBindGroup({
         entries: request.entries.map((entry) => {
-          if (!(entry.buffer instanceof BrowserWebGpuBuffer)) {
-            throw new Error('Bind Group Buffer belongs to another WebGPU device port.');
+          if (entry.kind === 'buffer') {
+            if (!(entry.buffer instanceof BrowserWebGpuBuffer)) {
+              throw new Error('Bind Group Buffer belongs to another WebGPU device port.');
+            }
+            return {
+              binding: entry.binding,
+              resource: {
+                buffer: entry.buffer.native,
+                offset: entry.offset,
+                size: entry.size,
+              },
+            };
           }
-          return {
-            binding: entry.binding,
-            resource: {
-              buffer: entry.buffer.native,
-              offset: entry.offset,
-              size: entry.size,
-            },
-          };
+          if (entry.kind === 'sampler') {
+            if (!(entry.sampler instanceof BrowserWebGpuSampler)) {
+              throw new Error('Bind Group Sampler belongs to another WebGPU device port.');
+            }
+            return { binding: entry.binding, resource: entry.sampler.native };
+          }
+          if (!(entry.view instanceof BrowserWebGpuTextureView)) {
+            throw new Error('Bind Group Texture belongs to another WebGPU device port.');
+          }
+          return { binding: entry.binding, resource: entry.view.native };
         }),
         layout: request.pipeline.native.getBindGroupLayout(request.group),
         ...(request.label === undefined ? {} : { label: request.label }),

@@ -58,6 +58,14 @@ export {
   type PbrRenderFeatureOptions,
 } from './pbr-render-feature.js';
 export {
+  PbrTextureLibrary,
+  PbrTextureSource,
+  type PbrTextureLibraryChangeEvent,
+  type PbrTextureLibraryDiagnostics,
+  type PbrTextureLibraryEvents,
+  type PbrTextureSourceDescriptor,
+} from './pbr-texture-library.js';
+export {
   SCENE_RENDER_FEATURE_ID,
   SceneRenderFeature,
   type SceneRenderFeatureDiagnostics,

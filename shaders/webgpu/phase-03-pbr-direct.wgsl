@@ -12,9 +12,16 @@ struct PbrObjectUniforms {
   cameraPosition: vec4f,
   lightDirectionAndIntensity: vec4f,
   lightColor: vec4f,
+  baseColorUvOffsetScale: vec4f,
+  metallicRoughnessUvOffsetScale: vec4f,
+  textureUvRotations: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> object: PbrObjectUniforms;
+@group(0) @binding(1) var baseColorTexture: texture_2d<f32>;
+@group(0) @binding(2) var baseColorSampler: sampler;
+@group(0) @binding(3) var metallicRoughnessTexture: texture_2d<f32>;
+@group(0) @binding(4) var metallicRoughnessSampler: sampler;
 
 struct PbrBrdfResult {
   diffuse: vec3f,
@@ -83,21 +90,33 @@ fn pbrSafeNormalize(value: vec3f, fallback: vec3f) -> vec3f {
   return value * inverseSqrt(squaredLength);
 }
 
+fn pbrTransformUv(uv: vec2f, offsetScale: vec4f, rotation: vec2f) -> vec2f {
+  let scaled = uv * offsetScale.zw;
+  let rotated = vec2f(
+    rotation.x * scaled.x - rotation.y * scaled.y,
+    rotation.y * scaled.x + rotation.x * scaled.y,
+  );
+  return rotated + offsetScale.xy;
+}
+
 struct VertexOutput {
   @builtin(position) position: vec4f,
   @location(0) worldPosition: vec3f,
   @location(1) worldNormal: vec3f,
+  @location(2) uv0: vec2f,
 }
 
 @vertex
 fn vertexMain(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
+  @location(2) uv0: vec2f,
 ) -> VertexOutput {
   var output: VertexOutput;
   output.position = object.modelViewProjection * vec4f(position, 1.0);
   output.worldPosition = (object.model * vec4f(position, 1.0)).xyz;
   output.worldNormal = (object.normalMatrix * vec4f(normal, 0.0)).xyz;
+  output.uv0 = uv0;
   return output;
 }
 
@@ -119,11 +138,28 @@ fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
   let nDotV = clamp(dot(normal, viewDirection), 0.0, 1.0);
   let nDotH = clamp(dot(normal, halfDirection), 0.0, 1.0);
   let vDotH = clamp(dot(viewDirection, halfDirection), 0.0, 1.0);
+  let baseColorUv = pbrTransformUv(
+    input.uv0,
+    object.baseColorUvOffsetScale,
+    object.textureUvRotations.xy,
+  );
+  let metallicRoughnessUv = pbrTransformUv(
+    input.uv0,
+    object.metallicRoughnessUvOffsetScale,
+    object.textureUvRotations.zw,
+  );
+  let baseColorSample = textureSample(baseColorTexture, baseColorSampler, baseColorUv);
+  let metallicRoughnessSample = textureSample(
+    metallicRoughnessTexture,
+    metallicRoughnessSampler,
+    metallicRoughnessUv,
+  );
+  let baseColor = object.baseColor * baseColorSample;
   let material = object.metallicRoughnessAlphaCutoff;
   let brdf = pbrEvaluateMetallicRoughness(
-    object.baseColor.rgb,
-    material.x,
-    material.y,
+    baseColor.rgb,
+    material.x * metallicRoughnessSample.b,
+    material.y * metallicRoughnessSample.g,
     nDotL,
     nDotV,
     nDotH,
@@ -134,7 +170,7 @@ fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
     object.lightDirectionAndIntensity.w *
     nDotL;
   let emission = object.emissiveAndStrength.rgb * object.emissiveAndStrength.w;
-  return vec4f(max(directRadiance + emission, vec3f(0.0)), object.baseColor.a);
+  return vec4f(max(directRadiance + emission, vec3f(0.0)), baseColor.a);
 }
 
 @fragment

@@ -24,8 +24,10 @@ import type {
   BackendShaderCompilationInfo,
   BackendShaderModuleDescriptor,
   BackendShaderModuleHandle,
+  BackendTextureData,
   BackendTextureDescriptor,
   BackendTextureHandle,
+  BackendTextureWriteDescriptor,
 } from './resources.js';
 import type {
   BackendSurfaceDescriptor,
@@ -83,6 +85,11 @@ export interface GraphicsBackend extends Disposable {
   resizeSurface(handle: BackendSurfaceHandle, resize: BackendSurfaceResize): BackendSurfaceInfo;
   waitForIdle(): Promise<void>;
   writeBuffer(handle: BackendBufferHandle, data: BackendBufferData, offset?: number): void;
+  writeTexture(
+    handle: BackendTextureHandle,
+    data: BackendTextureData,
+    descriptor: BackendTextureWriteDescriptor,
+  ): void;
   on<EventName extends keyof BackendEvents>(
     eventName: EventName,
     listener: EventListener<BackendEvents[EventName]>,

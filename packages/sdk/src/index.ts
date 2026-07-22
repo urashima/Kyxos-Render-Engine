@@ -3,6 +3,7 @@ export const SDK_PACKAGE_NAME = '@kyxos/render-sdk' as const;
 
 export type {
   BackendBindGroupDescriptor,
+  BackendBindGroupResource,
   BackendBindGroupHandle,
   BackendBufferData,
   BackendBufferDescriptor,
@@ -36,7 +37,9 @@ export type {
   BackendSurfaceSize,
   BackendSurfaceTarget,
   BackendTextureDescriptor,
+  BackendTextureData,
   BackendTextureHandle,
+  BackendTextureWriteDescriptor,
   BackendType,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
@@ -149,6 +152,10 @@ export type {
   PbrMaterialLibraryOptions,
   PbrRenderFeatureDiagnostics,
   PbrRenderFeatureOptions,
+  PbrTextureLibraryChangeEvent,
+  PbrTextureLibraryDiagnostics,
+  PbrTextureLibraryEvents,
+  PbrTextureSourceDescriptor,
   PreviewPreset,
   RenderFeature,
   RendererDiagnostics,
@@ -163,6 +170,8 @@ export {
   KyxosRenderer,
   PbrMaterialLibrary,
   PbrRenderFeature,
+  PbrTextureLibrary,
+  PbrTextureSource,
   SceneRenderFeature,
   createPbrDirectionalLight,
   packPbrObjectUniforms,
