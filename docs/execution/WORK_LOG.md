@@ -1262,3 +1262,50 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Merge the green Phase 2 closure record in PR #4.
 - Create `agent/phase-03-pbr-ibl` from updated `main` and begin the first bounded Phase 3 PBR/IBL
   contract checkpoint without changing the accepted Phase 2 implementation or baselines.
+
+## 2026-07-21 20:50 PDT — P3-01 material contract and P3-02 BRDF parity passed
+
+### Completed
+
+- Resumed from merged Phase 2 commit `0a7fac4e50367610b74b501a3bcedc2b260ed455`, created the
+  Phase 3 workstream on `agent/phase-03-pbr-ibl`, and opened Draft PR #5 without changing accepted
+  Phase 2 sources or baselines.
+- Added independent `@kyxos/render-material-core` and `@kyxos/render-material-pbr` packages with
+  immutable linear/sRGB color contracts, glTF-aligned texture semantics, UV transforms,
+  deterministic feature/binding keys, validated metallic-roughness state, change events, and
+  disposal.
+- Exposed product-facing material state through the public SDK while preserving the dependency rule
+  that material packages depend only on Core and each other, not Renderer, Scene, Backend, DOM, or
+  Texture Lab.
+- Recorded clean-room Khronos glTF and W3C color sources plus explicit deferred scope for GPU
+  bindings, Renderer integration, IBL, and tone mapping.
+- Added the P3-02 CPU reference for GGX/Trowbridge-Reitz distribution, separable Smith visibility,
+  Schlick Fresnel, Lambert diffuse, dielectric F0, metallic energy allocation, roughness direction,
+  reciprocity, and rejected-hemisphere behavior.
+- Added an exact generated mirror of the Phase 3 WGSL reference and a Chromium/WebGPU compute gate
+  that executes the shader, reads back 12 float32 values, and compares them with the CPU result.
+- Extended CI artifact retention to include `test-results/phase-03/runtime/` after detecting that the
+  first successful P3-02 Run executed the test but did not retain its JSON evidence.
+
+### Validation
+
+- P3-01 commit `d229e413f0b031c9ff5fc2d85b8deba981716196`, Run `29888741892`, job
+  `88824744141`: PASS with the complete pre-existing Chromium/WebGPU gate.
+- P3-02 implementation commit `a6b26fee47bd68acddea2909d525c28d4127b13e`, Run `29889124901`:
+  PASS; the new WebGPU compute/readback test passed.
+- Evidence-retention commit `e6562af223d4d6e64a452e885e85d95bd0a418d2`, Run `29889333840`, job
+  `88826441104`: PASS; 35 unit files / 161 tests and 11 / 11 browser tests.
+- Artifact `8517693659`, digest
+  `sha256:419a6cb50ed889a5933390cf0580b2e9588a4319986b6cbbda9bd1eeb3b1567a`, contains
+  `test-results/phase-03/runtime/brdf-reference.json` with no WGSL compilation messages and PASS.
+- CPU/GPU absolute differences across the 12 retained BRDF values are below `7.3e-8`; no threshold,
+  accepted baseline, or prior test was disabled.
+- Local formatting, zero-warning Lint, strict typecheck, unit tests, dependency boundaries,
+  architecture checks, accepted Phase 0–2 schemas, Shader validation, build, Bundle budgets, and
+  isolated Pages artifacts passed. Local browser launch remains unavailable only because this
+  workspace has no cached Playwright Chromium executable; official CI supplied the fixed browser.
+
+### Next
+
+- Implement P3-03 material GPU layout, explicit resource/cache ownership, and direct-light
+  metallic-roughness integration in the WebGPU Renderer while retaining the P3-02 CPU/GPU oracle.
