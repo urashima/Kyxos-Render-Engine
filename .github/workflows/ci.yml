@@ -66,6 +66,16 @@ jobs:
           );
           await writeFile(presentPath, present);
 
+          const presentUnitPath = 'packages/renderer/test/dynamic-taa-present-pass.test.ts';
+          let presentUnit = await readFile(presentUnitPath, 'utf8');
+          presentUnit = replaceOnce(
+            presentUnit,
+            "targets: [{ format: 'rgba8unorm' }]",
+            "targets: [{ format: 'bgra8unorm' }]",
+            'Present reported Surface format assertion',
+          );
+          await writeFile(presentUnitPath, presentUnit);
+
           const presentSpecPath = 'tests/e2e/phase-04-present.spec.ts';
           let presentSpec = await readFile(presentSpecPath, 'utf8');
           presentSpec = replaceOnce(
