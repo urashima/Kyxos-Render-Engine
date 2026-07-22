@@ -81,7 +81,10 @@ function validateExtent(name: string, value: number): number {
 
 function validateError(value: number | undefined): void {
   if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
-    throw error('Static accumulation convergence error must be finite and non-negative.', 'INVALID_ARGUMENT');
+    throw error(
+      'Static accumulation convergence error must be finite and non-negative.',
+      'INVALID_ARGUMENT',
+    );
   }
 }
 
@@ -212,9 +215,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
     this.#frameSignature = undefined;
   }
 
-  invalidate(
-    reason: TemporalHistoryInvalidationReason,
-  ): StaticAccumulationGpuHistoryDiagnostics {
+  invalidate(reason: TemporalHistoryInvalidationReason): StaticAccumulationGpuHistoryDiagnostics {
     this.#assertActive();
     this.#frameSignature = undefined;
     this.#history.invalidate(reason);
@@ -239,11 +240,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
     let replacement: StaticAccumulationGpuResources | undefined;
     if (backend !== undefined) {
       if (backend.state !== 'ready' || previous === undefined) {
-        throw error(
-          'Static Accumulation GPU History Backend is not ready.',
-          'INVALID_STATE',
-          true,
-        );
+        throw error('Static Accumulation GPU History Backend is not ready.', 'INVALID_STATE', true);
       }
       replacement = this.#createResources(backend, nextWidth, nextHeight);
     }
@@ -260,10 +257,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
       const errors = this.#destroyResources(backend, previous);
       if (errors.length === 1) throw errors[0];
       if (errors.length > 1) {
-        throw new AggregateError(
-          errors,
-          'Static Accumulation GPU History resize cleanup failed.',
-        );
+        throw new AggregateError(errors, 'Static Accumulation GPU History resize cleanup failed.');
       }
     }
     return this.getDiagnostics();
@@ -289,8 +283,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
   getDiagnostics(): StaticAccumulationGpuHistoryDiagnostics {
     return Object.freeze({
       convergence: this.#convergence.snapshot(),
-      estimatedGpuBytes:
-        this.#width * this.#height * COLOR_BYTES_PER_TEXEL * TARGET_COUNT,
+      estimatedGpuBytes: this.#width * this.#height * COLOR_BYTES_PER_TEXEL * TARGET_COUNT,
       frameOpen: this.#frameSignature !== undefined,
       history: this.#history.snapshot(),
       ownerId: this.#ownerId,

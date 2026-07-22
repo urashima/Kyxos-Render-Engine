@@ -95,22 +95,7 @@ describe('static accumulation reference', () => {
       },
     ]);
     expect(reference.values).toEqual([
-      0.25,
-      0.5,
-      1,
-      0.75,
-      1,
-      0,
-      1,
-      -1,
-      0.75,
-      0.875,
-      1.75,
-      0.625,
-      4,
-      0.75,
-      0.25,
-      1,
+      0.25, 0.5, 1, 0.75, 1, 0, 1, -1, 0.75, 0.875, 1.75, 0.625, 4, 0.75, 0.25, 1,
     ]);
     expect(Object.isFrozen(reference)).toBe(true);
     expect(Object.isFrozen(reference.cases)).toBe(true);

@@ -97,10 +97,7 @@ export function accumulateStaticSample(input: StaticAccumulationInput): StaticAc
     invalid('Static accumulation History validity must be boolean.');
   }
   const currentColor = rgba(input.currentColor, 'Static accumulation current Color');
-  const accumulatedColor = rgba(
-    input.accumulatedColor,
-    'Static accumulation prior Color',
-  );
+  const accumulatedColor = rgba(input.accumulatedColor, 'Static accumulation prior Color');
   const declaredSampleCount = previousSampleCount(input.accumulatedSampleCount);
   if (input.historyValid && declaredSampleCount === 0) {
     invalid('Valid Static accumulation History must contain at least one prior sample.');
