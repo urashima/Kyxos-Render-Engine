@@ -47,7 +47,7 @@ test.describe('Phase 4 final Dynamic TAA Present', () => {
           width: 3,
         });
         const canvas = document.createElement('canvas');
-        canvas.dataset.testid = 'phase-04-present-canvas';
+        canvas.dataset['testid'] = 'phase-04-present-canvas';
         document.body.append(canvas);
         const present = new DynamicTaaPresentPass({
           output: { exposure: -1, toneMapping: 'khronos-pbr-neutral' },
@@ -147,13 +147,17 @@ test.describe('Phase 4 final Dynamic TAA Present', () => {
         exposure: -1,
         toneMapping: 'khronos-pbr-neutral',
       });
-      return [...output.srgb.map((channel) => Math.round(channel * 255)), Math.round(pixel[3] * 255)];
+      return [
+        ...output.srgb.map((channel) => Math.round(channel * 255)),
+        Math.round(pixel[3] * 255),
+      ];
     });
 
     const gpuResult = await page.evaluate(
       async ({ expected, halfBits, source }) => {
         const adapter = await navigator.gpu?.requestAdapter();
-        if (adapter === null || adapter === undefined) throw new Error('WebGPU adapter unavailable.');
+        if (adapter === null || adapter === undefined)
+          throw new Error('WebGPU adapter unavailable.');
         const device = await adapter.requestDevice();
         const module = device.createShaderModule({ code: source, label: 'Phase 4 TAA Present' });
         const compilation = await module.getCompilationInfo();

@@ -31,9 +31,9 @@ describe('DynamicTaaPresentPass', () => {
       exposureMultiplierOffset: 0,
       toneMappingEnabledOffset: 4,
     });
-    expect(
-      Array.from(packDynamicTaaPresentUniforms({ exposure: 2, toneMapping: 'none' })),
-    ).toEqual([4, 0, 0, 0]);
+    expect(Array.from(packDynamicTaaPresentUniforms({ exposure: 2, toneMapping: 'none' }))).toEqual(
+      [4, 0, 0, 0],
+    );
     expect(
       Array.from(
         packDynamicTaaPresentUniforms({ exposure: -1, toneMapping: 'khronos-pbr-neutral' }),
@@ -65,7 +65,7 @@ describe('DynamicTaaPresentPass', () => {
     await present.initialize(backend);
     expect(createPipeline).toHaveBeenCalledWith(
       expect.objectContaining({
-        fragment: expect.objectContaining({ targets: [{ format: 'rgba8unorm' }] }),
+        fragment: expect.objectContaining({ targets: [{ format: 'bgra8unorm' }] }),
       }),
     );
 

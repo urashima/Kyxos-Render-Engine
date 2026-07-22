@@ -76,6 +76,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-taa-present.wgsl',
+    {
+      exportName: 'PHASE_04_TAA_PRESENT_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-taa-present.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-taa-resolve.wgsl',
     {
       exportName: 'PHASE_04_TAA_RESOLVE_WGSL',

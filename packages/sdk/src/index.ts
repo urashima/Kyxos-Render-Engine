@@ -284,6 +284,9 @@ export type {
   DynamicTaaGpuHistoryDiagnostics,
   DynamicTaaGpuHistoryOptions,
   DynamicTaaGpuHistorySize,
+  DynamicTaaPresentPassDiagnostics,
+  DynamicTaaPresentPassInput,
+  DynamicTaaPresentPassOptions,
   DynamicTaaResolvePassDiagnostics,
   DynamicTaaResolvePassInput,
   DynamicTaaResolvePassOptions,
@@ -316,12 +319,14 @@ export type {
   SceneRenderFeatureOptions,
 } from '@kyxos/render-renderer';
 export {
+  DYNAMIC_TAA_PRESENT_UNIFORM_LAYOUT,
   DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,
   PBR_OBJECT_UNIFORM_LAYOUT,
   PBR_RENDER_FEATURE_ID,
   EnvironmentGpuCache,
   EnvironmentGpuLease,
   DynamicTaaGpuHistory,
+  DynamicTaaPresentPass,
   DynamicTaaResolvePass,
   KyxosRenderer,
   PbrMaterialLibrary,
@@ -331,6 +336,7 @@ export {
   SceneRenderFeature,
   createPbrDirectionalLight,
   packPbrObjectUniforms,
+  packDynamicTaaPresentUniforms,
   packDynamicTaaResolveUniforms,
 } from '@kyxos/render-renderer';
 export {

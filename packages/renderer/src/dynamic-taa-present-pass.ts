@@ -14,9 +14,9 @@ import type {
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 import {
-  createPbrOutputTransform,
   type PbrOutputTransform,
   type PbrOutputTransformDescriptor,
+  createPbrOutputTransform,
 } from '@kyxos/render-material-pbr';
 
 import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
@@ -264,7 +264,9 @@ export class DynamicTaaPresentPass implements Disposable {
       resourceGeneration: this.#resourceGeneration,
       state: this.#disposed ? 'disposed' : resources === undefined ? 'detached' : 'ready',
       surface:
-        backend === undefined || resources === undefined ? null : backend.getSurfaceInfo(resources.surface),
+        backend === undefined || resources === undefined
+          ? null
+          : backend.getSurfaceInfo(resources.surface),
     });
   }
 
