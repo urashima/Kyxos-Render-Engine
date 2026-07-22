@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                                        |
-| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                            |
-| Current Commit      | `2efafd6f827ef1140bc2cedb1436dbf4b5a24749` (P3-08 Renderer indirect IBL)                                                            |
-| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-08 complete                                                            |
-| Current Task        | P3-09 — Exposure, Filmic Tone Mapping, and sRGB output                                                                              |
-| Last Completed Task | P3-08 — Renderer Diffuse/Specular IBL, indirect-only AO, rotation, intensity, and environment hot-swap                              |
-| Next Action         | Implement P3-09 deterministic linear HDR Exposure, Filmic Tone Mapping, and sRGB output CPU/WGSL parity before the Phase 3 gallery  |
-| CI Status           | Run 29913267657 PASS; 195 unit tests + 17 browser cases; Artifact 8526837761 retains exact P3-08 direct/indirect PBR pixel evidence |
-| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                                      |
-| Known Blockers      | None                                                                                                                                |
-| Last Updated        | 2026-07-22 03:51 PDT                                                                                                                |
+| Field               | Value                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                                                            |
+| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                                                |
+| Current Commit      | `0bc623b9952c6997df706c687b323d02846e78a3` (P3-09 HDR output transform)                                                                                 |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-09 complete                                                                                |
+| Current Task        | P3-10 — Public SDK PBR Canvas lifecycle and fixed material gallery                                                                                      |
+| Last Completed Task | P3-09 — Deterministic EV Exposure, Khronos PBR Neutral Tone Mapping, and single sRGB output                                                             |
+| Next Action         | Implement P3-10 public SDK PBR Canvas lifecycle plus the fixed interactive Phase 3 material gallery and deterministic visual/performance/resource gates |
+| CI Status           | Run 29914664604 PASS; 198 unit tests + 18 browser cases; Artifact 8527414634 retains exact P3-09 tone-mapped pixel evidence                             |
+| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                                                          |
+| Known Blockers      | None                                                                                                                                                    |
+| Last Updated        | 2026-07-22 04:14 PDT                                                                                                                                    |
 
 ## Phase Progress
 

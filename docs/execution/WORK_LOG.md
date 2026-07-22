@@ -1635,3 +1635,50 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 
 - Implement P3-09 deterministic linear HDR Exposure, Filmic Tone Mapping, and sRGB output CPU/WGSL
   parity before building the fixed Phase 3 material gallery.
+
+## 2026-07-22 04:14 PDT — P3-09 HDR output transform passed
+
+### Completed
+
+- Added a deterministic public CPU output oracle for nonnegative linear HDR input, -32 through +32
+  EV Exposure, Khronos PBR Neutral highlight compression/desaturation, explicit clipped mode, and
+  the IEC sRGB output transfer.
+- Fixed the Renderer output order as linear direct + indirect + Emission composition, `2^EV`
+  Exposure, one Tone Mapping operation, and one sRGB encoding operation. Alpha remains unchanged.
+- Reused the two reserved components in the existing 448-byte object Uniform for Exposure
+  multiplier and Tone Mapping mode; no Buffer size, Bind Group layout, resource count, or Pipeline
+  variant changed.
+- Added immutable output state, diagnostics, and `setOutputTransform` to `PbrRenderFeature`.
+  Exposure and mode changes remain Uniform-only and do not recreate GPU Handles.
+- Added a separate canonical tone-mapped PBR Shader and exact generated runtime mirror. The prior
+  direct-light and raw IBL Shaders remain byte-for-byte historical verification inputs.
+- Exported the output contract through the public SDK and added SDK-only consumer coverage.
+- Recorded the clean-room Khronos PBR Neutral, W3C sRGB, WebGPU, and WGSL contract, including the
+  current opaque-gallery boundary for per-fragment forward output.
+
+### Validation
+
+- Remote implementation commit `0bc623b9952c6997df706c687b323d02846e78a3` has Git Tree
+  `777a6ccf69aec0ebe8c4b07908233fdaf8731560`, identical to the locally verified implementation
+  tree. PR-head Run `29914664604`, job `88905588501`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 44 unit files / 198 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, seven
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 18
+  Chromium/WebGPU browser cases.
+- Artifact `8527414634`, digest
+  `sha256:a5acddcd524bbd78286fef573680649ccd5a6f981d39290929cf53f41690d075`, contains
+  `test-results/phase-03/runtime/pbr-tone-mapping.json`. WGSL compilation messages are empty and the
+  448-byte Uniform is retained.
+- The gate constructs linear HDR Emission `[4, 2, 1]`, applies +1 EV, PBR Neutral, and explicit
+  sRGB output into `rgba8unorm`. GPU pixel `[254, 224, 207, 255]` exactly matches the CPU oracle.
+- The complete local non-browser pipeline passed. Local Playwright discovered all 18 cases and
+  stopped before execution only because this workspace lacks the pinned Chromium executable; the
+  official CI installed it and executed every unmodified browser gate.
+- The frozen Phase 2 route remains below its unchanged raw JavaScript budget at
+  131,052 / 131,072 bytes. Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and
+  `phase-02-accepted`; Phase 3 remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-10 public SDK PBR Canvas lifecycle plus the fixed interactive Phase 3 material
+  gallery and deterministic visual, performance, and resource-lifecycle gates.
