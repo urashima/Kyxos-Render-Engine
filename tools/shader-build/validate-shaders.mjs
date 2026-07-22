@@ -69,6 +69,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-static-accumulation-reference.wgsl',
+    {
+      exportName: 'PHASE_04_STATIC_ACCUMULATION_REFERENCE_WGSL',
+      path: 'packages/temporal/src/generated/phase-04-static-accumulation-reference.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-taa-reference.wgsl',
     {
       exportName: 'PHASE_04_TAA_REFERENCE_WGSL',
@@ -177,7 +184,7 @@ try {
       `${JSON.stringify(
         {
           browserCompilerGate:
-            'tests/e2e/phase-01.spec.ts plus phase-03-* and phase-04-* specs (BRDF/IBL/TAA/Camera reprojection compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT/Dynamic TAA sampling)',
+            'tests/e2e/phase-01.spec.ts plus phase-03-* and phase-04-* specs (BRDF/IBL/TAA/Static Accumulation/Camera reprojection compute + direct/indirect/tone-mapped PBR render + HDR cube/LUT/Dynamic TAA sampling)',
           shaderCount: validated.length,
           shaders: validated,
           staticValidation: 'entry-points-balanced-syntax-exact-runtime-mirror',
