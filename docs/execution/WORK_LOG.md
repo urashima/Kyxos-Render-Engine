@@ -1472,3 +1472,59 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Build the P3-06 deterministic split-sum IBL CPU/WGSL oracle for diffuse irradiance, GGX specular
   prefiltering, and the BRDF integration LUT before adding environment GPU resource and cache
   ownership.
+
+## 2026-07-22 00:06 PDT — P3-06 deterministic split-sum IBL oracle passed
+
+### Completed
+
+- Added an exported CPU reference for unsigned Hammersley/Van der Corput sampling, cosine-weighted
+  physical Diffuse Irradiance plus `E/pi`, GGX half-vector Specular Prefiltering, and the two-channel
+  split-sum BRDF LUT using the exact P3-02 Smith visibility contract.
+- Fixed the canonical gate at 64 samples while validating public CPU requests from 1 through 4,096.
+  A deterministic asymmetric analytic environment isolates integration math from HDR decode,
+  Cubemap orientation, texture filtering, mip selection, and GPU resource ownership.
+- Added a canonical WGSL compute Shader and byte-exact generated TypeScript mirror. The public SDK
+  exposes the CPU oracle without introducing Renderer, Backend, Scene, DOM, or mutable-cache
+  dependencies into Material PBR.
+- Added repeatability, input-domain, bit-reversal, Hammersley, constant-environment, smooth-limit,
+  roughness-direction, and LUT-domain unit coverage plus a real Chromium/WebGPU gate that reads back
+  16 float32 values.
+- Recorded the independently implemented numerical contract from Khronos glTF IBL Sampler, Khronos
+  glTF Appendix B, the published split-sum formulation, and W3C WGSL. Environment Textures, runtime
+  preprocessing, Renderer binding, AO, exposure, and tone mapping remain explicitly deferred.
+- Diagnosed the first remote Run's sole failure as the raw 64-term float32 prefilter-weight sum
+  exceeding a shared `0.0005` threshold by `0.000264`. Kept every physical irradiance, normalized
+  radiance, and LUT output at `0.0005`; assigned only that unnormalized diagnostic sum a `0.001`
+  threshold and retained both thresholds per field in the Artifact.
+
+### Validation
+
+- P3-06 implementation commit `e0bef5872d92ea2ffb1414f8b009ca9a46698104` has Git Tree
+  `2f62e897595c413ef177ee2d06c229e33ffd7a46`, identical to the locally verified implementation
+  tree. Its Run `29898340207` passed every pre-existing browser case and exposed only the focused
+  diagnostic-tolerance mismatch above.
+- Current correction commit `6286604428cf8536be42fedaace1ab4c2e099e37` has Git Tree
+  `dcdc2fbca8c548d27c6be18d888a938d6d44ffe1`, identical to the local correction tree. PR-head Run
+  `29898755457`, job `88854548519`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 40 unit files / 183 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, five
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 15
+  Chromium/WebGPU browser cases.
+- Artifact `8521074469`, digest
+  `sha256:7829b7eb53abb18ead7d4004d0b8873a2e6f2f8a9496c9d538d97dd1ab4a5621`, contains
+  `test-results/phase-03/runtime/ibl-reference.json`. WGSL compilation messages are empty; all 16
+  fields pass; maximum threshold utilization is `0.7642643`.
+- The maximum CPU/GPU difference among physical irradiance, normalized Diffuse/Specular radiance,
+  BRDF LUT values, and retained inputs is approximately `0.000006641`, far below `0.0005`. The raw
+  Specular sample-weight difference is `0.0007642643` against its dedicated `0.001` threshold.
+- The complete local non-browser pipeline passed. Local Playwright still cannot launch because this
+  workspace lacks the pinned Chromium executable; official CI installed it and executed the
+  unmodified gate. The accepted Phase 2 route remains below its unchanged raw Bundle budget at
+  130,525 / 131,072 bytes.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Implement P3-07 environment Cubemap/LUT resource identity, cache ownership, mip lifecycle, Device
+  Lost recovery, and complete disposal before binding indirect IBL into `PbrRenderFeature`.
