@@ -56,6 +56,16 @@ jobs:
             return source.slice(0, index) + replacement + source.slice(index + search.length);
           }
 
+          const presentPath = 'packages/renderer/src/dynamic-taa-present-pass.ts';
+          let present = await readFile(presentPath, 'utf8');
+          present = replaceOnce(
+            present,
+            '  createPbrOutputTransform,\n  type PbrOutputTransform,\n  type PbrOutputTransformDescriptor,',
+            '  type PbrOutputTransform,\n  type PbrOutputTransformDescriptor,\n  createPbrOutputTransform,',
+            'Present material import ordering',
+          );
+          await writeFile(presentPath, present);
+
           const sdkPath = 'packages/sdk/src/index.ts';
           let sdk = await readFile(sdkPath, 'utf8');
           sdk = replaceOnce(
