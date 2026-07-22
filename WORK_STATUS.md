@@ -1,18 +1,18 @@
 # Kyxos Render Engine Work Status
 
-| Field               | Value                                                                                                                         |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                                  |
-| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                      |
-| Current Commit      | `efcec035b95745d0d1fb3462c259760fff95326e` (P3-04 sampled factor-map checkpoint)                                              |
-| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-04 complete                                                      |
-| Current Task        | P3-05 — Tangent-space Normal and Emission Texture rendering                                                                   |
-| Last Completed Task | P3-04 — Sampled Texture/Sampler Backend contract and Base Color/Metallic-Roughness maps                                       |
-| Next Action         | Add the Mesh Tangent contract/generator and bind tangent-space Normal plus Emission maps; retain AO for the IBL indirect pass |
-| CI Status           | Run 29894590807 PASS; 171 unit tests + 13 browser cases; Artifact 8519523154 retains exact P3-04 factor-map pixel diagnostics |
-| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                                |
-| Known Blockers      | None                                                                                                                          |
-| Last Updated        | 2026-07-21 22:47 PDT                                                                                                          |
+| Field               | Value                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Current Phase       | Phase 3 — Basic PBR and IBL (In Development)                                                                             |
+| Current Branch      | `agent/phase-03-pbr-ibl`                                                                                                 |
+| Current Commit      | `ff8a4556093ad03b58a07f27d7702e5060bca6b7` (P3-05 Normal and Emission checkpoint)                                        |
+| Overall Progress    | 3 / 15 phases accepted; Phase 3 checkpoints P3-01 through P3-05 complete                                                 |
+| Current Task        | P3-06 — Deterministic split-sum IBL CPU/WGSL reference                                                                   |
+| Last Completed Task | P3-05 — Mesh Tangents, tangent-space Normal Y handling, and sRGB Emission rendering                                      |
+| Next Action         | Build the P3-06 diffuse-irradiance, GGX-prefilter, and BRDF-LUT CPU/WGSL oracle before adding environment GPU resources  |
+| CI Status           | Run 29896303680 PASS; 175 unit tests + 14 browser cases; Artifact 8520146703 retains exact P3-05 three-pixel diagnostics |
+| Acceptance Status   | Phase 0, Phase 1, and Phase 2 Accepted; Phase 3 In Development                                                           |
+| Known Blockers      | None                                                                                                                     |
+| Last Updated        | 2026-07-21 23:22 PDT                                                                                                     |
 
 ## Phase Progress
 

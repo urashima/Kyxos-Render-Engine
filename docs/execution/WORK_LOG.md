@@ -1414,3 +1414,61 @@ This file is append-only. Times use America/Los_Angeles unless explicitly stated
 - Add the Mesh Tangent contract and deterministic Tangent generator, then bind tangent-space Normal
   and Emission maps in `PbrRenderFeature`. Retain material AO for the later IBL indirect-light pass so
   it cannot incorrectly darken direct lighting.
+
+## 2026-07-21 23:22 PDT — P3-05 tangent-space Normal and Emission passed
+
+### Completed
+
+- Extended immutable `MeshData` with optional validated vec4 Tangents. Supplied values are
+  orthogonalized and normalized, W is restricted to `-1` or `1`, and the public SDK exposes the
+  contract without a Renderer dependency.
+- Added a deterministic Geometry tangent generator from Position, Normal, UV0, and triangle
+  indices. It preserves authored Tangents, records mirrored-UV handedness, fails without UV0, and
+  produces a finite deterministic fallback for collapsed UV derivatives without claiming
+  MikkTSpace parity.
+- Expanded the PBR vertex stream to 48 bytes and the per-object Uniform to 400 bytes / 100 Float32
+  values. The single Group 0 Bind Group now contains Base Color, Metallic-Roughness, Normal, and
+  Emission Texture/Sampler pairs.
+- Prewarmed 12 bounded Pipeline variants for 3 alpha modes × 2 sidedness modes × 2 Normal-map modes
+  from one canonical Shader Module. Continuous factors and Texture metadata do not create
+  unbounded variants.
+- Implemented tangent-space Normal reconstruction with `tangent.w`, model orientation, Normal X/Y
+  scale, independent UV transforms, and an owned flat-Normal fallback.
+- Preserved accepted ADR-002 by storing Normal Y-up/Y-down correction on immutable
+  `PbrTextureSource` asset metadata rather than arbitrary Material state.
+- Implemented sRGB Emission sampling followed by linear `emissiveFactor * emissiveStrength`
+  multiplication. Emission remains independent of direct-light intensity and `N·L`.
+- Retained AO for the future IBL indirect-light pass; the direct-light Shader still does not darken
+  direct radiance with AO.
+- Recorded the clean-room Khronos glTF, KHR_materials_emissive_strength, W3C WGSL, tangent,
+  ownership, and cache contracts without changing the accepted Phase 2 implementation or evidence.
+
+### Validation
+
+- Remote implementation commit `ff8a4556093ad03b58a07f27d7702e5060bca6b7` has Git Tree
+  `6ebc4d2e4568dccae58bdc859638ee9976f7614c`, identical to the locally verified implementation
+  commit. PR-head Run `29896303680`, job `88847087925`: PASS.
+- Complete CI passed formatting, zero-warning Lint, strict TypeScript, 39 unit files / 175 tests,
+  dependency boundaries and cycle fixture, architecture checks, accepted Phase 0–2 Schemas, four
+  exact-mirror Shaders, build, unchanged Bundle budgets, isolated Pages artifacts, and all 14
+  Chromium/WebGPU browser cases.
+- Artifact `8520146703`, digest
+  `sha256:27a22d55bfa331a750026a7d5f7073b444d048718faae8611a4f998ce38a9f8d`, contains all four Phase 3
+  runtime records. `pbr-normal-emission.json` reports no WGSL compilation messages and a 400-byte
+  Uniform.
+- The P3-05 browser gate exactly matched all three CPU expectations: Normal Y-up
+  `[41, 33, 25, 255]`, Normal Y-down `[0, 0, 0, 255]`, and zero-direct-light Emission
+  `[13, 28, 255, 255]`.
+- The complete local non-browser pipeline passed. The frozen Phase 2 route remains under its
+  unchanged raw JavaScript budget at 130,525 / 131,072 bytes.
+- All 14 local browser cases stopped before test execution only because this workspace lacks the
+  Playwright Chromium executable; the fixed CI environment installed pinned Chromium and ran the
+  unmodified gates successfully.
+- Accepted Tags remain `phase-00-accepted`, `phase-01-accepted`, and `phase-02-accepted`; Phase 3
+  remains In Development and has no Accepted Tag.
+
+### Next
+
+- Build the P3-06 deterministic split-sum IBL CPU/WGSL oracle for diffuse irradiance, GGX specular
+  prefiltering, and the BRDF integration LUT before adding environment GPU resource and cache
+  ownership.
