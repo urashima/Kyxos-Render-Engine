@@ -5,14 +5,16 @@ import { createVec3, multiplyMat4, normalMatrixMat4, normalizeVec3 } from '@kyxo
 import type { MaterialTextureBinding, RgbColor } from '@kyxos/render-material-core';
 import type { PbrMaterialSnapshot } from '@kyxos/render-material-pbr';
 import type { Mat4, Vec3 } from '@kyxos/render-math';
+import type { PbrNormalYDirection } from './pbr-texture-library.js';
 
 export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
-  byteLength: 352,
-  floatLength: 88,
+  byteLength: 400,
+  floatLength: 100,
   offsets: Object.freeze({
     baseColor: 48,
     baseColorUvOffsetScale: 76,
     cameraPosition: 64,
+    emissiveUvOffsetScale: 88,
     emissiveAndStrength: 52,
     lightColor: 72,
     lightDirectionAndIntensity: 68,
@@ -20,9 +22,11 @@ export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
     metallicRoughnessUvOffsetScale: 80,
     model: 16,
     modelViewProjection: 0,
+    normalEmissiveUvRotations: 96,
     normalMatrix: 32,
     normalOcclusion: 60,
-    textureUvRotations: 84,
+    normalUvOffsetScale: 84,
+    textureUvRotations: 92,
   }),
 } as const);
 
@@ -80,6 +84,8 @@ export interface PackPbrObjectUniformsOptions {
   readonly cameraPosition: Vec3;
   readonly light: PbrDirectionalLight;
   readonly material: PbrMaterialSnapshot;
+  /** Asset-boundary Normal convention metadata; defaults to the engine's Y-up convention. */
+  readonly normalYDirection?: PbrNormalYDirection;
   readonly viewProjectionMatrix: Mat4;
   readonly worldMatrix: Mat4;
 }
@@ -116,6 +122,14 @@ export function createPbrDirectionalLight(
 }
 
 export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Float32Array {
+  const normalYDirection = options.normalYDirection ?? 'up';
+  if (normalYDirection !== 'down' && normalYDirection !== 'up') {
+    throw new KyxosEngineError('PBR normalYDirection must be "up" or "down".', {
+      code: 'INVALID_ARGUMENT',
+      module: 'renderer',
+      recoverable: false,
+    });
+  }
   const result = new Float32Array(PBR_OBJECT_UNIFORM_LAYOUT.floatLength);
   const offsets = PBR_OBJECT_UNIFORM_LAYOUT.offsets;
   result.set(
@@ -151,8 +165,8 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
     [
       options.material.normalScale,
       options.material.occlusionStrength,
-      options.material.textures['base-color'] === null ? 0 : 1,
-      options.material.textures['metallic-roughness'] === null ? 0 : 1,
+      options.material.textures.normal === null ? 0 : 1,
+      normalYDirection === 'up' ? 1 : -1,
     ],
     offsets.normalOcclusion,
   );
@@ -170,11 +184,25 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
     options.material.textures['metallic-roughness'],
     'PBR metallic-roughness Texture',
   );
+  const normalTransform = packTextureTransform(
+    options.material.textures.normal,
+    'PBR Normal Texture',
+  );
+  const emissiveTransform = packTextureTransform(
+    options.material.textures.emissive,
+    'PBR Emissive Texture',
+  );
   result.set(baseColorTransform.offsetScale, offsets.baseColorUvOffsetScale);
   result.set(metallicRoughnessTransform.offsetScale, offsets.metallicRoughnessUvOffsetScale);
+  result.set(normalTransform.offsetScale, offsets.normalUvOffsetScale);
+  result.set(emissiveTransform.offsetScale, offsets.emissiveUvOffsetScale);
   result.set(
     [...baseColorTransform.rotation, ...metallicRoughnessTransform.rotation],
     offsets.textureUvRotations,
+  );
+  result.set(
+    [...normalTransform.rotation, ...emissiveTransform.rotation],
+    offsets.normalEmissiveUvRotations,
   );
   return result;
 }

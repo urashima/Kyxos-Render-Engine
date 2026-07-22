@@ -2,6 +2,10 @@
 
 Status: Implemented checkpoint (Phase 3 remains In Development)
 
+This record freezes the P3-04 boundary. P3-05 subsequently implements the deferred Normal and
+Emission path and extends the live layouts; see
+[phase-03-normal-emission.md](./phase-03-normal-emission.md). The P3-04 evidence remains unchanged.
+
 ## Scope
 
 P3-04 extends the backend-neutral resource contract with sampled Texture and Sampler Bind Group

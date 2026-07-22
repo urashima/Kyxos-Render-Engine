@@ -14,7 +14,10 @@ struct PbrObjectUniforms {
   lightColor: vec4f,
   baseColorUvOffsetScale: vec4f,
   metallicRoughnessUvOffsetScale: vec4f,
+  normalUvOffsetScale: vec4f,
+  emissiveUvOffsetScale: vec4f,
   textureUvRotations: vec4f,
+  normalEmissiveUvRotations: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> object: PbrObjectUniforms;
@@ -22,6 +25,10 @@ struct PbrObjectUniforms {
 @group(0) @binding(2) var baseColorSampler: sampler;
 @group(0) @binding(3) var metallicRoughnessTexture: texture_2d<f32>;
 @group(0) @binding(4) var metallicRoughnessSampler: sampler;
+@group(0) @binding(5) var normalTexture: texture_2d<f32>;
+@group(0) @binding(6) var normalSampler: sampler;
+@group(0) @binding(7) var emissiveTexture: texture_2d<f32>;
+@group(0) @binding(8) var emissiveSampler: sampler;
 
 struct PbrBrdfResult {
   diffuse: vec3f,
@@ -104,6 +111,7 @@ struct VertexOutput {
   @location(0) worldPosition: vec3f,
   @location(1) worldNormal: vec3f,
   @location(2) uv0: vec2f,
+  @location(3) worldTangent: vec4f,
 }
 
 @vertex
@@ -111,13 +119,44 @@ fn vertexMain(
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
   @location(2) uv0: vec2f,
+  @location(3) tangent: vec4f,
 ) -> VertexOutput {
   var output: VertexOutput;
   output.position = object.modelViewProjection * vec4f(position, 1.0);
   output.worldPosition = (object.model * vec4f(position, 1.0)).xyz;
   output.worldNormal = (object.normalMatrix * vec4f(normal, 0.0)).xyz;
   output.uv0 = uv0;
+  output.worldTangent = vec4f((object.model * vec4f(tangent.xyz, 0.0)).xyz, tangent.w);
   return output;
+}
+
+fn pbrApplyNormalMap(input: VertexOutput, geometricNormal: vec3f) -> vec3f {
+  if (object.normalOcclusion.z < 0.5) {
+    return geometricNormal;
+  }
+  let uv = pbrTransformUv(
+    input.uv0,
+    object.normalUvOffsetScale,
+    object.normalEmissiveUvRotations.xy,
+  );
+  var tangentNormal = textureSample(normalTexture, normalSampler, uv).xyz * 2.0 - 1.0;
+  tangentNormal.x *= object.normalOcclusion.x;
+  tangentNormal.y *= object.normalOcclusion.x * object.normalOcclusion.w;
+  tangentNormal = pbrSafeNormalize(tangentNormal, vec3f(0.0, 0.0, 1.0));
+  let tangent = pbrSafeNormalize(
+    input.worldTangent.xyz - geometricNormal * dot(geometricNormal, input.worldTangent.xyz),
+    vec3f(1.0, 0.0, 0.0),
+  );
+  let modelOrientation = select(
+    -1.0,
+    1.0,
+    dot(cross(object.model[0].xyz, object.model[1].xyz), object.model[2].xyz) >= 0.0,
+  );
+  let bitangent = cross(geometricNormal, tangent) * input.worldTangent.w * modelOrientation;
+  return pbrSafeNormalize(
+    tangent * tangentNormal.x + bitangent * tangentNormal.y + geometricNormal * tangentNormal.z,
+    geometricNormal,
+  );
 }
 
 fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
@@ -125,6 +164,7 @@ fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
   if (!frontFacing) {
     normal = -normal;
   }
+  normal = pbrApplyNormalMap(input, normal);
   let viewDirection = pbrSafeNormalize(
     object.cameraPosition.xyz - input.worldPosition,
     normal,
@@ -154,6 +194,12 @@ fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
     metallicRoughnessSampler,
     metallicRoughnessUv,
   );
+  let emissiveUv = pbrTransformUv(
+    input.uv0,
+    object.emissiveUvOffsetScale,
+    object.normalEmissiveUvRotations.zw,
+  );
+  let emissiveSample = textureSample(emissiveTexture, emissiveSampler, emissiveUv).rgb;
   let baseColor = object.baseColor * baseColorSample;
   let material = object.metallicRoughnessAlphaCutoff;
   let brdf = pbrEvaluateMetallicRoughness(
@@ -169,7 +215,8 @@ fn shadePbr(input: VertexOutput, frontFacing: bool) -> vec4f {
     object.lightColor.rgb *
     object.lightDirectionAndIntensity.w *
     nDotL;
-  let emission = object.emissiveAndStrength.rgb * object.emissiveAndStrength.w;
+  let emission =
+    object.emissiveAndStrength.rgb * object.emissiveAndStrength.w * emissiveSample;
   return vec4f(max(directRadiance + emission, vec3f(0.0)), baseColor.a);
 }
 

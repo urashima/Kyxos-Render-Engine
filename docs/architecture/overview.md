@@ -25,7 +25,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | ------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `@kyxos/render-core`            | Errors, typed events, handles, deterministic disposal                  | None                                                             |
 | `@kyxos/render-math`            | Vectors, quaternions, matrices, bounds, and frusta                     | None                                                             |
-| `@kyxos/render-geometry`        | Immutable mesh data, validation, bounds, and primitive builders        | Math                                                             |
+| `@kyxos/render-geometry`        | Immutable mesh data, bounds, primitives, and tangent generation        | Math                                                             |
 | `@kyxos/render-material-core`   | Color, texture semantics, UV transforms, and feature identities        | Core                                                             |
 | `@kyxos/render-material-pbr`    | Metallic-roughness material state and BRDF reference                   | Core, Material Core                                              |
 | `@kyxos/render-scene`           | Entity hierarchy, cached world transforms, visibility, layers, bounds  | Core, Math                                                       |
@@ -34,7 +34,7 @@ Integration adapters and the WebGL2 backend are planned layers. They do not exis
 | `@kyxos/render-backend-api`     | Backend lifecycle, opaque GPU resources, uploads, and diagnostics      | Core                                                             |
 | `@kyxos/render-backend-webgpu`  | WebGPU implementation boundary; concrete implementation starts Phase 1 | Backend API, Core                                                |
 | `@kyxos/render-frame-scheduler` | Dirty flags and injected frame-request scheduling                      | Core                                                             |
-| `@kyxos/render-renderer`        | Renderer lifecycle, scene features, PBR resources, and cache ownership | Backend API, Camera, Core, Geometry, Material, Scene, Visibility |
+| `@kyxos/render-renderer`        | Renderer lifecycle, scene/PBR features, mapped resources, and caches   | Backend API, Camera, Core, Geometry, Material, Scene, Visibility |
 | `@kyxos/render-sdk`             | Product-facing composition root and only supported consumer entry      | Public engine packages                                           |
 | `@kyxos/render-testing`         | Mock Backend and deterministic frame driver                            | Backend API, Core, Frame Scheduler                               |
 | `@kyxos/render-playground`      | Independent acceptance and development application                     | SDK, Testing                                                     |

@@ -7,6 +7,9 @@ covers material state, texture semantics, color transfer, UV transforms, and det
 keys. BRDF evaluation, GPU bindings, shaders, IBL preprocessing, and tone mapping remain later
 Phase 3 checkpoints.
 
+P3-05 subsequently implements tangent-space Normal and Emission sampling while preserving this
+CPU material contract; see [phase-03-normal-emission.md](./phase-03-normal-emission.md).
+
 ## Authoritative inputs
 
 - [Khronos glTF 2.0 Specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html)

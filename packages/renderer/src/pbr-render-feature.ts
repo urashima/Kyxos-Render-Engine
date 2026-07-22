@@ -16,6 +16,7 @@ import type {
 } from '@kyxos/render-backend-api';
 import type { PerspectiveCamera } from '@kyxos/render-camera';
 import { KyxosEngineError } from '@kyxos/render-core';
+import { generateMeshTangents } from '@kyxos/render-geometry';
 import type { MeshData } from '@kyxos/render-geometry';
 import { PBR_TEXTURE_SLOTS, createPbrMaterialFeatureKey } from '@kyxos/render-material-pbr';
 import type { PbrAlphaMode, PbrMaterialSnapshot } from '@kyxos/render-material-pbr';
@@ -46,8 +47,9 @@ import { PbrTextureLibrary, PbrTextureSource } from './pbr-texture-library.js';
 export const PBR_RENDER_FEATURE_ID = 'kyxos.pbr-direct' as const;
 
 const DEPTH_FORMAT = 'depth24plus' as const;
-const PBR_VERTEX_STRIDE = 8 * Float32Array.BYTES_PER_ELEMENT;
+const PBR_VERTEX_STRIDE = 12 * Float32Array.BYTES_PER_ELEMENT;
 const PBR_ALPHA_MODES = ['opaque', 'mask', 'blend'] as const;
+const PBR_NORMAL_MAPS = [false, true] as const;
 const PBR_SIDEDNESS = [false, true] as const;
 const EMPTY_STATISTICS: BackendRenderPassStatistics = Object.freeze({
   drawCalls: 0,
@@ -60,6 +62,7 @@ interface PbrRenderResources {
   depthTexture: BackendTextureHandle | undefined;
   readonly fallbackBaseColorTexture: BackendTextureHandle;
   readonly fallbackMetallicRoughnessTexture: BackendTextureHandle;
+  readonly fallbackNormalTexture: BackendTextureHandle;
   readonly fallbackSampler: BackendSamplerHandle;
   readonly pipelines: ReadonlyMap<string, BackendPipelineHandle>;
   readonly shader: BackendShaderModuleHandle;
@@ -95,8 +98,10 @@ interface PreparedTextureBinding {
 
 interface PreparedMaterial {
   readonly baseColorSource: PbrTextureSource | null;
+  readonly emissiveSource: PbrTextureSource | null;
   readonly fallback: boolean;
   readonly metallicRoughnessSource: PbrTextureSource | null;
+  readonly normalSource: PbrTextureSource | null;
   readonly pipeline: BackendPipelineHandle;
   readonly snapshot: PbrMaterialSnapshot;
 }
@@ -152,8 +157,8 @@ function shaderFailureMessage(
     .join('; ')}`;
 }
 
-function variantKey(alphaMode: PbrAlphaMode, doubleSided: boolean): string {
-  return createPbrMaterialFeatureKey({ alphaMode, doubleSided, normalMap: false });
+function variantKey(alphaMode: PbrAlphaMode, doubleSided: boolean, normalMap: boolean): string {
+  return createPbrMaterialFeatureKey({ alphaMode, doubleSided, normalMap });
 }
 
 function fragmentEntryPoint(alphaMode: PbrAlphaMode): string {
@@ -272,16 +277,19 @@ export class PbrRenderFeature implements RenderFeature {
       const pipelines = new Map<string, BackendPipelineHandle>();
       for (const alphaMode of PBR_ALPHA_MODES) {
         for (const doubleSided of PBR_SIDEDNESS) {
-          const key = variantKey(alphaMode, doubleSided);
-          const pipeline = await this.#createPipeline(
-            backend,
-            shader,
-            surfaceInfo,
-            alphaMode,
-            doubleSided,
-          );
-          created.push(pipeline);
-          pipelines.set(key, pipeline);
+          for (const normalMap of PBR_NORMAL_MAPS) {
+            const key = variantKey(alphaMode, doubleSided, normalMap);
+            const pipeline = await this.#createPipeline(
+              backend,
+              shader,
+              surfaceInfo,
+              alphaMode,
+              doubleSided,
+              normalMap,
+            );
+            created.push(pipeline);
+            pipelines.set(key, pipeline);
+          }
         }
       }
       const fallbackSampler = backend.createSampler({
@@ -294,18 +302,27 @@ export class PbrRenderFeature implements RenderFeature {
         mipmapFilter: 'linear',
       });
       created.push(fallbackSampler);
-      const fallbackBaseColorTexture = this.#createWhiteTexture(
+      const fallbackBaseColorTexture = this.#createSolidTexture(
         backend,
         'phase-03-pbr-fallback-base-color',
         'rgba8unorm-srgb',
+        [255, 255, 255, 255],
       );
       created.push(fallbackBaseColorTexture);
-      const fallbackMetallicRoughnessTexture = this.#createWhiteTexture(
+      const fallbackMetallicRoughnessTexture = this.#createSolidTexture(
         backend,
         'phase-03-pbr-fallback-metallic-roughness',
         'rgba8unorm',
+        [255, 255, 255, 255],
       );
       created.push(fallbackMetallicRoughnessTexture);
+      const fallbackNormalTexture = this.#createSolidTexture(
+        backend,
+        'phase-03-pbr-fallback-normal',
+        'rgba8unorm',
+        [128, 128, 255, 255],
+      );
+      created.push(fallbackNormalTexture);
       const depthTexture = this.#createDepthTexture(backend, surfaceInfo);
       if (depthTexture !== undefined) created.push(depthTexture);
 
@@ -314,6 +331,7 @@ export class PbrRenderFeature implements RenderFeature {
         depthTexture,
         fallbackBaseColorTexture,
         fallbackMetallicRoughnessTexture,
+        fallbackNormalTexture,
         fallbackSampler,
         pipelines,
         shader,
@@ -484,6 +502,7 @@ export class PbrRenderFeature implements RenderFeature {
       handles.push(
         resources.fallbackBaseColorTexture,
         resources.fallbackMetallicRoughnessTexture,
+        resources.fallbackNormalTexture,
         resources.fallbackSampler,
         ...resources.pipelines.values(),
         resources.shader,
@@ -521,6 +540,7 @@ export class PbrRenderFeature implements RenderFeature {
     surfaceInfo: BackendSurfaceInfo,
     alphaMode: PbrAlphaMode,
     doubleSided: boolean,
+    normalMap: boolean,
   ): Promise<BackendPipelineHandle> {
     const transparent = alphaMode === 'blend';
     return backend.createRenderPipeline({
@@ -546,7 +566,7 @@ export class PbrRenderFeature implements RenderFeature {
           },
         ],
       },
-      label: `phase-03-pbr-${alphaMode}-${doubleSided ? 'double' : 'single'}`,
+      label: `phase-03-pbr-${alphaMode}-${doubleSided ? 'double' : 'single'}-${normalMap ? 'normal' : 'geometric'}`,
       primitive: {
         cullMode: doubleSided ? 'none' : 'back',
         frontFace: 'ccw',
@@ -560,6 +580,7 @@ export class PbrRenderFeature implements RenderFeature {
               { format: 'float32x3', offset: 0, shaderLocation: 0 },
               { format: 'float32x3', offset: 12, shaderLocation: 1 },
               { format: 'float32x2', offset: 24, shaderLocation: 2 },
+              { format: 'float32x4', offset: 32, shaderLocation: 3 },
             ],
           },
         ],
@@ -569,10 +590,11 @@ export class PbrRenderFeature implements RenderFeature {
     });
   }
 
-  #createWhiteTexture(
+  #createSolidTexture(
     backend: GraphicsBackend,
     label: string,
     format: 'rgba8unorm' | 'rgba8unorm-srgb',
+    pixel: readonly [number, number, number, number],
   ): BackendTextureHandle {
     const texture = backend.createTexture({
       format,
@@ -581,7 +603,7 @@ export class PbrRenderFeature implements RenderFeature {
       usage: ['copy-dst', 'sampled'],
     });
     try {
-      backend.writeTexture(texture, new Uint8Array([255, 255, 255, 255]), {
+      backend.writeTexture(texture, new Uint8Array(pixel), {
         size: { height: 1, width: 1 },
       });
       return texture;
@@ -611,25 +633,28 @@ export class PbrRenderFeature implements RenderFeature {
     const fallback = !this.#materials.has(item.materialKey);
     const snapshot = this.#materials.resolve(item.materialKey).snapshot();
     const unsupportedSlots = PBR_TEXTURE_SLOTS.filter(
-      (slot) =>
-        slot !== 'base-color' && slot !== 'metallic-roughness' && snapshot.textures[slot] !== null,
+      (slot) => slot === 'occlusion' && snapshot.textures[slot] !== null,
     );
     if (unsupportedSlots.length > 0) {
       throw new KyxosEngineError(
-        `P3-04 factor-map rendering does not yet bind PBR textures: ${unsupportedSlots.join(', ')}.`,
+        `P3-05 material rendering does not yet bind PBR textures: ${unsupportedSlots.join(', ')}.`,
         {
           code: 'UNSUPPORTED_CAPABILITY',
           module: 'renderer',
           recoverable: true,
-          suggestedAction: 'Use base-color and metallic-roughness maps until the next checkpoint.',
+          suggestedAction: 'Retain occlusion for the IBL indirect-light checkpoint.',
         },
       );
     }
     const baseColorBinding = snapshot.textures['base-color'];
+    const emissiveBinding = snapshot.textures.emissive;
     const metallicRoughnessBinding = snapshot.textures['metallic-roughness'];
+    const normalBinding = snapshot.textures.normal;
     for (const [label, binding] of [
       ['base-color', baseColorBinding],
+      ['emissive', emissiveBinding],
       ['metallic-roughness', metallicRoughnessBinding],
+      ['normal', normalBinding],
     ] as const) {
       if (binding !== null && binding.transform.texCoord !== 0) {
         throw new KyxosEngineError(`PBR ${label} Texture currently requires UV set 0.`, {
@@ -642,10 +667,14 @@ export class PbrRenderFeature implements RenderFeature {
     }
     const baseColorSource =
       baseColorBinding === null ? null : this.#textures.resolve(baseColorBinding.texture);
+    const emissiveSource =
+      emissiveBinding === null ? null : this.#textures.resolve(emissiveBinding.texture);
     const metallicRoughnessSource =
       metallicRoughnessBinding === null
         ? null
         : this.#textures.resolve(metallicRoughnessBinding.texture);
+    const normalSource =
+      normalBinding === null ? null : this.#textures.resolve(normalBinding.texture);
     const expectedAlphaMode = snapshot.alphaMode === 'blend' ? 'blend' : 'opaque';
     if (item.alphaMode !== expectedAlphaMode) {
       throw this.#error(
@@ -662,8 +691,10 @@ export class PbrRenderFeature implements RenderFeature {
     }
     return Object.freeze({
       baseColorSource,
+      emissiveSource,
       fallback,
       metallicRoughnessSource,
+      normalSource,
       pipeline,
       snapshot,
     });
@@ -675,11 +706,14 @@ export class PbrRenderFeature implements RenderFeature {
     material: PreparedMaterial,
   ): BackendDrawCommand {
     if (
-      (material.baseColorSource !== null || material.metallicRoughnessSource !== null) &&
+      (material.baseColorSource !== null ||
+        material.emissiveSource !== null ||
+        material.metallicRoughnessSource !== null ||
+        material.normalSource !== null) &&
       item.mesh.uv0 === null
     ) {
       throw this.#error(
-        `Mesh "${item.mesh.name}" requires UV0 for its PBR factor maps.`,
+        `Mesh "${item.mesh.name}" requires UV0 for its mapped PBR material.`,
         'INVALID_ARGUMENT',
       );
     }
@@ -700,6 +734,22 @@ export class PbrRenderFeature implements RenderFeature {
             texture: resources.fallbackMetallicRoughnessTexture,
           }
         : this.#ensureTextureResources(backend, material.metallicRoughnessSource);
+    const normalTexture: PreparedTextureBinding =
+      material.normalSource === null
+        ? {
+            sampler: resources.fallbackSampler,
+            source: null,
+            texture: resources.fallbackNormalTexture,
+          }
+        : this.#ensureTextureResources(backend, material.normalSource);
+    const emissiveTexture: PreparedTextureBinding =
+      material.emissiveSource === null
+        ? {
+            sampler: resources.fallbackSampler,
+            source: null,
+            texture: resources.fallbackBaseColorTexture,
+          }
+        : this.#ensureTextureResources(backend, material.emissiveSource);
     const mesh = this.#ensureMeshResources(backend, item.mesh);
     const object = this.#ensureObjectResources(
       backend,
@@ -707,6 +757,8 @@ export class PbrRenderFeature implements RenderFeature {
       material.pipeline,
       baseColorTexture,
       metallicRoughnessTexture,
+      normalTexture,
+      emissiveTexture,
     );
     backend.writeBuffer(
       object.uniformBuffer,
@@ -714,6 +766,7 @@ export class PbrRenderFeature implements RenderFeature {
         cameraPosition: this.#camera.position,
         light: this.#light,
         material: material.snapshot,
+        normalYDirection: material.normalSource?.normalYDirection ?? 'up',
         viewProjectionMatrix: this.#camera.viewProjectionMatrix(),
         worldMatrix: item.worldMatrix,
       }),
@@ -735,11 +788,13 @@ export class PbrRenderFeature implements RenderFeature {
     const existing = this.#meshResources.get(mesh);
     if (existing !== undefined) return existing;
 
-    const vertices = new Float32Array(mesh.vertexCount * 8);
+    const tangents = mesh.tangents ?? (mesh.uv0 === null ? null : generateMeshTangents(mesh));
+    const vertices = new Float32Array(mesh.vertexCount * 12);
     for (let vertexIndex = 0; vertexIndex < mesh.vertexCount; vertexIndex += 1) {
       const source = vertexIndex * 3;
       const uvSource = vertexIndex * 2;
-      const target = vertexIndex * 8;
+      const tangentSource = vertexIndex * 4;
+      const target = vertexIndex * 12;
       vertices[target] = mesh.positions[source] as number;
       vertices[target + 1] = mesh.positions[source + 1] as number;
       vertices[target + 2] = mesh.positions[source + 2] as number;
@@ -748,6 +803,10 @@ export class PbrRenderFeature implements RenderFeature {
       vertices[target + 5] = mesh.normals[source + 2] as number;
       vertices[target + 6] = mesh.uv0?.[uvSource] ?? 0;
       vertices[target + 7] = mesh.uv0?.[uvSource + 1] ?? 0;
+      vertices[target + 8] = tangents?.[tangentSource] ?? 1;
+      vertices[target + 9] = tangents?.[tangentSource + 1] ?? 0;
+      vertices[target + 10] = tangents?.[tangentSource + 2] ?? 0;
+      vertices[target + 11] = tangents?.[tangentSource + 3] ?? 1;
     }
     const indexLength =
       mesh.indexFormat === 'uint16' && mesh.indexCount % 2 !== 0
@@ -820,6 +879,8 @@ export class PbrRenderFeature implements RenderFeature {
     pipeline: BackendPipelineHandle,
     baseColorTexture: PreparedTextureBinding,
     metallicRoughnessTexture: PreparedTextureBinding,
+    normalTexture: PreparedTextureBinding,
+    emissiveTexture: PreparedTextureBinding,
   ): ObjectGpuResources {
     const existing = this.#objectResources.get(entity);
     const bindingKey = [
@@ -828,6 +889,10 @@ export class PbrRenderFeature implements RenderFeature {
       baseColorTexture.sampler.id,
       metallicRoughnessTexture.texture.id,
       metallicRoughnessTexture.sampler.id,
+      normalTexture.texture.id,
+      normalTexture.sampler.id,
+      emissiveTexture.texture.id,
+      emissiveTexture.sampler.id,
     ].join(':');
     if (existing?.bindingKey === bindingKey) return existing;
     const uniformBuffer =
@@ -849,6 +914,10 @@ export class PbrRenderFeature implements RenderFeature {
           { binding: 2, resource: { sampler: baseColorTexture.sampler } },
           { binding: 3, resource: { texture: metallicRoughnessTexture.texture } },
           { binding: 4, resource: { sampler: metallicRoughnessTexture.sampler } },
+          { binding: 5, resource: { texture: normalTexture.texture } },
+          { binding: 6, resource: { sampler: normalTexture.sampler } },
+          { binding: 7, resource: { texture: emissiveTexture.texture } },
+          { binding: 8, resource: { sampler: emissiveTexture.sampler } },
         ],
         group: 0,
         label: `pbr-object-${entity.id}`,
@@ -860,9 +929,14 @@ export class PbrRenderFeature implements RenderFeature {
     }
     if (existing !== undefined) backend.destroyResource(existing.bindGroup);
     const textureSources = Object.freeze(
-      [...new Set([baseColorTexture.source, metallicRoughnessTexture.source])].filter(
-        (source): source is PbrTextureSource => source !== null,
-      ),
+      [
+        ...new Set([
+          baseColorTexture.source,
+          metallicRoughnessTexture.source,
+          normalTexture.source,
+          emissiveTexture.source,
+        ]),
+      ].filter((source): source is PbrTextureSource => source !== null),
     );
     const result = Object.freeze({
       bindingKey,

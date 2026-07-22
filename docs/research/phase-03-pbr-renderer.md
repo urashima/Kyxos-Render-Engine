@@ -2,8 +2,10 @@
 
 Status: Implemented checkpoint (Phase 3 remains In Development)
 
-This document freezes the P3-03 boundary. P3-04 subsequently implements the deferred factor-map
-path in [phase-03-pbr-textures.md](./phase-03-pbr-textures.md); the P3-03 evidence remains unchanged.
+This document freezes the P3-03 boundary. P3-04 implements the deferred factor-map path in
+[phase-03-pbr-textures.md](./phase-03-pbr-textures.md), and P3-05 adds the tangent-space Normal and
+Emission path in [phase-03-normal-emission.md](./phase-03-normal-emission.md). The P3-03 evidence
+remains unchanged.
 
 ## Scope
 

@@ -63,6 +63,7 @@ export {
   type PbrTextureLibraryChangeEvent,
   type PbrTextureLibraryDiagnostics,
   type PbrTextureLibraryEvents,
+  type PbrNormalYDirection,
   type PbrTextureSourceDescriptor,
 } from './pbr-texture-library.js';
 export {

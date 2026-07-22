@@ -7,9 +7,13 @@ import type {
   TextureTransferFunction,
 } from '@kyxos/render-material-core';
 
+export type PbrNormalYDirection = 'down' | 'up';
+
 export interface PbrTextureSourceDescriptor {
   readonly height: number;
   readonly id: string;
+  /** Asset-boundary Normal convention metadata; ignored by non-Normal slots. */
+  readonly normalYDirection?: PbrNormalYDirection;
   readonly pixels: Uint8Array | Uint8ClampedArray;
   readonly sampler?: BackendSamplerDescriptor;
   readonly transferFunction: TextureTransferFunction;
@@ -76,6 +80,7 @@ export class PbrTextureSource {
   readonly byteLength: number;
   readonly height: number;
   readonly id: string;
+  readonly normalYDirection: PbrNormalYDirection;
   readonly sampler: BackendSamplerDescriptor;
   readonly transferFunction: TextureTransferFunction;
   readonly width: number;
@@ -88,6 +93,13 @@ export class PbrTextureSource {
     if (descriptor.transferFunction !== 'linear' && descriptor.transferFunction !== 'srgb') {
       throw error(
         'PBR Texture source transferFunction must be "linear" or "srgb".',
+        'INVALID_ARGUMENT',
+      );
+    }
+    const normalYDirection = descriptor.normalYDirection ?? 'up';
+    if (normalYDirection !== 'down' && normalYDirection !== 'up') {
+      throw error(
+        'PBR Texture source normalYDirection must be "up" or "down".',
         'INVALID_ARGUMENT',
       );
     }
@@ -104,6 +116,7 @@ export class PbrTextureSource {
     this.byteLength = byteLength;
     this.height = height;
     this.id = id;
+    this.normalYDirection = normalYDirection;
     this.sampler = normalizeSampler(descriptor.sampler);
     this.transferFunction = descriptor.transferFunction;
     this.width = width;

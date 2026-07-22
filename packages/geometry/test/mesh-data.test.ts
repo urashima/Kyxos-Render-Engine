@@ -11,6 +11,7 @@ describe('MeshData', () => {
     expect(mesh.name).toBe('custom-triangle');
     expect(mesh.positions).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
     expect(mesh.normals).toEqual([0, 0, 1, 0, 0, 1, 0, 0, 1]);
+    expect(mesh.tangents).toBeNull();
     expect(mesh.indices).toEqual([0, 1, 2]);
     expect(mesh.bounds).toEqual({ min: [0, 0, 0], max: [1, 1, 0] });
     expect(mesh.vertexCount).toBe(3);
@@ -21,15 +22,17 @@ describe('MeshData', () => {
     expect(Object.isFrozen(mesh)).toBe(true);
   });
 
-  it('normalizes explicit normals and preserves optional UV data', () => {
+  it('normalizes explicit normals and Tangents and preserves optional UV data', () => {
     const mesh = createMeshData({
       indices: new Uint16Array([0, 1, 2]),
       normals: new Float32Array([0, 0, 2, 0, 0, 2, 0, 0, 2]),
       positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      tangents: new Float32Array([2, 0, 1, 1, 2, 0, 1, 1, 2, 0, 1, 1]),
       uv0: new Float32Array([0, 0, 1, 0, 0, 1]),
     });
 
     expect(mesh.normals).toEqual([0, 0, 1, 0, 0, 1, 0, 0, 1]);
+    expect(mesh.tangents).toEqual([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]);
     expect(mesh.uv0).toEqual([0, 0, 1, 0, 0, 1]);
   });
 
@@ -75,5 +78,17 @@ describe('MeshData', () => {
         uv0: [0, 0],
       }),
     ).toThrow(/exactly 6/u);
+    expect(() =>
+      createMeshData({
+        positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+        tangents: [1, 0, 0, 1],
+      }),
+    ).toThrow(/exactly 12/u);
+    expect(() =>
+      createMeshData({
+        positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+        tangents: [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1],
+      }),
+    ).toThrow(/must be -1 or 1/u);
   });
 });

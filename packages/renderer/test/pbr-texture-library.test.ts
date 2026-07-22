@@ -22,6 +22,7 @@ describe('PbrTextureLibrary', () => {
       magFilter: 'nearest',
       minFilter: 'linear',
     });
+    expect(source.normalYDirection).toBe('up');
 
     const library = new PbrTextureLibrary();
     const changed = vi.fn();
@@ -59,14 +60,27 @@ describe('PbrTextureLibrary', () => {
           width: 2,
         }),
     ).toThrow('exactly 16 RGBA8 bytes');
+    expect(
+      () =>
+        new PbrTextureSource({
+          height: 1,
+          id: 'bad-direction',
+          normalYDirection: 'sideways' as 'up',
+          pixels: new Uint8Array(4),
+          transferFunction: 'linear',
+          width: 1,
+        }),
+    ).toThrow('normalYDirection');
 
     const first = new PbrTextureSource({
       height: 1,
       id: 'map',
+      normalYDirection: 'down',
       pixels: new Uint8Array([0, 255, 255, 255]),
       transferFunction: 'linear',
       width: 1,
     });
+    expect(first.normalYDirection).toBe('down');
     const replacement = new PbrTextureSource({
       height: 1,
       id: 'map',
