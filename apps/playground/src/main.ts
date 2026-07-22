@@ -1,4 +1,3 @@
-import { mountPhase00Acceptance } from './acceptance/phase-00/index.js';
 import { acceptancePhaseHref, resolveAcceptancePhase } from './routing.js';
 import './styles.css';
 
@@ -24,5 +23,7 @@ if (phase === 3) {
     mountPhase01Acceptance(root),
   );
 } else {
-  await mountPhase00Acceptance(root);
+  await import('./acceptance/phase-00/index.js').then(({ mountPhase00Acceptance }) =>
+    mountPhase00Acceptance(root),
+  );
 }

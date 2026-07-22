@@ -5,6 +5,7 @@ export type {
   BackendBufferData,
   BackendBindGroupBinding,
   BackendClearColor,
+  BackendColorAttachment,
   BackendDrawCommand,
   BackendFrameSubmission,
   BackendIndexBufferBinding,
@@ -12,6 +13,8 @@ export type {
   BackendDepthAttachment,
   BackendRenderPassDescriptor,
   BackendRenderPassStatistics,
+  BackendSurfaceRenderPassDescriptor,
+  BackendTextureRenderPassDescriptor,
   BackendVertexBufferBinding,
 } from './commands.js';
 

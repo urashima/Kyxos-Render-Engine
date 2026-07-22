@@ -8,9 +8,16 @@ import {
   PbrMaterial,
   PbrTextureLibrary,
   PbrTextureSource,
+  PerspectiveCamera,
+  TemporalCameraMatrixTracker,
+  TemporalFrameScheduler,
+  TemporalHistory,
   createBackendCapabilityReport,
   createKyxosRendererFromBackend,
+  createTemporalJitterSample,
+  evaluateDeterministicCameraReprojectionReference,
   evaluateDeterministicIblReference,
+  evaluateDeterministicTemporalTaaReference,
   evaluatePbrOutputTransform,
   evaluateSplitSumIbl,
   float32ToFloat16Bits,
@@ -251,6 +258,68 @@ describe('SDK-only consumer', () => {
       roughnessFactor: 0.3,
     });
     material.dispose();
+  });
+
+  it('constructs temporal state and scheduling using only the public SDK entry point', () => {
+    const frameDriver = new SdkOnlyFrameDriver();
+    const scheduler = new TemporalFrameScheduler({
+      convergence: { targetSamples: 2 },
+      driver: frameDriver,
+      stabilizationMs: 0,
+    });
+    const history = new TemporalHistory({ kind: 'static', ownerId: 'sdk-viewport' });
+
+    scheduler.invalidate('camera');
+    expect(scheduler.getDiagnostics()).toMatchObject({
+      historyGeneration: 1,
+      mode: 'interactive',
+      strategy: 'temporal',
+    });
+    expect(history.snapshot()).toMatchObject({ ownerId: 'sdk-viewport', valid: false });
+
+    scheduler.dispose();
+    history.dispose();
+  });
+
+  it('constructs jittered Previous/Current Camera matrices from the public SDK', () => {
+    const camera = new PerspectiveCamera();
+    const matrices = new TemporalCameraMatrixTracker({ camera });
+    const frame = matrices.update({
+      historyGeneration: 1,
+      jitter: createTemporalJitterSample(1),
+      viewport: { height: 720, width: 1280 },
+    });
+
+    expect(frame).toMatchObject({
+      historyReset: true,
+      historyResetReason: 'first-frame',
+      jitter: { sampleIndex: 1 },
+    });
+    matrices.dispose();
+    camera.dispose();
+  });
+
+  it('evaluates deterministic Dynamic TAA resolve branches from the public SDK', () => {
+    const reference = evaluateDeterministicTemporalTaaReference();
+
+    expect(reference.cases.map(({ id, result }) => [id, result.rejectionReason])).toEqual([
+      ['accepted', null],
+      ['depth-rejected', 'depth'],
+      ['normal-rejected', 'normal'],
+    ]);
+    expect(reference.values).toHaveLength(60);
+  });
+
+  it('evaluates deterministic Camera reprojection from the public SDK', () => {
+    const reference = evaluateDeterministicCameraReprojectionReference();
+
+    expect(reference.cases.map(({ id, result }) => [id, result.invalidReason])).toEqual([
+      ['stationary', null],
+      ['camera-motion', null],
+      ['uv-rejected', 'previous-uv-out-of-bounds'],
+      ['background-depth', 'background-depth'],
+    ]);
+    expect(reference.values).toHaveLength(64);
   });
 
   it('evaluates the deterministic IBL oracle using only the public SDK entry point', () => {

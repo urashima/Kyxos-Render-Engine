@@ -33,6 +33,7 @@
     "@kyxos/render-math": "workspace:*",
     "@kyxos/render-renderer": "workspace:*",
     "@kyxos/render-scene": "workspace:*",
+    "@kyxos/render-temporal": "workspace:*",
     "@kyxos/render-visibility": "workspace:*"
   },
   "devDependencies": {

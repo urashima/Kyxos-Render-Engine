@@ -10,7 +10,7 @@ import { createWebGpuBackend } from '@kyxos/render-backend-webgpu';
 import type { WebGpuPowerPreference } from '@kyxos/render-backend-webgpu';
 import { OrbitController, PerspectiveCamera } from '@kyxos/render-camera';
 import type { OrbitControllerOptions, PerspectiveCameraOptions } from '@kyxos/render-camera';
-import type { FrameRequestDriver } from '@kyxos/render-frame-scheduler';
+import type { FrameRequestDriver, FrameSchedulerController } from '@kyxos/render-frame-scheduler';
 import type { PbrOutputTransformDescriptor } from '@kyxos/render-material-pbr';
 import { PbrMaterialLibrary, PbrRenderFeature, PbrTextureLibrary } from '@kyxos/render-renderer';
 import type {
@@ -38,6 +38,7 @@ export interface CreateKyxosPbrRendererOptions {
   readonly environment?: PbrEnvironmentDescriptor;
   readonly forceFallbackAdapter?: boolean;
   readonly frameDriver?: FrameRequestDriver;
+  readonly frameScheduler?: FrameSchedulerController;
   readonly frustumCulling?: boolean;
   readonly label?: string;
   readonly light?: PbrDirectionalLightDescriptor;
@@ -112,11 +113,15 @@ function composePbrRenderer(options: CreateKyxosPbrRendererOptions): KyxosPbrCan
     },
     textures,
   });
+  const scheduling =
+    options.frameScheduler === undefined
+      ? { frameDriver: options.frameDriver ?? createBrowserFrameDriver() }
+      : { frameScheduler: options.frameScheduler };
   return new KyxosPbrCanvasRenderer({
     backend,
     camera,
     feature,
-    frameDriver: options.frameDriver ?? createBrowserFrameDriver(),
+    ...scheduling,
     materials,
     meshRenderers,
     orbitController,
