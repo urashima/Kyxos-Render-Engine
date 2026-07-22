@@ -66,6 +66,16 @@ jobs:
           );
           await writeFile(presentPath, present);
 
+          const presentSpecPath = 'tests/e2e/phase-04-present.spec.ts';
+          let presentSpec = await readFile(presentSpecPath, 'utf8');
+          presentSpec = replaceOnce(
+            presentSpec,
+            "        canvas.dataset.testid = 'phase-04-present-canvas';",
+            "        canvas.dataset['testid'] = 'phase-04-present-canvas';",
+            'Present test Dataset access',
+          );
+          await writeFile(presentSpecPath, presentSpec);
+
           const sdkPath = 'packages/sdk/src/index.ts';
           let sdk = await readFile(sdkPath, 'utf8');
           sdk = replaceOnce(
