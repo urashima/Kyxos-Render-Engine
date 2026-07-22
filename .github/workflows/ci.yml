@@ -47,7 +47,11 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run complete verification pipeline
-        run: pnpm verify
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
