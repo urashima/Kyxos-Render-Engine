@@ -1953,3 +1953,54 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-04 validated offscreen Texture Color Attachments in the Backend and owner-scoped
   rgba16float Dynamic TAA ping-pong History allocation, resize/signature invalidation, Device Lost
   recovery, and disposal without integrating the Renderer resolve pass.
+
+## 2026-07-22 07:22 PDT — P4-04 offscreen target and Dynamic TAA GPU History passed
+
+### Completed
+
+- Extended Backend Render Passes to select exactly one Canvas Surface or offscreen Texture Color
+  Attachment with explicit load/store operations and an optional single-2D-subresource View.
+- Added WebGPU and Mock validation for attachment usage, non-depth and single-sample formats,
+  Pipeline Color Format compatibility, selected Mip dimensions, and matching Depth attachments.
+- Added `DynamicTaaGpuHistory`, an owner-scoped pair of sampled/renderable `rgba16float` Textures
+  plus one linear clamp Sampler. Explicit prepare/commit/cancel operations preserve read/write roles
+  and reuse History only for an exact immutable signature.
+- Added create-before-publish Resize, partial-allocation rollback, Viewport/signature invalidation,
+  Device Lost detachment and same-Backend restoration, and idempotent release without disposing the
+  caller-owned Backend.
+- Exposed the contract through the public SDK and added the explicit
+  `Renderer → Temporal` dependency edge without a cycle.
+- Made the already accepted Phase 0 Playground route lazy like Phases 1–3. The Bundle gate still
+  counts its complete route closure while accepted WebGPU routes no longer download Mock Backend
+  code; no budget was increased and no visual baseline changed.
+- Preserved the checkpoint boundary: P4-04 adds no Motion/Depth/Normal History, reprojection math,
+  Bind Group, resolve Pipeline, Renderer frame submission, Render Graph resource, Phase 4 route, or
+  acceptance claim.
+
+### Validation
+
+- Implementation commit `39570032ecf0cdc33d98bf12d90615e54b7259b4` has Git Tree
+  `06e3848f704aa6c6f275f2cef57d77740f2c1d6f`, identical to the complete locally verified Tree.
+- Run `29927804583`, job `88949367501`: PASS. Formatting, zero-warning Lint, strict TypeScript,
+  50 unit files / 236 tests, package/architecture gates, Phase 0–3 frozen Schemas, eight Shader
+  mirrors, build, Bundle, Pages, and all 23 pinned Chromium/WebGPU cases passed.
+- Artifact `8532801681`, digest
+  `sha256:2eea5575ad9fb1abf7cc609650aaa2fdfa6ab31367d37746b28b12d24845f3bb`, contains
+  `test-results/phase-04/runtime/taa-history-gpu.json` bound to the exact Head.
+- The Artifact reports zero Shader compilation messages. Both initial and resized native WebGPU
+  offscreen submissions record one Draw / one Triangle; the second frame confirms read/write swap
+  and reusable History, while Resize invalidates reuse and increments resource generation 1 → 2.
+- The History pair reports exactly 96 bytes at 3×2 and 320 bytes at 5×4. Owner disposal reduces the
+  active resources from five to the two caller-owned Shader/Pipeline resources, leaving zero owner
+  Texture or Sampler Handles.
+- The unchanged Bundle thresholds pass with Phase 0 at 36,225 / 65,536, Phase 2 at
+  113,130 / 131,072, and Phase 3 at 162,894 / 196,608 raw JavaScript bytes. Pages still contain only
+  accepted Phases 0–3 with `latest=3`.
+- Draft PR #7 remains In Development. Phase 4 has no Resolve Render Feature, Owner Acceptance,
+  deployment, or Accepted Tag yet.
+
+### Next
+
+- Implement P4-05 deterministic Camera-motion reprojection from Current Depth through inverse
+  Current and Previous jittered View-Projection matrices, including UV/out-of-bounds validity and
+  CPU/WGSL float32 parity, without Skinned/Morph Motion Vectors or Renderer resolve integration.
