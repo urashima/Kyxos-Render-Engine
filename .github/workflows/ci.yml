@@ -42,7 +42,10 @@ jobs:
 
       - name: Apply pending P4-08 patch
         if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/phase-04-temporal' }}
-        run: node tools/agent/p4-08-apply.mjs
+        run: |
+          sed -i "s/'   PbrDirectionalLightDescriptor,\\n   PbrEnvironmentDescriptor,'/'  PbrDirectionalLightDescriptor,\\n  PbrEnvironmentDescriptor,'/" tools/agent/p4-08-apply.mjs
+          node tools/agent/p4-08-apply.mjs
+          node tools/agent/p4-08-amend.mjs
 
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
