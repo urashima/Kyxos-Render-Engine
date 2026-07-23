@@ -26,6 +26,8 @@ import type {
   PbrEnvironmentState,
   RendererDiagnostics,
   TemporalPbrRenderFeatureDiagnostics,
+  TemporalTaaSettings,
+  TemporalTaaSettingsDescriptor,
 } from '@kyxos/render-renderer';
 import type { Scene, SceneDiagnostics } from '@kyxos/render-scene';
 import type { BuildRenderQueuesOptions, MeshRendererStore } from '@kyxos/render-visibility';
@@ -153,6 +155,10 @@ export class KyxosTemporalPbrCanvasRenderer extends KyxosRenderer {
     return this.#feature.getSurfaceInfo();
   }
 
+  getTemporalTaaSettings(): TemporalTaaSettings {
+    return this.#feature.taaSettings;
+  }
+
   getTemporalDiagnostics(): KyxosTemporalPbrRendererDiagnostics {
     return Object.freeze({
       camera: this.camera.diagnostics(),
@@ -224,6 +230,13 @@ export class KyxosTemporalPbrCanvasRenderer extends KyxosRenderer {
 
   setOutputTransform(descriptor: PbrOutputTransformDescriptor): PbrOutputTransform {
     const state = this.#feature.pbr.setOutputTransform(descriptor);
+    this.#revisions.postProcess += 1;
+    this.#invalidateWhenReady('post-process');
+    return state;
+  }
+
+  setTemporalTaaSettings(descriptor: TemporalTaaSettingsDescriptor): TemporalTaaSettings {
+    const state = this.#feature.setTaaSettings(descriptor);
     this.#revisions.postProcess += 1;
     this.#invalidateWhenReady('post-process');
     return state;

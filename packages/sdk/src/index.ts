@@ -317,12 +317,15 @@ export type {
   RendererLifecycleState,
   SceneRenderFeatureDiagnostics,
   SceneRenderFeatureOptions,
+  TemporalTaaSettings,
+  TemporalTaaSettingsDescriptor,
 } from '@kyxos/render-renderer';
 export {
   DYNAMIC_TAA_PRESENT_UNIFORM_LAYOUT,
   DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,
   PBR_OBJECT_UNIFORM_LAYOUT,
   PBR_RENDER_FEATURE_ID,
+  TEMPORAL_TAA_DEFAULT_SETTINGS,
   EnvironmentGpuCache,
   EnvironmentGpuLease,
   DynamicTaaGpuHistory,
@@ -335,6 +338,7 @@ export {
   PbrTextureSource,
   SceneRenderFeature,
   createPbrDirectionalLight,
+  createTemporalTaaSettings,
   packPbrObjectUniforms,
   packDynamicTaaPresentUniforms,
   packDynamicTaaResolveUniforms,

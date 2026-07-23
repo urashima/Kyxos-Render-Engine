@@ -321,3 +321,174 @@
     gap: 4px;
   }
 }
+
+.taa-tuning-panel {
+  margin-top: 18px;
+}
+
+.taa-tuning-intro {
+  max-width: 980px;
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.taa-tuning-intro b {
+  color: var(--text);
+}
+
+.taa-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.taa-preset-row button {
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid #30383c;
+  border-radius: 9px;
+  color: #b8c2c6;
+  background: #171c1f;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.taa-preset-row button:hover {
+  border-color: rgb(97 218 251 / 45%);
+  color: var(--text);
+  background: rgb(97 218 251 / 8%);
+}
+
+.taa-preset-row button[data-taa-preset='no-jitter'] {
+  border-color: rgb(255 122 69 / 38%);
+  color: #ffc0a6;
+}
+
+.taa-tuning-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.taa-control-card {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.taa-control-card > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.taa-control-card b {
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
+.taa-control-card output {
+  color: var(--temporal-cyan);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.taa-control-card > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 10px;
+  align-items: center;
+}
+
+.taa-control-card input[type='range'] {
+  width: 100%;
+  accent-color: var(--temporal-cyan);
+}
+
+.taa-control-card input[type='number'] {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #30383c;
+  border-radius: 7px;
+  color: var(--text);
+  background: #111619;
+  font: inherit;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.taa-control-card small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.taa-live-config {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.taa-live-config > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgb(97 218 251 / 4%);
+}
+
+.taa-live-config span {
+  color: var(--muted);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.taa-live-config strong {
+  color: var(--text);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.taa-live-config pre {
+  grid-column: 1 / -1;
+  overflow: auto;
+  max-height: 260px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: #b9eefa;
+  background: #0d1214;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .taa-live-config {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .taa-tuning-grid,
+  .taa-live-config {
+    grid-template-columns: 1fr;
+  }
+
+  .taa-control-card > div {
+    grid-template-columns: minmax(0, 1fr) 82px;
+  }
+}

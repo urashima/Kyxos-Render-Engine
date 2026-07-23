@@ -89,6 +89,23 @@ describe('TemporalPbrRenderFeature', () => {
     expect(feature.getDiagnostics()).toMatchObject({
       pbr: { outputTarget: 'dynamic-taa', pipelineCount: 12 },
       pipeline: { state: 'ready' },
+      taa: { jitterScale: 1, responsiveMask: 0 },
+    });
+    expect(
+      feature.setTaaSettings({
+        baseHistoryWeight: 0.94,
+        jitterScale: 0.35,
+        responsiveMask: 0.1,
+      }),
+    ).toMatchObject({
+      jitterScale: 0.35,
+      resolve: { baseHistoryWeight: 0.94 },
+      responsiveMask: 0.1,
+    });
+    feature.setTaaSettings({
+      baseHistoryWeight: 0.9,
+      jitterScale: 1,
+      responsiveMask: 0,
     });
 
     const interactive = feature.render({

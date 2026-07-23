@@ -14,6 +14,7 @@ import type {
   TemporalConvergenceOptions,
   TemporalHistoryInvalidationReason,
   TemporalHistorySignatureDescriptor,
+  TemporalTaaResolveOptions,
 } from '@kyxos/render-temporal';
 
 import { DynamicTaaGpuHistory } from './dynamic-taa-gpu-history.js';
@@ -60,6 +61,7 @@ export interface TemporalPipelineExecuteInput {
   readonly renderCurrent: (frame: DynamicTaaGpuFrame) => BackendRenderPassStatistics;
   readonly responsiveMask?: number;
   readonly signature: TemporalHistorySignatureDescriptor;
+  readonly taaResolveOptions?: Partial<TemporalTaaResolveOptions>;
   readonly temporal: TemporalFrameMetadata;
 }
 
@@ -292,6 +294,7 @@ export class TemporalPipelineTransaction implements Disposable {
         this.#resolve.execute({
           currentInverseViewProjection: input.currentInverseViewProjection,
           frame: dynamicFrame,
+          ...(input.taaResolveOptions === undefined ? {} : { options: input.taaResolveOptions }),
           previousViewProjection: input.previousViewProjection,
           ...(input.responsiveMask === undefined ? {} : { responsiveMask: input.responsiveMask }),
         }),
