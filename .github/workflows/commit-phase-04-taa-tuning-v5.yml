@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/phase-04-taa-tuning-panel
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: phase-04-taa-tuning-commit-v5
@@ -102,7 +105,7 @@ jobs:
           git status --short | tee /tmp/phase-04-taa-commit-status.txt
           git diff --cached --stat | tee /tmp/phase-04-taa-commit-stat.txt
           git commit -m 'feat(phase-04): expose complete Dynamic TAA tuning panel'
-          git push --force-with-lease=refs/heads/agent/phase-04-taa-tuning-panel:${GITHUB_SHA} origin HEAD:refs/heads/agent/phase-04-taa-tuning-panel
+          git push origin HEAD:refs/heads/agent/phase-04-taa-tuning-panel
 
       - name: Upload commit diagnostics
         if: ${{ !cancelled() }}
