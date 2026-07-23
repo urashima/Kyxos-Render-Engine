@@ -40,7 +40,7 @@ export type TemporalPbrRenderFeatureOptions = Omit<PbrRenderFeatureOptions, 'dyn
   };
 
 export interface TemporalPbrRenderFeatureDiagnostics {
-  readonly pbr: PbrRenderFeatureDiagnostics;
+  readonly pbr: PbrRenderFeatureDiagnostics | null;
   readonly pipeline: TemporalPipelineTransactionDiagnostics;
 }
 
@@ -207,9 +207,10 @@ export class TemporalPbrRenderFeature implements RenderFeature {
 
   getDiagnostics(): TemporalPbrRenderFeatureDiagnostics {
     this.#assertActive();
+    const pipeline = this.#transaction.getDiagnostics();
     return Object.freeze({
-      pbr: this.#pbr.getDiagnostics(),
-      pipeline: this.#transaction.getDiagnostics(),
+      pbr: pipeline.state === 'ready' ? this.#pbr.getDiagnostics() : null,
+      pipeline,
     });
   }
 
