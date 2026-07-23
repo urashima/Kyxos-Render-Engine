@@ -13,6 +13,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./static-accumulation": {
+      "types": "./dist/static-accumulation.d.ts",
+      "import": "./dist/static-accumulation.js",
+      "default": "./dist/static-accumulation.js"
     }
   },
   "scripts": {
