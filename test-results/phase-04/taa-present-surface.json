@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "checkpoint": "P4-09-surface",
+  "diagnostics": {
+    "activeBindGroupCount": 1,
+    "executionCount": 1,
+    "outputExposure": -1,
+    "outputExposureMultiplier": 0.5,
+    "outputToneMapping": "khronos-pbr-neutral",
+    "ownerId": "phase-04-taa-present-gate",
+    "resourceGeneration": 1,
+    "state": "ready",
+    "surface": {
+      "format": "rgba8unorm",
+      "size": {
+        "clamped": false,
+        "cssHeight": 2,
+        "cssWidth": 3,
+        "devicePixelRatio": 1,
+        "physicalHeight": 2,
+        "physicalWidth": 3,
+        "renderScale": 1,
+        "suspended": false
+      }
+    }
+  },
+  "resourcesAfterDispose": {
+    "activeCount": 0,
+    "activeEstimatedBytes": 0,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      }
+    },
+    "createdTotal": 14,
+    "destroyedTotal": 14
+  },
+  "resourcesBeforeDispose": {
+    "activeCount": 13,
+    "activeEstimatedBytes": 2664,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 16
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 2360
+      },
+      "surface": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 7,
+        "activeEstimatedBytes": 288
+      }
+    },
+    "createdTotal": 14,
+    "destroyedTotal": 1
+  },
+  "statistics": {
+    "drawCalls": 1,
+    "instances": 1,
+    "triangles": 1,
+    "vertices": 3
+  },
+  "status": "PASS"
+}

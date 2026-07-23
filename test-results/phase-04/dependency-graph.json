@@ -1,0 +1,93 @@
+{
+  "edges": {
+    "@kyxos/render-backend-api": [
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-backend-webgpu": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-camera": [
+      "@kyxos/render-core",
+      "@kyxos/render-math",
+      "@kyxos/render-scene",
+      "@kyxos/render-temporal"
+    ],
+    "@kyxos/render-core": [],
+    "@kyxos/render-environment": [
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-frame-scheduler": [
+      "@kyxos/render-core",
+      "@kyxos/render-temporal"
+    ],
+    "@kyxos/render-geometry": [
+      "@kyxos/render-math"
+    ],
+    "@kyxos/render-material-core": [
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-material-pbr": [
+      "@kyxos/render-core",
+      "@kyxos/render-material-core"
+    ],
+    "@kyxos/render-math": [],
+    "@kyxos/render-renderer": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-camera",
+      "@kyxos/render-core",
+      "@kyxos/render-environment",
+      "@kyxos/render-frame-scheduler",
+      "@kyxos/render-geometry",
+      "@kyxos/render-material-core",
+      "@kyxos/render-material-pbr",
+      "@kyxos/render-math",
+      "@kyxos/render-scene",
+      "@kyxos/render-temporal",
+      "@kyxos/render-visibility"
+    ],
+    "@kyxos/render-scene": [
+      "@kyxos/render-core",
+      "@kyxos/render-math"
+    ],
+    "@kyxos/render-sdk": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-backend-webgpu",
+      "@kyxos/render-camera",
+      "@kyxos/render-core",
+      "@kyxos/render-environment",
+      "@kyxos/render-frame-scheduler",
+      "@kyxos/render-geometry",
+      "@kyxos/render-material-core",
+      "@kyxos/render-material-pbr",
+      "@kyxos/render-math",
+      "@kyxos/render-renderer",
+      "@kyxos/render-scene",
+      "@kyxos/render-temporal",
+      "@kyxos/render-visibility"
+    ],
+    "@kyxos/render-temporal": [
+      "@kyxos/render-core"
+    ],
+    "@kyxos/render-testing": [
+      "@kyxos/render-backend-api",
+      "@kyxos/render-core",
+      "@kyxos/render-frame-scheduler"
+    ],
+    "@kyxos/render-visibility": [
+      "@kyxos/render-camera",
+      "@kyxos/render-core",
+      "@kyxos/render-geometry",
+      "@kyxos/render-math",
+      "@kyxos/render-scene"
+    ],
+    "@kyxos/render-playground": [
+      "@kyxos/render-sdk",
+      "@kyxos/render-testing"
+    ]
+  },
+  "cycles": [],
+  "violations": [],
+  "deliberateFixtureRejected": true,
+  "status": "PASS"
+}

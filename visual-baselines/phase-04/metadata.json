@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "route": "/acceptance/phase-04",
+  "capture": {
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "colorScheme": "dark",
+    "devicePixelRatio": 1,
+    "font": "@fontsource-variable/inter@5.2.8 Latin weight-variable subset",
+    "operatingSystem": "GitHub Actions Ubuntu 24.04",
+    "viewport": {
+      "height": 1600,
+      "width": 1440
+    },
+    "webGpuAdapter": "SwiftShader"
+  },
+  "comparison": {
+    "status": "PASS",
+    "threshold": 0.2,
+    "maximumDiffPixels": 0,
+    "actualDiffPixels": 0
+  },
+  "files": {
+    "reference": {
+      "path": "reference.png",
+      "bytes": 448368,
+      "height": 1600,
+      "width": 1440,
+      "sha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea"
+    },
+    "current": {
+      "path": "current.png",
+      "bytes": 448368,
+      "height": 1600,
+      "width": 1440,
+      "sha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea"
+    },
+    "difference": {
+      "path": "difference.png",
+      "bytes": 6778,
+      "height": 1600,
+      "width": 1440,
+      "sha256": "cf808ecd3733464df9f6476e7c45c572875e1c9285ab1fd09d40080c286bdb91"
+    }
+  },
+  "canonicalProvenance": {
+    "rejectedUnstyledRunId": 29990187238,
+    "rejectedReason": "Native white controls did not satisfy the acceptance surface visual standard.",
+    "reviewedSourceRunId": 29990674489,
+    "reviewedSourceJobId": 89152534050,
+    "reviewedSourceCommit": "1202548b8dbe98072262d8e10caacbd8e4449978",
+    "reviewedSourceArtifactId": 8557009402,
+    "reviewedSourceArtifactDigest": "sha256:55c5f93749a849daf96776c3db33eea9c1889d1578701a18e9d2b6435f879a12",
+    "verificationRunId": 29991223373,
+    "verificationJobId": 89154307231,
+    "verificationCommit": "d11b1e4c18722d7aaf4e950b53085e9ac2d12e03",
+    "verificationArtifactId": 8557205445,
+    "verificationArtifactDigest": "sha256:9fbf6138349649d271f6fd2aa6e705e1fb1be34bd2e45f43fa3d8a22079922e1",
+    "deterministicVisualRepair": {
+      "cause": "The prior frozen visual inherited a variable number of animation RAF orbit increments before capture.",
+      "repairCommit": "c11354126b935d951d61e7992d84212494c3efb5",
+      "candidateRunId": 29998770570,
+      "candidateJobId": 89178678725,
+      "candidateArtifactId": 8560223373,
+      "candidateArtifactDigest": "sha256:2b45479e55901ec57298feea17abc4bf924fece9f9201c5202180f5d3e9276f3",
+      "firstAttemptSha256": "1b350490a6842437137eda3efd2d852b4bae9525fc5e97039016064440d89909",
+      "retrySha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea",
+      "baselinePromotionCommit": "3fd19268484b8e050eda9350fe4d9658dc7b1fb6",
+      "finalProvenanceDocumentCommit": "bb5991b773d4ba93336ff4bf5d836a2102894be6",
+      "crossRetryThreshold": 0.2,
+      "crossRetryDiffPixels": 0,
+      "reviewStatus": "PASS"
+    }
+  },
+  "subjectiveReview": {
+    "status": "PASS",
+    "temporalPbr": "The fixed sphere matrix has coherent silhouettes, PBR response, and no visible ghost trails or stale-scene residue.",
+    "diagnostics": "Scheduler, RAF, samples, History, resources, performance, and timeline remain legible.",
+    "controls": "The fixed public Reset scene, Orbit right, and Roughness 0.63 sequence is visible, aligned, unclipped, and repeatable.",
+    "defects": []
+  }
+}

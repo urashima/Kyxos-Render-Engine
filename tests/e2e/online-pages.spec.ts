@@ -156,6 +156,70 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('renderer-state')).toHaveText('ready');
     await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
   }
+  if (phase === 4) {
+    const waitForSleeping = async () => {
+      await expect(page.getByTestId('renderer-state')).toHaveText('ready', {
+        timeout: 60_000,
+      });
+      await expect(page.getByTestId('render-mode')).toHaveText('sleeping', {
+        timeout: 60_000,
+      });
+      await expect(page.getByTestId('sample-count')).toHaveText('16', {
+        timeout: 60_000,
+      });
+      await expect(page.getByTestId('raf-active')).toHaveText('false');
+      await expect(page.getByTestId('history-valid')).toHaveText('valid');
+    };
+    await waitForSleeping();
+    const resourceBaseline = Number(await page.getByTestId('resource-count').textContent());
+    expect(resourceBaseline).toBeGreaterThan(0);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
+
+    const wakeCount = page.getByTestId('wake-count');
+    const historyGeneration = page.getByTestId('history-generation');
+    const exerciseReset = async (action: () => Promise<void>) => {
+      const previousWake = Number(await wakeCount.textContent());
+      const previousGeneration = Number(await historyGeneration.textContent());
+      await action();
+      await expect
+        .poll(async () => Number(await wakeCount.textContent()))
+        .toBeGreaterThan(previousWake);
+      await expect
+        .poll(async () => Number(await historyGeneration.textContent()))
+        .toBeGreaterThan(previousGeneration);
+      await waitForSleeping();
+      await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    };
+
+    await exerciseReset(() => page.locator('[data-action="orbit-right"]').click());
+    await exerciseReset(() => page.locator('[data-control="roughness"]').fill('0.63'));
+    await exerciseReset(() => page.locator('[data-action="texture"]').click());
+    await exerciseReset(() => page.locator('[data-action="reset-history"]').click());
+
+    await page.locator('[data-action="animation"]').click();
+    await expect(page.getByTestId('render-mode')).toHaveText('interactive');
+    await expect(page.getByTestId('raf-active')).toHaveText('true');
+    const animatedFrame = Number(await page.getByTestId('frame-index').textContent());
+    await expect
+      .poll(async () => Number(await page.getByTestId('frame-index').textContent()))
+      .toBeGreaterThan(animatedFrame + 2);
+    await page.locator('[data-action="animation"]').click();
+    await waitForSleeping();
+
+    await page.locator('[data-action="lose"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('lost');
+    await expect(page.getByTestId('resource-count')).toHaveText('0');
+    await expect(page.getByTestId('surface-size')).toHaveText('unavailable');
+    await page.locator('[data-action="recover"]').click();
+    await waitForSleeping();
+    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    await page.locator('[data-action="dispose"]').click();
+    await expect(page.getByTestId('renderer-state')).toHaveText('disposed');
+    await expect(page.getByTestId('resource-count')).toHaveText('0');
+    await page.locator('[data-action="recreate"]').click();
+    await waitForSleeping();
+    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+  }
   expect(runtimeErrors).toEqual([]);
 }
 

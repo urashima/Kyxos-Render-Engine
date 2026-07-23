@@ -4,6 +4,7 @@ import {
   approximatelyEqualVec3,
   composeTrsMat4,
   identityMat4,
+  inverseMat4,
   lookAtMat4,
   multiplyMat4,
   normalMatrixMat4,
@@ -75,5 +76,27 @@ describe('Mat4', () => {
       0.5, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1,
     ]);
     expect(() => normalMatrixMat4(scalingMat4([1, 0, 1]))).toThrow(/invertible/u);
+  });
+
+  it('inverts general affine and perspective matrices without mutating the source', () => {
+    const affine = composeTrsMat4(
+      [3, -2, 5],
+      quaternionFromAxisAngle([0, 1, 0], Math.PI / 3),
+      [2, 0.5, 4],
+    );
+    const projectionView = multiplyMat4(
+      perspectiveMat4(Math.PI / 3, 1.5, 0.1, 100),
+      lookAtMat4([2, 1, 5], [0, 0, 0], [0, 1, 0]),
+    );
+
+    for (const matrix of [affine, projectionView]) {
+      const inverse = inverseMat4(matrix);
+      const product = multiplyMat4(matrix, inverse);
+      identityMat4().forEach((expected, index) => {
+        expect(product[index]).toBeCloseTo(expected, 11);
+      });
+      expect(Object.isFrozen(inverse)).toBe(true);
+    }
+    expect(() => inverseMat4(scalingMat4([1, 0, 1]))).toThrow(/invertible/u);
   });
 });

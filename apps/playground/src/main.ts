@@ -1,4 +1,3 @@
-import { mountPhase00Acceptance } from './acceptance/phase-00/index.js';
 import { acceptancePhaseHref, resolveAcceptancePhase } from './routing.js';
 import './styles.css';
 
@@ -11,7 +10,11 @@ const phase =
   resolveAcceptancePhase(window.location.pathname) ??
   (window.history.replaceState({}, '', acceptancePhaseHref(0)), 0);
 
-if (phase === 3) {
+if (phase === 4) {
+  await import('./acceptance/phase-04/index.js').then(({ mountPhase04Acceptance }) =>
+    mountPhase04Acceptance(root),
+  );
+} else if (phase === 3) {
   await import('./acceptance/phase-03/index.js').then(({ mountPhase03Acceptance }) =>
     mountPhase03Acceptance(root),
   );
@@ -24,5 +27,7 @@ if (phase === 3) {
     mountPhase01Acceptance(root),
   );
 } else {
-  await mountPhase00Acceptance(root);
+  await import('./acceptance/phase-00/index.js').then(({ mountPhase00Acceptance }) =>
+    mountPhase00Acceptance(root),
+  );
 }

@@ -17,6 +17,7 @@ import { MeshRendererStore } from '@kyxos/render-visibility';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  DynamicTaaGpuHistory,
   KyxosRenderer,
   PBR_OBJECT_UNIFORM_LAYOUT,
   PbrMaterialLibrary,
@@ -684,5 +685,81 @@ describe('PbrRenderFeature', () => {
     backend.dispose();
     materials.dispose();
     textures.dispose();
+  });
+  it('writes opt-in linear-HDR Color and encoded Normal MRT into a prepared Dynamic TAA frame', async () => {
+    const backend = new MockBackend();
+    const createPipeline = vi.spyOn(backend, 'createRenderPipeline');
+    const executeFrame = vi.spyOn(backend, 'executeFrame');
+    await backend.initialize();
+    const scene = new Scene();
+    const camera = new PerspectiveCamera();
+    const meshRenderers = new MeshRendererStore(scene);
+    const entity = scene.createEntity();
+    meshRenderers.attach(entity, { mesh: createCubeGeometry() });
+    const history = new DynamicTaaGpuHistory({
+      height: 32,
+      ownerId: 'p4-08-pbr-temporal',
+      width: 64,
+    });
+    history.initialize(backend);
+    const frame = history.prepareFrame({
+      camera: 1,
+      device: 1,
+      environment: 1,
+      geometry: 1,
+      lighting: 1,
+      materials: 1,
+      postProcess: 1,
+      scene: 1,
+      viewport: 1,
+    });
+    const feature = new PbrRenderFeature({
+      camera,
+      dynamicTaaOutput: { acquireFrame: () => frame },
+      frustumCulling: false,
+      meshRenderers,
+      scene,
+      surface: { cssHeight: 32, cssWidth: 64, devicePixelRatio: 1, target },
+    });
+    await feature.initialize({ backend });
+
+    expect(createPipeline).toHaveBeenCalledTimes(12);
+    for (const [descriptor] of createPipeline.mock.calls) {
+      expect(descriptor.depthStencil?.format).toBe('depth32float');
+      expect(descriptor.fragment?.targets?.map(({ format }) => format)).toEqual([
+        'rgba16float',
+        'rgba16float',
+      ]);
+    }
+    expect(
+      feature.render({ backend, dirtyFlags: ['geometry'], frameIndex: 1, timestamp: 0 }),
+    ).toEqual({ drawCalls: 1, instances: 1, triangles: 12, vertices: 36 });
+    const pass = executeFrame.mock.calls[0]?.[0].renderPasses[0];
+    expect(pass).toMatchObject({
+      colorAttachments: [
+        { texture: frame.currentColorTexture },
+        {
+          clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
+          texture: frame.writeNormalTexture,
+        },
+      ],
+      depthAttachment: { clearValue: 1, texture: frame.writeDepthTexture },
+      label: 'phase-04-pbr-temporal-mrt-pass',
+    });
+    expect(pass).not.toHaveProperty('surface');
+    expect(feature.getDiagnostics()).toMatchObject({
+      outputTarget: 'dynamic-taa',
+      pipelineCount: 12,
+      temporalOwnerId: 'p4-08-pbr-temporal',
+    });
+
+    feature.dispose();
+    history.cancelFrame();
+    history.dispose();
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    backend.dispose();
+    meshRenderers.dispose();
+    camera.dispose();
+    scene.dispose();
   });
 });

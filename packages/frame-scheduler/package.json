@@ -21,6 +21,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@kyxos/render-core": "workspace:*"
+    "@kyxos/render-core": "workspace:*",
+    "@kyxos/render-temporal": "workspace:*"
   }
 }

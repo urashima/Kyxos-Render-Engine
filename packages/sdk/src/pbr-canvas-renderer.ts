@@ -11,7 +11,11 @@ import type {
   PerspectiveCamera,
 } from '@kyxos/render-camera';
 import { DisposeBag, KyxosEngineError } from '@kyxos/render-core';
-import type { DirtyFlag, FrameRequestDriver } from '@kyxos/render-frame-scheduler';
+import type {
+  DirtyFlag,
+  FrameRequestDriver,
+  FrameSchedulerController,
+} from '@kyxos/render-frame-scheduler';
 import type { PbrOutputTransform, PbrOutputTransformDescriptor } from '@kyxos/render-material-pbr';
 import {
   KyxosRenderer,
@@ -29,17 +33,28 @@ import type {
 import type { Scene, SceneDiagnostics } from '@kyxos/render-scene';
 import type { BuildRenderQueuesOptions, MeshRendererStore } from '@kyxos/render-visibility';
 
-export interface KyxosPbrCanvasRendererOptions {
+interface KyxosPbrCanvasRendererSharedOptions {
   readonly backend: GraphicsBackend;
   readonly camera: PerspectiveCamera;
   readonly feature: PbrRenderFeature;
-  readonly frameDriver: FrameRequestDriver;
   readonly materials: PbrMaterialLibrary;
   readonly meshRenderers: MeshRendererStore;
   readonly orbitController: OrbitController;
   readonly scene: Scene;
   readonly textures: PbrTextureLibrary;
 }
+
+export type KyxosPbrCanvasRendererOptions = KyxosPbrCanvasRendererSharedOptions &
+  (
+    | {
+        readonly frameDriver: FrameRequestDriver;
+        readonly frameScheduler?: never;
+      }
+    | {
+        readonly frameDriver?: never;
+        readonly frameScheduler: FrameSchedulerController;
+      }
+  );
 
 export interface KyxosPbrRendererDiagnostics {
   readonly camera: ReturnType<PerspectiveCamera['diagnostics']>;
@@ -68,7 +83,11 @@ export class KyxosPbrCanvasRenderer extends KyxosRenderer {
   readonly textures: PbrTextureLibrary;
 
   constructor(options: KyxosPbrCanvasRendererOptions) {
-    super({ backend: options.backend, frameDriver: options.frameDriver });
+    super(
+      options.frameScheduler === undefined
+        ? { backend: options.backend, frameDriver: options.frameDriver }
+        : { backend: options.backend, frameScheduler: options.frameScheduler },
+    );
     this.#backend = options.backend;
     this.#feature = options.feature;
     this.camera = options.camera;

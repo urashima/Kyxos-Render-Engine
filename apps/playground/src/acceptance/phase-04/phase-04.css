@@ -1,0 +1,323 @@
+.phase-04-shell {
+  --temporal-cyan: #61dafb;
+  --temporal-violet: #a78bfa;
+  --temporal-orange: #ff7a45;
+  --temporal-green: #79e0a8;
+}
+
+.phase-04-hero {
+  background:
+    radial-gradient(circle at 84% 14%, rgb(97 218 251 / 18%), transparent 28%),
+    radial-gradient(circle at 72% 80%, rgb(167 139 250 / 12%), transparent 38%);
+}
+
+.temporal-status {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--border);
+}
+
+.temporal-status > div {
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 16px;
+  background: rgb(13 17 24 / 94%);
+}
+
+.temporal-status span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.temporal-status strong {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 0.98rem;
+  text-transform: capitalize;
+}
+
+.phase-04-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(310px, 0.7fr);
+  gap: 18px;
+}
+
+.temporal-stage-card {
+  min-width: 0;
+}
+
+.temporal-stage {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 48%, rgb(38 73 99 / 42%), transparent 44%), #080b10;
+}
+
+.temporal-stage .gpu-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+}
+
+.temporal-mode-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  max-width: calc(100% - 32px);
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 13px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  background: rgb(6 9 14 / 72%);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.temporal-mode-overlay span {
+  color: var(--temporal-cyan);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.temporal-mode-overlay small {
+  overflow: hidden;
+  color: rgb(223 231 239 / 72%);
+  font-size: 0.63rem;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.temporal-mode-overlay[data-mode='interactive'] span {
+  color: var(--temporal-orange);
+}
+
+.temporal-mode-overlay[data-mode='stabilizing'] span {
+  color: var(--temporal-violet);
+}
+
+.temporal-mode-overlay[data-mode='accumulating'] span {
+  color: var(--temporal-cyan);
+}
+
+.temporal-mode-overlay[data-mode='sleeping'] span {
+  color: var(--temporal-green);
+}
+
+.sample-progress {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 9%);
+  pointer-events: none;
+}
+
+.sample-progress i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--temporal-violet), var(--temporal-cyan));
+  box-shadow: 0 0 18px rgb(97 218 251 / 70%);
+  transition: width 80ms linear;
+}
+
+.stage-instructions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.stage-instructions span {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.temporal-diagnostics .metric-list > div {
+  min-height: 37px;
+}
+
+.phase-04-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(330px, 0.7fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.temporal-sliders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.temporal-sliders label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.temporal-sliders output {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.temporal-sliders input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--temporal-cyan);
+}
+
+.temporal-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.temporal-buttons button {
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid #30383c;
+  border-radius: 9px;
+  color: #b8c2c6;
+  background: #171c1f;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.temporal-buttons button:hover {
+  transform: translateY(-1px);
+  border-color: rgb(97 218 251 / 45%);
+  color: var(--text);
+  background: rgb(97 218 251 / 8%);
+}
+
+.temporal-buttons button[data-action='lose'] {
+  border-color: rgb(255 122 69 / 34%);
+  color: #ffc0a6;
+}
+
+.temporal-buttons button[data-active='true'] {
+  border-color: rgb(255 122 69 / 55%);
+  background: rgb(255 122 69 / 13%);
+  color: #ffc0a6;
+}
+
+.temporal-timeline ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.temporal-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 54px;
+  padding: 10px 12px 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 2%);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.temporal-timeline li::before {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 7px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  content: '';
+}
+
+.temporal-timeline li[data-active='true'] {
+  transform: translateX(3px);
+  border-color: rgb(97 218 251 / 42%);
+  background: rgb(97 218 251 / 7%);
+}
+
+.temporal-timeline li[data-active='true']::before {
+  background: var(--temporal-cyan);
+  box-shadow: 0 0 12px rgb(97 218 251 / 80%);
+}
+
+.temporal-timeline b {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.temporal-timeline span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1080px) {
+  .temporal-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .phase-04-grid,
+  .phase-04-lower {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .temporal-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .temporal-stage,
+  .temporal-stage .gpu-canvas {
+    min-height: 390px;
+  }
+
+  .temporal-sliders,
+  .temporal-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .temporal-timeline li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

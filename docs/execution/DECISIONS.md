@@ -309,3 +309,72 @@
 - **Reason:** A shared root bundle can silently change historical routes, while a local or downloadable artifact does not prove that a reviewer can open and operate the milestone from another device. The acceptance tag must represent code, CI, deployment, public reachability, and browser interaction together rather than code alone.
 - **Impact:** `/phase-0/` through the latest accepted `/phase-N/` remain explicit regression surfaces, `/latest/` never selects an in-development phase, and each directory owns its hashed assets under the repository Pages base path. The deployment workflow has only `contents: read`, `pages: write`, and `id-token: write`; the separate post-deployment freeze workflow alone receives `contents: write`. A repository must have GitHub Pages configured to use GitHub Actions before the deployment can pass.
 - **ADR required:** No; this governs acceptance delivery and release automation without changing engine runtime architecture or public APIs.
+
+## ED-036 — Keep temporal PBR output opt-in, offscreen, and caller-owned
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** Add a separate opt-in forward PBR Shader/Pipeline family that writes linear-HDR Color,
+  encoded world-space Normal, and Depth into a caller-prepared `DynamicTaaGpuFrame`. Keep the accepted
+  direct Surface Pipeline as the default and leave History commit, resize, recovery, and disposal with
+  the temporal owner.
+- **Candidates:** Replace the direct Surface path globally; make PBR own Dynamic TAA History; add an
+  explicit offscreen output contract with separate Pipelines and caller ownership.
+- **Reason:** Replacing the accepted path would create an unnecessary regression surface, while PBR
+  ownership would entangle scene rendering with temporal scheduling and prevent independent Resolve,
+  Present, accumulation, and future Render Graph composition. An explicit opt-in seam preserves public
+  behavior and makes resource roles mechanically testable.
+- **Impact:** WebGPU uses `rgba16float` Color/Normal MRT plus `depth32float` only when temporal output is
+  supplied. The default Pipeline and resource budget are unchanged. WebGL2 may later advertise a
+  downgraded compatible format set behind the same owner-neutral contract. Final output transform must
+  occur in Present exactly once.
+- **ADR required:** No; this is an internal composition decision within the existing backend-neutral,
+  owner-scoped temporal architecture.
+
+## ED-037 — Present reads the open resolved write target before History commit
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** The final Present pass reads `DynamicTaaGpuFrame.writeColorTexture` while the frame is
+  open, performs the only display output transform, submits to its independently owned Surface, and
+  leaves History commit/cancel and Backend lifetime to the caller.
+- **Candidates:** Present after commit from the newly swapped History read target; let Resolve write
+  directly to the Surface; read the open resolved write target before commit through a dedicated pass.
+- **Reason:** Direct Surface Resolve would mix linear temporal state with display encoding and make
+  accumulation reuse impossible. Presenting only after commit would expose History role-swapping to
+  the display pass and complicate failure recovery. Reading the open write target preserves the clear
+  order `prepare → scene MRT → resolve → present → commit` and permits cancel on any failed stage.
+- **Impact:** WebGPU gains one full-screen Triangle, one small Uniform, one Pipeline, and one Bind Group
+  in temporal mode. The accepted direct Surface PBR path remains unchanged. WebGL2 can implement the
+  same owner-neutral contract with its supported HDR format and output Surface.
+- **ADR required:** No; this refines the existing temporal transaction and resource-ownership contract.
+
+## ED-038 — Keep Static Accumulation owner-scoped and downstream of Dynamic TAA
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** Accumulate the already resolved linear-HDR Dynamic TAA Color through a separate
+  two-Texture `rgba16float` ping-pong History using an arithmetic running mean. Keep convergence,
+  sample count, reset, Resize, Device Lost, and disposal with the Static History owner; keep the
+  sampled Pass stateless except for Shader/Pipeline/Uniform/Bind Group resources.
+- **Candidates:** Accumulate directly inside PBR; reuse Dynamic TAA Color roles as Static History;
+  add an independent downstream accumulation transaction.
+- **Reason:** PBR ownership would mix scene rendering with temporal policy, while reusing Dynamic
+  roles would couple interactive rejection History to static convergence and make reset/cancel
+  semantics ambiguous. A downstream transaction preserves dynamic/static isolation and permits
+  Present to choose the current temporal result without changing the accepted direct Surface path.
+- **Impact:** WebGPU adds two `rgba16float` Textures, one Sampler, one full-screen Triangle, one
+  16-byte Uniform, one Pipeline, and at most two role Bind Groups only when Static Accumulation is
+  enabled. WebGL2 may implement the same public transaction with its declared HDR fallback.
+- **ADR required:** No; this implements the Phase 4 architecture already mandated by ADR-005 and
+  does not change dependency direction or public product scope.
+
+## ED-039 — Give Present sole Canvas Surface ownership in temporal PBR mode
+
+- **Status:** Accepted
+- **Date:** 2026-07-23
+- **Decision:** In temporal PBR mode, the final Present transaction is the sole owner of the Canvas Surface. PBR borrows only `getSurfaceInfo` and `resize`, and writes exclusively to the caller-prepared offscreen MRT frame. The temporal transaction owns Dynamic/Static History and commit/cancel ordering; the accepted direct PBR mode retains its own Surface unchanged.
+- **Candidates:** Let PBR and Present each create a Surface for the same Canvas; make PBR own the Surface and let Present borrow it; make Present own the only Canvas Surface while PBR borrows dimensions and Resize.
+- **Reason:** Two WebGPU contexts/configurations for one Canvas create ambiguous ownership and recovery order. PBR ownership would also couple scene output to display encoding. Present-only ownership keeps linear HDR scene/History resources independent from display output and makes Resize, Device Lost, disposal, and error rollback mechanically testable.
+- **Impact:** Temporal mode creates one Canvas Surface, while PBR owns no Surface Handle. Direct Phase 3 rendering is unchanged. Future WebGL2 temporal support must preserve the same single-output-owner contract even if its HDR attachment formats differ.
+- **ADR required:** No; this refines the existing ADR-005 temporal ownership and ED-036 through ED-038 composition boundaries without changing dependency direction.

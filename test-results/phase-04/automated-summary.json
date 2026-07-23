@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "sourceCheckpoint": "d11b1e4c18722d7aaf4e950b53085e9ac2d12e03",
+  "generatedAt": "2026-07-23T03:30:00-07:00",
+  "status": "PASS",
+  "remoteCi": {
+    "runId": 29991223373,
+    "jobId": 89154307231,
+    "sourceCommit": "d11b1e4c18722d7aaf4e950b53085e9ac2d12e03",
+    "conclusion": "success",
+    "artifactId": 8557205445,
+    "artifactDigest": "sha256:9fbf6138349649d271f6fd2aa6e705e1fb1be34bd2e45f43fa3d8a22079922e1"
+  },
+  "gates": [
+    {
+      "id": "format",
+      "status": "PASS",
+      "command": "pnpm format:check"
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "command": "pnpm lint",
+      "warnings": 0
+    },
+    {
+      "id": "typecheck",
+      "status": "PASS",
+      "command": "pnpm typecheck"
+    },
+    {
+      "id": "unit",
+      "status": "PASS",
+      "command": "pnpm test:unit",
+      "testFiles": 62,
+      "tests": 275
+    },
+    {
+      "id": "boundaries",
+      "status": "PASS",
+      "command": "pnpm check:boundaries",
+      "cycles": 0,
+      "violations": 0,
+      "deliberateFixtureRejected": true
+    },
+    {
+      "id": "shaders",
+      "status": "PASS",
+      "command": "pnpm validate:shaders",
+      "canonicalWgslModules": 14,
+      "runtimeCompilerVerified": true
+    },
+    {
+      "id": "build",
+      "status": "PASS",
+      "command": "pnpm build",
+      "apps": 1,
+      "packages": 16
+    },
+    {
+      "id": "bundle",
+      "status": "PASS",
+      "command": "pnpm check:bundle",
+      "rawBytes": 409606,
+      "gzipBytes": 150010
+    },
+    {
+      "id": "pages-build",
+      "status": "PASS",
+      "command": "pnpm build:pages:verify && pnpm check:pages",
+      "routes": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4",
+        "latest"
+      ]
+    },
+    {
+      "id": "browser",
+      "status": "PASS",
+      "command": "pnpm test:e2e",
+      "browser": "Chrome Headless Shell 149.0.7827.55",
+      "tests": 33
+    },
+    {
+      "id": "visual",
+      "status": "PASS",
+      "actualDiffPixels": 0,
+      "maximumDiffPixels": 0,
+      "threshold": 0.2
+    },
+    {
+      "id": "performance",
+      "status": "PASS",
+      "cpuFrameBudgetMs": 16.7,
+      "cpuFrameP95Ms": 1.2,
+      "staticToSleepBudgetMs": 10000,
+      "staticToSleepP95Ms": 3827.2
+    },
+    {
+      "id": "resources",
+      "status": "PASS",
+      "readyResources": 73,
+      "afterLoss": 0,
+      "afterDispose": 0,
+      "afterRecovery": 73,
+      "afterRecreate": 73
+    }
+  ],
+  "deploymentGate": {
+    "status": "PENDING",
+    "workflow": "Deploy accepted Playgrounds",
+    "requiredRoutes": [
+      "/latest/",
+      "/phase-0/",
+      "/phase-1/",
+      "/phase-2/",
+      "/phase-3/",
+      "/phase-4/"
+    ],
+    "reason": "Phase 4 cannot be marked Accepted until the final verified head merges, Pages deploys, public Chromium/WebGPU operations pass, and phase-04-accepted is frozen."
+  },
+  "requiredFailures": [],
+  "notes": [
+    "Run 29991223373 passed all 33 browser/WebGPU cases and the original zero-difference Phase 4 visual gate.",
+    "Run 29998770570 isolated a variable post-animation camera input; its two repaired candidates have zero thresholded cross-retry differences at 0.2.",
+    "Artifact 8560223373 supplies the reviewed deterministic visual now frozen without changing thresholds.",
+    "GPU timestamp duration remains unavailable through the public diagnostics contract and is not synthesized."
+  ]
+}

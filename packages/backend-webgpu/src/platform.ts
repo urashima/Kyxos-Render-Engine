@@ -176,13 +176,32 @@ export interface WebGpuDepthAttachmentRequest {
   readonly view: WebGpuTextureViewPort;
 }
 
-export interface WebGpuRenderPassRequest {
+export interface WebGpuColorAttachmentRequest {
+  readonly clearColor: BackendClearColor;
+  readonly loadOp: 'clear' | 'load';
+  readonly storeOp: 'discard' | 'store';
+  readonly view: WebGpuTextureViewPort;
+}
+
+interface WebGpuRenderPassBase {
   readonly clearColor: BackendClearColor;
   readonly depthAttachment: WebGpuDepthAttachmentRequest | undefined;
   readonly draws: readonly WebGpuDrawRequest[];
   readonly label: string | undefined;
+}
+
+export interface WebGpuSurfaceRenderPassRequest extends WebGpuRenderPassBase {
+  readonly colorAttachments?: never;
   readonly surface: WebGpuSurfacePort;
 }
+
+export interface WebGpuTextureRenderPassRequest extends WebGpuRenderPassBase {
+  readonly colorAttachments: readonly WebGpuColorAttachmentRequest[];
+  readonly surface?: never;
+}
+
+export type WebGpuRenderPassRequest =
+  WebGpuSurfaceRenderPassRequest | WebGpuTextureRenderPassRequest;
 
 export interface WebGpuVertexStageRequest {
   readonly buffers: readonly BackendVertexBufferLayout[];

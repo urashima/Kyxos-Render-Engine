@@ -13,6 +13,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./static-accumulation": {
+      "types": "./dist/static-accumulation.d.ts",
+      "import": "./dist/static-accumulation.js",
+      "default": "./dist/static-accumulation.js"
+    },
+    "./temporal-pbr": {
+      "types": "./dist/temporal-pbr.d.ts",
+      "import": "./dist/temporal-pbr.js",
+      "default": "./dist/temporal-pbr.js"
     }
   },
   "scripts": {
@@ -33,6 +43,7 @@
     "@kyxos/render-math": "workspace:*",
     "@kyxos/render-renderer": "workspace:*",
     "@kyxos/render-scene": "workspace:*",
+    "@kyxos/render-temporal": "workspace:*",
     "@kyxos/render-visibility": "workspace:*"
   },
   "devDependencies": {
