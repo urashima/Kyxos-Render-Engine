@@ -1,6 +1,8 @@
 import type {
   BackendRenderPassStatistics,
   BackendSurfaceDescriptor,
+  BackendSurfaceInfo,
+  BackendSurfaceResize,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import type { DirtyFlag, TemporalFrameMetadata } from '@kyxos/render-frame-scheduler';
@@ -189,6 +191,59 @@ export class TemporalPipelineTransaction implements Disposable {
     await this.#staticPass.initialize(backend);
     await this.#present.initialize(backend);
     this.#backend = backend;
+  }
+
+  getSurfaceInfo(): BackendSurfaceInfo {
+    this.#assertActive();
+    const surface = this.#present.getDiagnostics().surface;
+    if (surface === null) {
+      throw error('Temporal pipeline Surface is unavailable.', 'INVALID_STATE', true);
+    }
+    return surface;
+  }
+
+  resize(resize: BackendSurfaceResize): BackendSurfaceInfo {
+    this.#assertActive();
+    if (this.#open !== undefined) {
+      throw error('Temporal pipeline cannot resize during an open frame.', 'INVALID_STATE');
+    }
+    const previous = this.getSurfaceInfo();
+    const next = this.#present.resize(resize);
+    if (next.size.suspended) return next;
+
+    try {
+      this.#dynamicHistory.resize(next.size.physicalWidth, next.size.physicalHeight);
+      this.#staticHistory.resize(next.size.physicalWidth, next.size.physicalHeight);
+      return next;
+    } catch (cause) {
+      const rollbackErrors: unknown[] = [];
+      const previousResize: BackendSurfaceResize = {
+        cssHeight: previous.size.cssHeight,
+        cssWidth: previous.size.cssWidth,
+        devicePixelRatio: previous.size.devicePixelRatio,
+        renderScale: previous.size.renderScale,
+      };
+      for (const rollback of [
+        () => this.#present.resize(previousResize),
+        () =>
+          this.#dynamicHistory.resize(previous.size.physicalWidth, previous.size.physicalHeight),
+        () => this.#staticHistory.resize(previous.size.physicalWidth, previous.size.physicalHeight),
+      ]) {
+        try {
+          rollback();
+        } catch (rollbackCause) {
+          rollbackErrors.push(rollbackCause);
+        }
+      }
+      if (rollbackErrors.length > 0) {
+        throw new AggregateError(
+          [cause, ...rollbackErrors],
+          'Temporal pipeline Resize and rollback failed.',
+          { cause },
+        );
+      }
+      throw cause;
+    }
   }
 
   execute(input: TemporalPipelineExecuteInput): TemporalPipelineExecuteResult {

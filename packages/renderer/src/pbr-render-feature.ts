@@ -91,7 +91,7 @@ interface PbrRenderResources {
   readonly fallbackSampler: BackendSamplerHandle;
   readonly pipelines: ReadonlyMap<string, BackendPipelineHandle>;
   readonly shader: BackendShaderModuleHandle;
-  readonly surface: BackendSurfaceHandle;
+  readonly surface: BackendSurfaceHandle | undefined;
 }
 
 interface MeshGpuResources {
@@ -147,9 +147,16 @@ export interface PbrEnvironmentState {
   readonly source: EnvironmentSource | null;
 }
 
+export interface PbrDynamicTaaSurface {
+  readonly getSurfaceInfo: () => BackendSurfaceInfo;
+  readonly resize: (resize: BackendSurfaceResize) => BackendSurfaceInfo;
+}
+
 export interface PbrDynamicTaaOutput {
   /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */
   readonly acquireFrame: () => DynamicTaaGpuFrame;
+  /** Optional borrowed output Surface contract. PBR never creates or disposes this Surface. */
+  readonly surface?: PbrDynamicTaaSurface;
 }
 
 export interface PbrRenderFeatureOptions extends BuildRenderQueuesOptions {
@@ -342,15 +349,29 @@ export class PbrRenderFeature implements RenderFeature {
         recoverable: false,
       });
     }
-    if (
-      options.dynamicTaaOutput !== undefined &&
-      typeof options.dynamicTaaOutput.acquireFrame !== 'function'
-    ) {
-      throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {
-        code: 'INVALID_ARGUMENT',
-        module: 'renderer',
-        recoverable: false,
-      });
+    if (options.dynamicTaaOutput !== undefined) {
+      if (typeof options.dynamicTaaOutput.acquireFrame !== 'function') {
+        throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'renderer',
+          recoverable: false,
+        });
+      }
+      const borrowedSurface = options.dynamicTaaOutput.surface;
+      if (
+        borrowedSurface !== undefined &&
+        (typeof borrowedSurface.getSurfaceInfo !== 'function' ||
+          typeof borrowedSurface.resize !== 'function')
+      ) {
+        throw new KyxosEngineError(
+          'PBR Dynamic TAA borrowed Surface requires getSurfaceInfo and resize functions.',
+          {
+            code: 'INVALID_ARGUMENT',
+            module: 'renderer',
+            recoverable: false,
+          },
+        );
+      }
     }
     this.#scene = options.scene;
     this.#camera = options.camera;
@@ -411,9 +432,15 @@ export class PbrRenderFeature implements RenderFeature {
     const created: BackendResourceHandle[] = [];
     let acquiredEnvironmentLease: EnvironmentGpuLease | undefined;
     try {
-      const surface = backend.createSurface(this.#surfaceDescriptor);
-      created.push(surface);
-      const surfaceInfo = backend.getSurfaceInfo(surface);
+      const borrowedSurface = this.#dynamicTaaOutput?.surface;
+      const surface =
+        borrowedSurface === undefined ? backend.createSurface(this.#surfaceDescriptor) : undefined;
+      if (surface !== undefined) created.push(surface);
+      const surfaceInfo =
+        surface === undefined ? borrowedSurface?.getSurfaceInfo() : backend.getSurfaceInfo(surface);
+      if (surfaceInfo === undefined) {
+        throw this.#error('PBR Surface information is unavailable.', 'INVALID_STATE');
+      }
       this.#updateCameraAspect(surfaceInfo);
       const dynamicTaa = this.#dynamicTaaOutput !== undefined;
       const shader = backend.createShaderModule({
@@ -539,7 +566,7 @@ export class PbrRenderFeature implements RenderFeature {
       ...(this.#frustumCulling === undefined ? {} : { frustumCulling: this.#frustumCulling }),
     });
     this.#lastVisibility = queues.diagnostics;
-    const surfaceInfo = context.backend.getSurfaceInfo(resources.surface);
+    const surfaceInfo = this.#resolveSurfaceInfo(context.backend, resources);
     if (surfaceInfo.size.suspended) return EMPTY_STATISTICS;
     const surfaceDepthTexture = resources.depthTexture;
     if (this.#dynamicTaaOutput === undefined && surfaceDepthTexture === undefined) {
@@ -590,7 +617,7 @@ export class PbrRenderFeature implements RenderFeature {
         'INVALID_STATE',
       );
     }
-    return backend.getSurfaceInfo(resources.surface);
+    return this.#resolveSurfaceInfo(backend, resources);
   }
 
   getDiagnostics(): PbrRenderFeatureDiagnostics {
@@ -630,7 +657,13 @@ export class PbrRenderFeature implements RenderFeature {
     if (backend === undefined || resources === undefined) {
       throw this.#error('PBR rendering must be initialized before resizing.', 'INVALID_STATE');
     }
-    const surfaceInfo = backend.resizeSurface(resources.surface, resize);
+    const surfaceInfo =
+      resources.surface === undefined
+        ? this.#dynamicTaaOutput?.surface?.resize(resize)
+        : backend.resizeSurface(resources.surface, resize);
+    if (surfaceInfo === undefined) {
+      throw this.#error('PBR borrowed Surface cannot be resized.', 'INVALID_STATE');
+    }
     this.#updateCameraAspect(surfaceInfo);
     const nextDepthTexture =
       this.#dynamicTaaOutput === undefined
@@ -719,8 +752,8 @@ export class PbrRenderFeature implements RenderFeature {
         resources.fallbackSampler,
         ...resources.pipelines.values(),
         resources.shader,
-        resources.surface,
       );
+      if (resources.surface !== undefined) handles.push(resources.surface);
     }
     this.#meshResources.clear();
     this.#objectResources.clear();
@@ -758,6 +791,15 @@ export class PbrRenderFeature implements RenderFeature {
     if (errors.length > 1) {
       throw new AggregateError(errors, 'PBR Render Feature resource disposal failed.');
     }
+  }
+
+  #resolveSurfaceInfo(backend: GraphicsBackend, resources: PbrRenderResources): BackendSurfaceInfo {
+    if (resources.surface !== undefined) return backend.getSurfaceInfo(resources.surface);
+    const surfaceInfo = this.#dynamicTaaOutput?.surface?.getSurfaceInfo();
+    if (surfaceInfo === undefined) {
+      throw this.#error('PBR borrowed Surface information is unavailable.', 'INVALID_STATE');
+    }
+    return surfaceInfo;
   }
 
   #createDynamicTaaRenderPass(
