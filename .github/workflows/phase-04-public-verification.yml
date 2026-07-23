@@ -6,6 +6,9 @@ on:
       - agent/phase-04-public-verification
     paths:
       - .github/workflows/phase-04-public-verification.yml
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: phase-04-public-verification-finalize
