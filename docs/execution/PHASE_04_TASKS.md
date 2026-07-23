@@ -1,6 +1,6 @@
 # Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
 
-Phase status: **In Development**  
+Phase status: **Deployment Pending**  
 Branch: `agent/phase-04-temporal`  
 Pull request: `#7`  
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
@@ -25,17 +25,17 @@ status only. Detailed checkpoint history, Commit SHAs, CI Runs, and Artifact dig
 | P4-11 | Orchestrate PBR MRT → Dynamic TAA → optional Static Accumulation → Present → atomic commit/cancel           | P4-08,P4-09,P4-10 | Real Scheduler/WebGPU mode sequence, ordered draw counts, failure cancellation, exact lifecycle     | Completed      |
 | P4-12 | Expose public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground                   | P4-11             | SDK-only route, public operations, reviewed zero-diff visual, fail-closed evidence/checker and CI   | In Development |
 
-## P4-12 completion gate
+## Deployment and acceptance gate
 
-P4-12 remains `In Development` until all of the following are true:
+P4-12 implementation and pre-deployment evidence are complete, and the exact evidence Head passed the
+complete read-only `pnpm verify` pipeline. P4-12 remains **In Development** and Phase 4 remains
+**Deployment Pending** until all of the following are true:
 
-- the temporary formatting/integration workflow is removed and standard read-only CI is restored;
-- `pnpm verify` passes with the documentation-governance gate and the complete pinned browser suite;
-- `/acceptance/phase-04` exposes Scheduler mode, RAF state, Dirty flags, History validity, sample count,
-  Resize, wake/reset, Device Lost recovery, disposal/recreation, and performance/resource diagnostics;
-- deterministic Reference/Current/Difference visuals and Phase 4 performance/lifecycle reports are committed;
-- `docs/acceptance/phase-04/` and `check-phase-04-acceptance.mjs` pass fail-closed review;
-- PR #7 is updated to the exact verified Head before merge.
+- the provenance-only final PR Head passes the complete pinned CI gate without source drift;
+- PR #7 is marked ready and merged with expected-Head protection;
+- GitHub Pages deploys the verified merge source;
+- public `/phase-4/` and `/latest/` pass the required Chromium/WebGPU operation sequence;
+- immutable `phase-04-accepted` targets the deployed accepted source.
 
 ## Required boundaries
 

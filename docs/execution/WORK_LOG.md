@@ -2436,3 +2436,33 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Push the fail-closed acceptance package and public online-operation gate.
 - Require the exact evidence Head to pass the complete `pnpm verify` pipeline before updating PR #7
   for final provenance verification.
+
+## 2026-07-23 02:30 PDT — P4-12 evidence Head verified
+
+### Completed
+
+- Verified the exact fail-closed Phase 4 evidence Head without changing implementation, assertions,
+  tolerances, visual thresholds, budgets, or accepted Phase 0–3 artifacts.
+- Confirmed the committed Phase 4 acceptance package, online operation gate, task ledger, and
+  documentation-governance rules are internally consistent.
+- Updated PR #7 summary to the verified Owner Acceptance Passed — Deployment Pending state.
+
+### Validation
+
+- Evidence Head `49ff7f1170b3596fd56d6cb3dc3f9653fa38eed1` passed GitHub Actions Run
+  `29993831789`, job `89162655128`: complete `pnpm verify` PASS.
+- The read-only gate passed lockfile installation, formatting, zero-warning lint, strict typecheck,
+  62 unit files / 275 tests, documentation governance, dependency boundaries and negative fixture,
+  architecture checks, Phase 0–4 acceptance schemas, 14 canonical WGSL modules, all builds, bundle
+  budgets, Pages build verification, and all 33 pinned Chromium/WebGPU cases.
+- Artifact `8558240090`, digest
+  `sha256:431724dfbcb252a7e1e7e58fecc9649a1b65308584b9449d9914a5bd0cb7df9b`,
+  preserves the authoritative browser diagnostics for the exact evidence Head.
+- P4-12 implementation and pre-deployment evidence are complete; the task remains In Development until the public acceptance gate passes.
+
+### Next
+
+- Push this provenance-only task/status/log synchronization and require its exact Head to pass the
+  complete read-only `pnpm verify` gate.
+- If unchanged and green, inspect PR #7 reviews, mark it ready, merge with expected-Head protection,
+  then require public `/phase-4/` and `/latest/` verification before freezing `phase-04-accepted`.
