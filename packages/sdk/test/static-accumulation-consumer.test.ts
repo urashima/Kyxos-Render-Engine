@@ -16,9 +16,9 @@ describe('SDK static accumulation entry', () => {
 
     const first = accumulateStaticSample({
       currentColor: [1, 0.5, 0.25, 1],
-      historyColor: [0, 0, 0, 0],
+      accumulatedColor: [0, 0, 0, 0],
       historyValid: false,
-      previousSampleCount: 0,
+      accumulatedSampleCount: 0,
     });
 
     expect(first).toMatchObject({

@@ -188,16 +188,16 @@ test.describe('Phase 4 Static Accumulation runtime', () => {
     await page.goto('/acceptance/phase-01');
     let cpu = accumulateStaticSample({
       currentColor: samples[0],
-      historyColor: [0, 0, 0, 0],
+      accumulatedColor: [0, 0, 0, 0],
       historyValid: false,
-      previousSampleCount: 0,
+      accumulatedSampleCount: 0,
     });
     for (const sample of samples.slice(1)) {
       cpu = accumulateStaticSample({
         currentColor: sample,
-        historyColor: cpu.outputColor,
+        accumulatedColor: cpu.outputColor,
         historyValid: true,
-        previousSampleCount: cpu.sampleCount,
+        accumulatedSampleCount: cpu.sampleCount,
       });
     }
     const halfBits = samples.map((sample) => sample.map(float32ToFloat16Bits));
