@@ -143,6 +143,15 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
     await recordSettled('animation-stop');
 
+    await page.getByRole('button', { name: 'Reset scene' }).click();
+    await waitForSleeping(page);
+    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
+    await page.getByRole('button', { name: 'Orbit right' }).click();
+    await waitForSleeping(page);
+    await page.locator('[data-control="roughness"]').fill('0.63');
+    await expect(page.locator('[data-output="roughness"]')).toHaveText('0.63');
+    await waitForSleeping(page);
+
     await page.setViewportSize(RESIZED_VIEWPORT);
     await expect
       .poll(() => page.getByTestId('surface-size').textContent())
