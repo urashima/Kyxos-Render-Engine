@@ -1,4 +1,4 @@
-name: Phase 4 acceptance freeze verification
+name: Freeze Phase 4 accepted source
 
 on:
   push:
@@ -13,11 +13,11 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
-    name: Verify exact accepted deployment source
+  freeze:
+    name: Reverify exact deployment and freeze immutable tag
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -28,11 +28,12 @@ jobs:
       PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
 
     steps:
-      - name: Check out accepted candidate
+      - name: Check out freeze branch
         uses: actions/checkout@v7
         with:
-          ref: a1b004d4e7862873c653478af528201a898f906b
-          persist-credentials: false
+          ref: agent/phase-04-acceptance-freeze
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Install Node.js
         uses: actions/setup-node@v7
@@ -50,25 +51,27 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Wait for exact deployment in browser runtime
+      - name: Reverify exact accepted deployment source
+        run: pnpm exec playwright test --config playwright.pages.config.ts
+
+      - name: Freeze immutable accepted tag
         shell: bash
         run: |
-          base_url="${PUBLIC_PLAYGROUND_URL%/}/"
-          for attempt in $(seq 1 36); do
-            if curl --fail --silent --show-error --location "${base_url}latest/" >/dev/null \
-              && curl --fail --silent --show-error --location "${base_url}phase-4/" >/dev/null; then
-              set +e
-              pnpm exec playwright test --config playwright.pages.config.ts
-              status=$?
-              set -e
-              if [ "$status" -eq 0 ]; then
-                exit 0
-              fi
+          git fetch --tags origin
+          if git show-ref --verify --quiet refs/tags/phase-04-accepted; then
+            existing_target="$(git rev-list -n 1 refs/tags/phase-04-accepted)"
+            if [ "$existing_target" != "$EXPECTED_COMMIT_SHA" ]; then
+              echo "phase-04-accepted already targets ${existing_target}, expected ${EXPECTED_COMMIT_SHA}." >&2
+              exit 1
             fi
-            sleep 10
-          done
-          echo 'Exact accepted candidate did not pass the public operation gate.' >&2
-          exit 1
+            echo "phase-04-accepted already targets the exact accepted source."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag --annotate phase-04-accepted "$EXPECTED_COMMIT_SHA" \
+            --message 'Phase 4 accepted: scheduler, Dynamic TAA, static accumulation, exact public WebGPU verification'
+          git push origin refs/tags/phase-04-accepted
 
       - name: Write acceptance-freeze evidence
         shell: bash
@@ -80,11 +83,12 @@ jobs:
             "phase": "04",
             "status": "PASS",
             "acceptedSource": "${EXPECTED_COMMIT_SHA}",
+            "acceptedTag": "phase-04-accepted",
             "latestPhase": 4,
             "phases": [0, 1, 2, 3, 4],
             "publicUrl": "${PUBLIC_PLAYGROUND_URL}",
             "workflowRunId": "${GITHUB_RUN_ID}",
-            "workflowJob": "Verify exact accepted deployment source"
+            "workflowJob": "Reverify exact deployment and freeze immutable tag"
           }
           EOF
 
