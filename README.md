@@ -6,14 +6,14 @@
 
 本 README 是仓库唯一文档索引。不要创建 `docs/README.md`、目录级索引或重复状态文档。
 
-| Authority | Document | Purpose |
-| --------- | -------- | ------- |
-| Product scope | [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md) | Phase 0–14 要开发什么、架构和模块边界 |
-| Acceptance | [`PHASE_ACCEPTANCE_PLAN.md`](./PHASE_ACCEPTANCE_PLAN.md) | 如何证明一个 Phase 完成，以及公开 Pages/冻结 Tag 门禁 |
-| Current state | [`WORK_STATUS.md`](./WORK_STATUS.md) | 当前 Phase、当前任务、最后完成任务、唯一 Next Action 和阻断 |
-| Contribution rules | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | 分支、验证、架构和文档治理规则 |
-| Execution history | [`docs/execution/WORK_LOG.md`](./docs/execution/WORK_LOG.md) | 追加式检查点事实、CI Run、Artifact 和恢复线索 |
-| Architecture | [`docs/architecture/overview.md`](./docs/architecture/overview.md) / [`docs/architecture/dependency-rules.md`](./docs/architecture/dependency-rules.md) / [`docs/adr/`](./docs/adr/) | 当前架构和不可逆决策 |
+| Authority          | Document                                                                                                                                                                             | Purpose                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Product scope      | [`DEVELOPMENT_PLAN.md`](./DEVELOPMENT_PLAN.md)                                                                                                                                       | Phase 0–14 要开发什么、架构和模块边界                       |
+| Acceptance         | [`PHASE_ACCEPTANCE_PLAN.md`](./PHASE_ACCEPTANCE_PLAN.md)                                                                                                                             | 如何证明一个 Phase 完成，以及公开 Pages/冻结 Tag 门禁       |
+| Current state      | [`WORK_STATUS.md`](./WORK_STATUS.md)                                                                                                                                                 | 当前 Phase、当前任务、最后完成任务、唯一 Next Action 和阻断 |
+| Contribution rules | [`CONTRIBUTING.md`](./CONTRIBUTING.md)                                                                                                                                               | 分支、验证、架构和文档治理规则                              |
+| Execution history  | [`docs/execution/WORK_LOG.md`](./docs/execution/WORK_LOG.md)                                                                                                                         | 追加式检查点事实、CI Run、Artifact 和恢复线索               |
+| Architecture       | [`docs/architecture/overview.md`](./docs/architecture/overview.md) / [`docs/architecture/dependency-rules.md`](./docs/architecture/dependency-rules.md) / [`docs/adr/`](./docs/adr/) | 当前架构和不可逆决策                                        |
 
 ### Phase task ledgers
 

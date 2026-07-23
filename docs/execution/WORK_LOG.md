@@ -2318,4 +2318,3 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 ### Next
 
 - Implement the public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground with observable Scheduler modes, RAF state, Dirty flags, History validity, sample count, Resize, wake/reset, Device Lost recovery, performance/resource reports, and fixed visual evidence.
-

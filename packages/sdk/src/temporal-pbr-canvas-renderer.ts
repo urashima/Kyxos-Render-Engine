@@ -195,7 +195,11 @@ export class KyxosTemporalPbrCanvasRenderer extends KyxosRenderer {
     return info;
   }
 
-  setActivity(activity: FrameActivity, active: boolean, dirtyFlag: DirtyFlag = 'accumulation'): void {
+  setActivity(
+    activity: FrameActivity,
+    active: boolean,
+    dirtyFlag: DirtyFlag = 'accumulation',
+  ): void {
     this.#scheduler.setActivity(activity, active, dirtyFlag);
   }
 

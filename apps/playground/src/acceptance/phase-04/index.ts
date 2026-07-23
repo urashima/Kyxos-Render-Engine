@@ -350,7 +350,13 @@ function populateScene(
     { baseColorFactor: [1, 0.766, 0.336, 1], metallicFactor: 1, roughnessFactor: 0.18 },
     [-2.05, 0, 0],
   );
-  const control = addMaterial(runtime, renderer, 'Temporal control', materialDescriptor(runtime), [0, 0, 0]);
+  const control = addMaterial(
+    runtime,
+    renderer,
+    'Temporal control',
+    materialDescriptor(runtime),
+    [0, 0, 0],
+  );
   addMaterial(
     runtime,
     renderer,
@@ -396,8 +402,10 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
   requireElement(root, '[data-testid="target-samples"]').textContent = String(
     scheduler.convergence.targetSamples,
   );
-  requireElement(root, '[data-testid="history-valid"]').textContent =
-    pipeline.dynamicHistory.history.valid ? 'valid' : 'invalid';
+  requireElement(root, '[data-testid="history-valid"]').textContent = pipeline.dynamicHistory
+    .history.valid
+    ? 'valid'
+    : 'invalid';
   requireElement(root, '[data-testid="frame-index"]').textContent = String(base.frameIndex);
   requireElement(root, '[data-testid="fps"]').textContent = runtime.fps.toFixed(1);
   requireElement(root, '[data-testid="cpu-frame-time"]').textContent =

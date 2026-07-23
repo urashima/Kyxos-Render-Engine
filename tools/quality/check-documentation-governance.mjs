@@ -60,7 +60,9 @@ function parseTaskLedger(relativePath, source, expectedPhase) {
     if (idMatch === null) continue;
     const status = cells.at(-1) ?? '';
     if (!allowedTaskStatuses.has(status)) {
-      failures.push(`${relativePath}: ${cells[0]} has unsupported status ${JSON.stringify(status)}`);
+      failures.push(
+        `${relativePath}: ${cells[0]} has unsupported status ${JSON.stringify(status)}`,
+      );
       continue;
     }
     const phase = Number(idMatch[1]);
@@ -113,9 +115,12 @@ const currentPhaseMatch = /\*\*Current Phase:\*\*\s*Phase\s+(\d+)/u.exec(workSta
 const currentTaskMatch = /\*\*Current Task:\*\*\s*(P\d+-\d{2})/u.exec(workStatus);
 const lastCompletedMatch = /\*\*Last Completed Task:\*\*\s*(P\d+-\d{2})/u.exec(workStatus);
 
-if (currentPhaseMatch === null) failures.push('WORK_STATUS.md: Current Phase is missing or malformed');
-if (currentTaskMatch === null) failures.push('WORK_STATUS.md: Current Task is missing or malformed');
-if (lastCompletedMatch === null) failures.push('WORK_STATUS.md: Last Completed Task is missing or malformed');
+if (currentPhaseMatch === null)
+  failures.push('WORK_STATUS.md: Current Phase is missing or malformed');
+if (currentTaskMatch === null)
+  failures.push('WORK_STATUS.md: Current Task is missing or malformed');
+if (lastCompletedMatch === null)
+  failures.push('WORK_STATUS.md: Last Completed Task is missing or malformed');
 
 const currentPhase = Number(currentPhaseMatch?.[1] ?? -1);
 const ledgers = new Map();
@@ -148,9 +153,13 @@ const currentLedger = ledgers.get(currentPhase);
 if (currentLedger !== undefined && currentTaskMatch !== null) {
   const currentTask = currentLedger.tasks.find((task) => task.id === currentTaskMatch[1]);
   if (currentTask === undefined) {
-    failures.push(`WORK_STATUS.md: Current Task ${currentTaskMatch[1]} is absent from ${currentLedger.relativePath}`);
+    failures.push(
+      `WORK_STATUS.md: Current Task ${currentTaskMatch[1]} is absent from ${currentLedger.relativePath}`,
+    );
   } else if (!['In Development', 'Blocked'].includes(currentTask.status)) {
-    failures.push(`${currentLedger.relativePath}: Current Task ${currentTask.id} must be In Development or Blocked`);
+    failures.push(
+      `${currentLedger.relativePath}: Current Task ${currentTask.id} must be In Development or Blocked`,
+    );
   }
 }
 if (currentLedger !== undefined && lastCompletedMatch !== null) {
@@ -160,7 +169,9 @@ if (currentLedger !== undefined && lastCompletedMatch !== null) {
       `WORK_STATUS.md: Last Completed Task ${lastCompletedMatch[1]} is absent from ${currentLedger.relativePath}`,
     );
   } else if (lastCompleted.status !== 'Completed') {
-    failures.push(`${currentLedger.relativePath}: Last Completed Task ${lastCompleted.id} must be Completed`);
+    failures.push(
+      `${currentLedger.relativePath}: Last Completed Task ${lastCompleted.id} must be Completed`,
+    );
   }
   if (!workLog.includes(lastCompletedMatch[1])) {
     failures.push(`docs/execution/WORK_LOG.md: missing ${lastCompletedMatch[1]} checkpoint`);
@@ -185,7 +196,9 @@ for (const relativePath of researchMarkdown) {
 }
 for (const [phase, count] of researchCounts) {
   if (phase >= 4 && count > 1) {
-    failures.push(`docs/research: Phase ${phase} has ${count} research documents; consolidate to one`);
+    failures.push(
+      `docs/research: Phase ${phase} has ${count} research documents; consolidate to one`,
+    );
   }
 }
 
@@ -220,7 +233,9 @@ const linkSources = [
 for (const [relativePath, source] of linkSources) await validateRelativeLinks(relativePath, source);
 
 if (await exists('docs/execution/BLOCKERS.md')) {
-  failures.push('docs/execution/BLOCKERS.md: blockers must live in WORK_STATUS.md and WORK_LOG.md only');
+  failures.push(
+    'docs/execution/BLOCKERS.md: blockers must live in WORK_STATUS.md and WORK_LOG.md only',
+  );
 }
 
 if (failures.length > 0) {

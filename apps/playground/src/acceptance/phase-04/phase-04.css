@@ -61,9 +61,7 @@
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 16px;
-  background:
-    radial-gradient(circle at 50% 48%, rgb(38 73 99 / 42%), transparent 44%),
-    #080b10;
+  background: radial-gradient(circle at 50% 48%, rgb(38 73 99 / 42%), transparent 44%), #080b10;
 }
 
 .temporal-stage .gpu-canvas {
@@ -223,7 +221,10 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: rgb(255 255 255 / 2%);
-  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
 }
 
 .temporal-timeline li::before {

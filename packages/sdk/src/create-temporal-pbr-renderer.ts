@@ -23,7 +23,10 @@ import type {
   PbrEnvironmentDescriptor,
 } from '@kyxos/render-renderer';
 import { Scene } from '@kyxos/render-scene';
-import type { TemporalConvergenceOptions, TemporalConvergenceSnapshot } from '@kyxos/render-temporal';
+import type {
+  TemporalConvergenceOptions,
+  TemporalConvergenceSnapshot,
+} from '@kyxos/render-temporal';
 import { MeshRendererStore } from '@kyxos/render-visibility';
 
 import { createBrowserFrameDriver } from './browser-frame-driver.js';
@@ -114,13 +117,12 @@ function composeTemporalPbrRenderer(
       targetSamples: options.targetSamples,
     },
     driver: frameDriver,
-    ...(options.stabilizationMs === undefined
-      ? {}
-      : { stabilizationMs: options.stabilizationMs }),
+    ...(options.stabilizationMs === undefined ? {} : { stabilizationMs: options.stabilizationMs }),
   });
   const cssHeight =
     options.cssHeight ?? canvasDimension(options.canvas, 'clientHeight', options.canvas.height);
-  const cssWidth = options.cssWidth ?? canvasDimension(options.canvas, 'clientWidth', options.canvas.width);
+  const cssWidth =
+    options.cssWidth ?? canvasDimension(options.canvas, 'clientWidth', options.canvas.width);
   const devicePixelRatio = options.devicePixelRatio ?? browserDevicePixelRatio();
   const renderScale = options.renderScale ?? 1;
   const revisions: TemporalPbrRevisionState = {

@@ -378,4 +378,3 @@
 - **Reason:** Two WebGPU contexts/configurations for one Canvas create ambiguous ownership and recovery order. PBR ownership would also couple scene output to display encoding. Present-only ownership keeps linear HDR scene/History resources independent from display output and makes Resize, Device Lost, disposal, and error rollback mechanically testable.
 - **Impact:** Temporal mode creates one Canvas Surface, while PBR owns no Surface Handle. Direct Phase 3 rendering is unchanged. Future WebGL2 temporal support must preserve the same single-output-owner contract even if its HDR attachment formats differ.
 - **ADR required:** No; this refines the existing ADR-005 temporal ownership and ED-036 through ED-038 composition boundaries without changing dependency direction.
-
