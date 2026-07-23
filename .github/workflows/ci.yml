@@ -49,7 +49,11 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Synchronize Phase 4 provenance
-        run: python "$GITHUB_WORKSPACE/.github/scripts/sync-phase-04-provenance.py"
+        shell: bash
+        run: |
+          git fetch origin agent/phase-04-worklog-export
+          git show FETCH_HEAD:.github/scripts/sync-phase-04-provenance.py > /tmp/sync-phase-04-provenance.py
+          python /tmp/sync-phase-04-provenance.py
 
       - name: Format canonical documents
         run: pnpm exec prettier --write WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
