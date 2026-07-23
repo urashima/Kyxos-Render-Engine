@@ -1,0 +1,1 @@
+Temporary trigger for the Phase 4 deterministic visual candidate capture. Do not merge.
