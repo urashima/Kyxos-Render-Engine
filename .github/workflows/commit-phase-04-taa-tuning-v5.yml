@@ -93,6 +93,8 @@ jobs:
             apps/playground/src/acceptance/phase-04/phase-04.css \
             tests/e2e/phase-04-acceptance.spec.ts \
             tests/e2e/online-pages.spec.ts
+          sed -i '3,7s/[[:space:]]*$//' docs/execution/PHASE_04_TASKS.md
+          pnpm exec prettier --write docs/execution/PHASE_04_TASKS.md
 
       - name: Commit exact verified source checkpoint
         shell: bash
