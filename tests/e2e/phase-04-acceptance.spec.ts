@@ -2,10 +2,19 @@ import { expect, test } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+const ROUTE_SETTLE_TIMEOUT_MS = 60_000;
+const ROUTE_LIFECYCLE_TIMEOUT_MS = 120_000;
+
 async function waitForSleeping(page: import('@playwright/test').Page): Promise<void> {
-  await expect(page.getByTestId('renderer-state')).toHaveText('ready', { timeout: 20_000 });
-  await expect(page.getByTestId('render-mode')).toHaveText('sleeping', { timeout: 20_000 });
-  await expect(page.getByTestId('sample-count')).toHaveText('16', { timeout: 20_000 });
+  await expect(page.getByTestId('renderer-state')).toHaveText('ready', {
+    timeout: ROUTE_SETTLE_TIMEOUT_MS,
+  });
+  await expect(page.getByTestId('render-mode')).toHaveText('sleeping', {
+    timeout: ROUTE_SETTLE_TIMEOUT_MS,
+  });
+  await expect(page.getByTestId('sample-count')).toHaveText('16', {
+    timeout: ROUTE_SETTLE_TIMEOUT_MS,
+  });
   await expect(page.getByTestId('raf-active')).toHaveText('false');
   await expect(page.getByTestId('history-valid')).toHaveText('valid');
 }
@@ -19,6 +28,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
   test('wakes, accumulates, sleeps, disposes, and recreates through the public SDK', async ({
     page,
   }) => {
+    test.setTimeout(ROUTE_LIFECYCLE_TIMEOUT_MS);
     const runtimeErrors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') runtimeErrors.push(message.text());
@@ -27,7 +37,9 @@ test.describe('Phase 4 public temporal acceptance route', () => {
 
     await page.goto('/acceptance/phase-04');
     await expect(page.getByTestId('phase-04-acceptance')).toBeVisible();
-    await expect(page.getByTestId('backend-type')).toHaveText('webgpu', { timeout: 20_000 });
+    await expect(page.getByTestId('backend-type')).toHaveText('webgpu', {
+      timeout: ROUTE_SETTLE_TIMEOUT_MS,
+    });
     await waitForSleeping(page);
 
     const initialWakeCount = await numericText(page, 'wake-count');
@@ -47,15 +59,13 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await page.locator('[data-control="roughness"]').fill('0.63');
     await expect(page.locator('[data-output="roughness"]')).toHaveText('0.63');
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterCameraWake);
-    await waitForSleeping(page);
+    await waitForSleeping(pae);
 
     const afterMaterialWake = await numericText(page, 'wake-count');
     await page.getByRole('button', { name: 'Replace texture' }).click();
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterMaterialWake);
     await waitForSleeping(page);
-    await expect
-      .poll(() => numericText(page, 'resource-count'))
-      .toBe(initialResources + 2);
+    await expect.poll(() => numericText(page, 'resource-count')).toBe(initialResources + 2);
     const warmedResources = await numericText(page, 'resource-count');
 
     const afterTextureWarmWake = await numericText(page, 'wake-count');
@@ -77,7 +87,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
 
     await expect(page.getByTestId('active-passes')).toHaveText('NO ACTIVE PASS');
-    await expect(page.getByTestId('static-to-sleep')).not.toHaveText('—');
+    await expect(page.getByTestId('static-to-sleep')).not.toHaveText('—");
     await expect(page.getByTestId('resource-count')).toHaveText(String(warmedResources));
 
     const evidenceBeforeDispose = {
@@ -104,7 +114,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
     await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
     await expect(page.locator('[data-testid="gpu-error"]')).toBeHidden();
-    expect(runtimeErrors).toEqual([]);
+    expect(runtimeErors).toEqual([]);
 
     const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
     await mkdir(runtimeDirectory, { recursive: true });

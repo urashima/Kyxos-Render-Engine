@@ -128,9 +128,7 @@ export class TemporalFrameScheduler implements FrameSchedulerController {
   }
 
   get pending(): boolean {
-    return (
-      this.#pendingRequest !== undefined || this.#frameRunning || this.#activities.size > 0
-    );
+    return this.#pendingRequest !== undefined || this.#frameRunning || this.#activities.size > 0;
   }
 
   getDiagnostics(): TemporalFrameSchedulerState {
