@@ -368,3 +368,14 @@
   enabled. WebGL2 may implement the same public transaction with its declared HDR fallback.
 - **ADR required:** No; this implements the Phase 4 architecture already mandated by ADR-005 and
   does not change dependency direction or public product scope.
+
+## ED-039 — Give Present sole Canvas Surface ownership in temporal PBR mode
+
+- **Status:** Accepted
+- **Date:** 2026-07-23
+- **Decision:** In temporal PBR mode, the final Present transaction is the sole owner of the Canvas Surface. PBR borrows only `getSurfaceInfo` and `resize`, and writes exclusively to the caller-prepared offscreen MRT frame. The temporal transaction owns Dynamic/Static History and commit/cancel ordering; the accepted direct PBR mode retains its own Surface unchanged.
+- **Candidates:** Let PBR and Present each create a Surface for the same Canvas; make PBR own the Surface and let Present borrow it; make Present own the only Canvas Surface while PBR borrows dimensions and Resize.
+- **Reason:** Two WebGPU contexts/configurations for one Canvas create ambiguous ownership and recovery order. PBR ownership would also couple scene output to display encoding. Present-only ownership keeps linear HDR scene/History resources independent from display output and makes Resize, Device Lost, disposal, and error rollback mechanically testable.
+- **Impact:** Temporal mode creates one Canvas Surface, while PBR owns no Surface Handle. Direct Phase 3 rendering is unchanged. Future WebGL2 temporal support must preserve the same single-output-owner contract even if its HDR attachment formats differ.
+- **ADR required:** No; this refines the existing ADR-005 temporal ownership and ED-036 through ED-038 composition boundaries without changing dependency direction.
+

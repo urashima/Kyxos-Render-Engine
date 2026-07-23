@@ -2296,3 +2296,26 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-11 temporal pipeline orchestration: ordered PBR MRT → Dynamic TAA Resolve →
   optional Static Accumulation → final Present → atomic History commit/cancel, driven by the
   Temporal Scheduler metadata. Preserve direct Phase 3 Surface mode as the default.
+
+## 2026-07-22 21:15 PDT — P4-11 Scheduler-driven single-Surface Temporal PBR pipeline passed
+
+### Completed
+
+- Added `TemporalPipelineTransaction` with the fixed order PBR MRT → Dynamic TAA Resolve → optional Static Accumulation → final Present → atomic Dynamic/Static History commit. Any failed stage cancels every open History frame.
+- Added `TemporalPbrRenderFeature`, which composes Scheduler metadata, Halton Camera jitter, the PBR temporal MRT path, Dynamic Resolve, Static Accumulation, and final display output behind one Render Feature.
+- Kept the accepted Phase 3 direct-Surface PBR mode unchanged and made temporal output opt-in. Temporal PBR borrows the Present-owned Surface contract so one Canvas has exactly one Surface owner.
+- Added borrowed Surface Resize, jittered View-Projection injection, complete Dirty reset propagation, Static convergence reporting, Device Lost detachment/recovery, exact disposal, and public `@kyxos/render-sdk/temporal-pbr` exposure.
+- Added MockBackend transaction/unit coverage plus a pinned Chromium/SwiftShader gate driven by the real `TemporalFrameScheduler`.
+
+### Validation
+
+- Verified checkpoint Head `9e173a8644f5187934b3343d0991741b2c9afca5` passed Run `29978597536`, job `89115544133`: formatting, zero-warning Lint, strict TypeScript, package/architecture boundaries, frozen Phase 0–3 Schemas, fourteen exact Shader mirrors, build, Bundle, Pages, unit tests, and all 32 pinned Chromium/WebGPU cases.
+- Artifact `8552401380`, digest `sha256:0caa60b3f06f0a73b694743679e2ca0ba347895234cd15233d0aa263c8bbce58`, contains the complete browser diagnostics including `test-results/phase-04/runtime/pbr-temporal-pipeline.json`.
+- The native Scheduler sequence is exactly Interactive → Stabilizing → Accumulating 1/2 → Accumulating 2/2 → Sleeping. Dynamic frames record three Draws / fourteen Triangles; accumulating frames record four Draws / fifteen Triangles.
+- The final diagnostic reports one active Canvas Surface before cleanup, Static and Scheduler convergence at exactly 2/2 samples, no pending RAF, and zero active resources after Feature disposal.
+- Phase 4 remains In Development: no public Phase 4 route, visual/performance acceptance package, Owner Acceptance, deployment, merge, or Accepted Tag is claimed.
+
+### Next
+
+- Implement the public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground with observable Scheduler modes, RAF state, Dirty flags, History validity, sample count, Resize, wake/reset, Device Lost recovery, performance/resource reports, and fixed visual evidence.
+

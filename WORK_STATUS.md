@@ -2,15 +2,15 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal`
-- **Current Commit:** `e593c5cf3a1d602a4693eada4cbb76c6d910713d` (native PBR Temporal gate formatting and zero-warning Lint normalization complete)
-- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-10 verified; P4-11 native verification in progress
-- **Current Task:** P4-11 — Ordered Scheduler-driven PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction
-- **Last Completed Task:** P4-11 unit integration — single borrowed Surface, jittered PBR matrices, transaction order, Resize, Device Lost, failure cancellation, and SDK subpath
-- **Next Action:** Run the complete read-only gate with the native browser orchestration case, fix any strict TypeScript or WebGPU runtime failure without weakening assertions, then record P4-11 evidence
-- **CI Status:** Run 29978459518 passed formatting and reached zero-warning Lint; two auto-fixable E2E syntax violations were normalized by commit `e593c5cf3a1d602a4693eada4cbb76c6d910713d`; fresh verification requested
-- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; P4-11 not yet accepted
+- **Current Commit:** `9e173a8644f5187934b3343d0991741b2c9afca5` (P4-11 Scheduler-driven single-Surface Temporal PBR pipeline verified)
+- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-11 verified; acceptance Playground integration in progress
+- **Current Task:** P4-12 — Public Temporal PBR Canvas lifecycle and Phase 4 acceptance Playground
+- **Last Completed Task:** P4-11 — ordered PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction with native Scheduler/WebGPU evidence
+- **Next Action:** Add the public Temporal PBR renderer wrapper, independent `/acceptance/phase-04` route, realtime HUD, interaction/reset/recovery controls, fixed visual baseline, and performance/resource acceptance reports
+- **CI Status:** Run 29978597536 / job 89115544133 PASS at verified Head `9e173a8644f5187934b3343d0991741b2c9afca5`; 32/32 pinned Chromium/WebGPU cases PASS
+- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; P4-11 verified; Phase 4 route and Owner Acceptance pending
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 21:04 PDT
+- **Last Updated:** 2026-07-22 21:15 PDT
 
 ## Phase Progress
 
@@ -20,7 +20,7 @@
 |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS        | Phase Accepted | `phase-01-accepted` |
 |    02 | Phase Accepted | `agent/phase-02-scene-camera`        | #3  | PASS        | Phase Accepted | `phase-02-accepted` |
 |    03 | Phase Accepted | `agent/phase-03-pbr-ibl`             | #5  | PASS        | Phase Accepted | `phase-03-accepted` |
-|    04 | In Development | `agent/phase-04-temporal`            | #7  | IN PROGRESS | In Development | —                   |
+|    04 | In Development | `agent/phase-04-temporal`            | #7  | PASS        | In Development | —                   |
 |    05 | Planned        | `agent/phase-05-lighting-postfx`     | —   | —           | Planned        | —                   |
 |    06 | Planned        | `agent/phase-06-assets`              | —   | —           | Planned        | —                   |
 |    07 | Planned        | `agent/phase-07-animation`           | —   | —           | Planned        | —                   |
