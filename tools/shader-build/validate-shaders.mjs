@@ -76,6 +76,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-static-accumulation.wgsl',
+    {
+      exportName: 'PHASE_04_STATIC_ACCUMULATION_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-static-accumulation.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-taa-reference.wgsl',
     {
       exportName: 'PHASE_04_TAA_REFERENCE_WGSL',
