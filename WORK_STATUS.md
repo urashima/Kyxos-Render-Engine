@@ -6,10 +6,10 @@
 - **Current Task:** P4-13 — Public Dynamic TAA tuning API, complete parameter panel, and exact Pages deployment
 - **Last Completed Task:** P4-12 — Merge, exact public Phase 0–4/Latest WebGPU verification, and immutable `phase-04-accepted` freeze
 - **Next Action:** Require the final user-authored governance Head to pass complete `pnpm verify`, then mark PR #13 ready, merge with expected-Head protection, deploy Pages, and verify the public tuning panel
-- **CI Status:** TAA tuning implementation and append-only provenance passed complete verification; final user-authored documentation Head pending standard read-only CI
+- **CI Status:** Implementation, append-only provenance, and canonical formatting passed complete verification; final user-authored Head pending standard read-only CI
 - **Acceptance Status:** Phase 0–4 Accepted; Phase 4 tuning hotfix Deployment Pending; Phase 5 Draft PR #12 paused until the tuning panel is public
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-23 08:55 PDT
+- **Last Updated:** 2026-07-23 09:10 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one
