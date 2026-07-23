@@ -5,11 +5,11 @@
 - **Overall Progress:** 4 / 15 phases accepted; P4-01 through P4-11 completed; P4-12 implementation and deterministic pre-deployment evidence verified
 - **Current Task:** P4-12 — Final provenance, merge, public Pages verification, and immutable acceptance freeze
 - **Last Completed Task:** P4-11 — ordered PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction with native Scheduler/WebGPU evidence
-- **Next Action:** Require the exact deterministic visual-baseline Head to pass the complete `pnpm verify` gate, then freeze final CI provenance
-- **CI Status:** Deterministic repair candidate passed every nonvisual gate and 32 browser/WebGPU cases; baseline-promotion Head pending
-- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 Owner Acceptance Passed — Deployment Pending; final CI, merge, public verification, and accepted tag pending
+- **Next Action:** Require the exact final-provenance Head to pass the complete `pnpm verify` gate, then mark PR #7 ready and merge with expected-Head protection
+- **CI Status:** Deterministic baseline Head passed complete `pnpm verify`; final provenance-only Head must remain green before merge
+- **Acceptance Status:** Phase 0–3 Accepted; Phase 4 Owner Acceptance Passed — Deployment Pending; final provenance CI, merge, public verification, and accepted tag pending
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-23 03:30 PDT
+- **Last Updated:** 2026-07-23 03:56 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one

@@ -2498,3 +2498,33 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Freeze the reviewed candidate as Phase 4 Reference and Current with a zero-difference image.
 - Require the exact baseline-promotion Head to pass the complete `pnpm verify` pipeline before
   recording final CI provenance.
+
+## 2026-07-23 03:56 PDT — P4-12 deterministic baseline Head verified
+
+### Completed
+
+- Verified the promoted deterministic Phase 4 visual baseline on the exact non-workflow Head.
+- Confirmed the public acceptance route still exercises Camera, Material, Texture, Animation,
+  Resize, Device Lost recovery, Dispose, and Recreate through the public SDK.
+- Preserved `maxDiffPixels: 0`, threshold `0.2`, all budgets, and accepted Phase 0–3 artifacts.
+
+### Validation
+
+- Head `bb69ea17ed2c1156f3ce2bd63c0bd529f2c78177` passed GitHub Actions Run
+  `30000020272`, job `89182762580`: complete `pnpm verify` PASS.
+- The gate passed formatting, zero-warning lint, strict typecheck, 62 unit files / 275 tests,
+  documentation governance, dependency boundaries and negative fixture, architecture checks,
+  Phase 0–4 acceptance schemas, 14 canonical WGSL modules, all builds, bundle budgets, Pages
+  build verification, and all 33 pinned Chromium/WebGPU cases.
+- Artifact `8560696284`, digest
+  `sha256:e6a6e86a0dd11fc2d8b5b946da8f8179e7d807965047b1dbc38734777d2b9871`,
+  preserves the authoritative diagnostics for the deterministic baseline Head.
+- Reference and Current remain the reviewed 1440×1600 image with SHA-256
+  `0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea`;
+  the zero-difference gate passed without tolerance changes.
+
+### Next
+
+- Require the final provenance-only Head to pass the complete read-only `pnpm verify` gate.
+- If green, mark PR #7 ready and merge with expected-Head protection, then verify public
+  `/phase-4/` and `/latest/` before freezing `phase-04-accepted`.

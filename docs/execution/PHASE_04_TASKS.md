@@ -32,8 +32,9 @@ public state after animation so a variable RAF count cannot leak into the frozen
 remains **In Development** and Phase 4 remains **Deployment Pending** until all of the following are
 true:
 
-- the deterministic visual-baseline Head passes the complete pinned CI gate without source drift;
+- the deterministic visual-baseline Head passed the complete pinned CI gate without source drift;
 - final CI provenance is recorded in the canonical task/status/log documents;
+- the final provenance-only Head passes the complete pinned CI gate without source drift;
 - PR #7 is marked ready and merged with expected-Head protection;
 - GitHub Pages deploys the verified merge source;
 - public `/phase-4/` and `/latest/` pass the required Chromium/WebGPU operation sequence;
