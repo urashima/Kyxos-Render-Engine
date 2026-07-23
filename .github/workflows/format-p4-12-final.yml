@@ -46,3 +46,5 @@ jobs:
           git add WORK_STATUS.md docs/execution/DECISIONS.md docs/execution/WORK_LOG.md packages/sdk/src packages/sdk/test apps/playground/src
           git commit -m "style(phase-04): normalize P4-12 public route"
           git push origin HEAD:agent/phase-04-temporal
+
+# Explicit trigger revision 2
