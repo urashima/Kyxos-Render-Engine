@@ -1,0 +1,55 @@
+name: Normalize P4-11 native lint
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-fix-p4-11-native-lint.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Apply lint-safe syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/e2e/phase-04-pbr-temporal-pipeline.spec.ts')
+          source = path.read_text()
+          source = source.replace(
+              "        const frames: Array<{\n",
+              "        const frames: {\n"
+          ).replace(
+              "          statistics: ReturnType<typeof feature.render>;\n        }> = [];\n",
+              "          statistics: ReturnType<typeof feature.render>;\n        }[] = [];\n"
+          ).replace(
+              "        let scheduler!: InstanceType<typeof TemporalFrameScheduler>;\n        scheduler = new TemporalFrameScheduler({\n",
+              "        const scheduler = new TemporalFrameScheduler({\n"
+          )
+          path.write_text(source)
+          PY
+          pnpm exec eslint --fix tests/e2e/phase-04-pbr-temporal-pipeline.spec.ts
+          pnpm exec prettier --write tests/e2e/phase-04-pbr-temporal-pipeline.spec.ts
+      - name: Commit lint fix
+        run: |
+          git rm .github/workflows/agent-fix-p4-11-native-lint.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/e2e/phase-04-pbr-temporal-pipeline.spec.ts
+          git commit -m 'style(phase-04): normalize native temporal gate lint'
+          git push origin HEAD:agent/phase-04-temporal
