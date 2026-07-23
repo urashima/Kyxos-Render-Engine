@@ -10,7 +10,11 @@ const phase =
   resolveAcceptancePhase(window.location.pathname) ??
   (window.history.replaceState({}, '', acceptancePhaseHref(0)), 0);
 
-if (phase === 3) {
+if (phase === 4) {
+  await import('./acceptance/phase-04/index.js').then(({ mountPhase04Acceptance }) =>
+    mountPhase04Acceptance(root),
+  );
+} else if (phase === 3) {
   await import('./acceptance/phase-03/index.js').then(({ mountPhase03Acceptance }) =>
     mountPhase03Acceptance(root),
   );
