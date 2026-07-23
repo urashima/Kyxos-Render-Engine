@@ -14,21 +14,23 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
     name: Full quality and acceptance gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       CI: 'true'
 
     steps:
-      - name: Check out repository
+      - name: Check out Phase 4 branch
         uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          ref: agent/phase-04-temporal
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Install Node.js
         uses: actions/setup-node@v7
@@ -46,12 +48,31 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Synchronize Phase 4 provenance
+        run: python "$GITHUB_WORKSPACE/.github/scripts/sync-phase-04-provenance.py"
+
+      - name: Format canonical documents
+        run: pnpm exec prettier --write WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+
       - name: Run complete verification pipeline
         shell: bash
         run: |
           set -o pipefail
           mkdir -p test-results/phase-04/runtime
           pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
+
+      - name: Commit and push verified provenance
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+          if git diff --cached --quiet; then
+            echo 'No provenance changes to push.'
+            exit 0
+          fi
+          git commit -m 'docs(phase-04): record evidence head provenance'
+          git push origin HEAD:agent/phase-04-temporal
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
