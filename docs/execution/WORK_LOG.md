@@ -2564,3 +2564,45 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Require the exact PR #10 final documentation/cleanup Head to pass complete `pnpm verify`.
 - Merge with expected-Head protection, then require main CI, Pages redeployment, built-in public
   verification, and immutable `phase-04-accepted` before marking P4-12 Completed.
+
+## 2026-07-23 08:30 PDT — P4-13 Dynamic TAA tuning source gate green
+
+### Trigger
+
+- Owner review of the accepted public `/phase-4/` route found persistent visible shimmer while
+  Dynamic TAA remained active and requested complete live parameter access before changing the
+  algorithm implementation.
+
+### Completed
+
+- Added public immutable Dynamic TAA settings with accepted defaults unchanged.
+- Exposed Jitter Scale, Base History Weight, absolute/relative Depth rejection, Normal rejection
+  cosine, Responsive History reduction, and Responsive Mask through the public SDK and Phase 4
+  Playground.
+- Added Default, Stable, Sharp, and No Jitter presets plus copyable exact JSON configuration.
+- Parameter updates reset only Temporal History and wake rendering; Renderer, Canvas Surface,
+  Pipelines, Bind Groups, and GPU History resources remain allocated and stable.
+- Kept `phase-04-accepted`, accepted numerical references, Shader math, visual thresholds, and
+  Phase 0–4 accepted routes immutable.
+
+### Validation
+
+- Exact implementation source passed GitHub Actions Run `30019258099`, job `89247376501`:
+  complete `pnpm verify` PASS.
+- The gate passed formatting, zero-warning lint, strict TypeScript, unit tests, documentation and
+  architecture governance, all builds and bundle budgets, isolated Pages generation, and all 33
+  pinned Chromium/WebGPU cases.
+- The original Phase 4 visual reference passed at `maxDiffPixels: 0` and threshold `0.2`; no
+  baseline, tolerance, retry policy, or accepted artifact changed.
+- Artifact `8568677744`, digest
+  `sha256:2aaf1ee3a6a72f3da3b0de23fbb2aaba3cdc1d431e221ebfaca9dd211d02df7f`, preserves the complete
+  verification output.
+- Verified source was committed as `c820c6db21269aab8f41604053ba9c0491c1ca6b`; its bot-triggered
+  standard workflow was `action_required`, so a final user-authored governance Head must run the
+  normal read-only CI before merge.
+
+### Next
+
+- Synchronize `WORK_STATUS.md` and this task ledger with the green source provenance.
+- Require that exact user-authored documentation Head to pass complete `pnpm verify`, then mark PR
+  #13 ready, merge with expected-Head protection, deploy Pages, and verify the public tuning panel.
