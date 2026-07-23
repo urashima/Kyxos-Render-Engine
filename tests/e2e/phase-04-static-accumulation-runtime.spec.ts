@@ -72,10 +72,10 @@ test.describe('Phase 4 Static Accumulation runtime', () => {
             usage: ['copy-dst', 'sampled'],
           });
           const sourceTexture = currentTexture;
-          const frames: Array<{
+          const frames: {
             diagnostics: ReturnType<typeof history.getDiagnostics>;
             statistics: ReturnType<typeof accumulationPass.execute>;
-          }> = [];
+          }[] = [];
           for (const bits of halfBits) {
             backend.writeTexture(sourceTexture, new Uint16Array(bits), {
               bytesPerRow: 8,

@@ -7,10 +7,10 @@ import type {
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 import {
-  TemporalConvergenceTracker,
-  TemporalHistory,
   type TemporalConvergenceOptions,
   type TemporalConvergenceSnapshot,
+  TemporalConvergenceTracker,
+  TemporalHistory,
   type TemporalHistoryInvalidationReason,
   type TemporalHistorySignature,
   type TemporalHistorySignatureDescriptor,

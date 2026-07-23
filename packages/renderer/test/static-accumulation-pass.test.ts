@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   STATIC_ACCUMULATION_UNIFORM_LAYOUT,
+  type StaticAccumulationGpuFrame,
   StaticAccumulationGpuHistory,
   StaticAccumulationPass,
   packStaticAccumulationUniforms,
-  type StaticAccumulationGpuFrame,
 } from '../src/index.js';
 
 const signature = {
