@@ -32,6 +32,7 @@ import type {
   PbrOutputTransform,
   PbrOutputTransformDescriptor,
 } from '@kyxos/render-material-pbr';
+import type { Mat4 } from '@kyxos/render-math';
 import type { EntityHandle, Scene } from '@kyxos/render-scene';
 import { VisibilitySystem } from '@kyxos/render-visibility';
 import type {
