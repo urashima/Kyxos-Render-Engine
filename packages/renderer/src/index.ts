@@ -86,6 +86,7 @@ export {
   PBR_RENDER_FEATURE_ID,
   PbrRenderFeature,
   type PbrDynamicTaaOutput,
+  type PbrDynamicTaaSurface,
   type PbrEnvironmentDescriptor,
   type PbrEnvironmentState,
   type PbrRenderFeatureDiagnostics,
@@ -121,6 +122,12 @@ export {
   type StaticAccumulationPassInput,
   type StaticAccumulationPassOptions,
 } from './static-accumulation-pass.js';
+export {
+  TEMPORAL_PBR_RENDER_FEATURE_ID,
+  TemporalPbrRenderFeature,
+  type TemporalPbrRenderFeatureDiagnostics,
+  type TemporalPbrRenderFeatureOptions,
+} from './temporal-pbr-render-feature.js';
 export {
   TemporalPipelineTransaction,
   type TemporalPipelineExecuteInput,
