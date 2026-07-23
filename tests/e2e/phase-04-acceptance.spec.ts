@@ -53,8 +53,10 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await page.getByRole('button', { name: 'Replace texture' }).click();
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterMaterialWake);
     await waitForSleeping(page);
+    await expect
+      .poll(() => numericText(page, 'resource-count'))
+      .toBe(initialResources + 2);
     const warmedResources = await numericText(page, 'resource-count');
-    expect(warmedResources).toBeGreaterThanOrEqual(initialResources);
 
     const afterTextureWarmWake = await numericText(page, 'wake-count');
     await page.getByRole('button', { name: 'Replace texture' }).click();
