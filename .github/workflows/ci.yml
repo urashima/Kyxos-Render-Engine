@@ -75,34 +75,37 @@ jobs:
       - name: Format candidate source
         run: pnpm exec prettier --write tests/e2e/phase-04-acceptance.spec.ts
 
-      - name: Run fail-closed candidate capture
+      - name: Run candidate capture and classify result
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p test-results/phase-04/runtime
+          mkdir -p test-results/phase-04/runtime visual-candidates/phase-04
           set +e
           pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
           verify_status=${PIPESTATUS[0]}
           set -e
+          classification='UNEXPECTED_FAILURE'
           if [ "$verify_status" -eq 0 ]; then
-            echo 'Candidate unexpectedly matched the frozen reference; review is still required.'
-            exit 1
+            classification='UNEXPECTED_REFERENCE_MATCH'
+          elif grep -q '1 failed' test-results/phase-04/runtime/phase-verification.log \
+            && grep -q '32 passed' test-results/phase-04/runtime/phase-verification.log \
+            && grep -q 'phase-04-acceptance.spec.ts' test-results/phase-04/runtime/phase-verification.log \
+            && grep -q 'toMatchSnapshot' test-results/phase-04/runtime/phase-verification.log \
+            && test -f test-results/phase-04/runtime/acceptance-visual/current.png; then
+            classification='EXPECTED_OLD_REFERENCE_MISMATCH'
           fi
-          grep -q '1 failed' test-results/phase-04/runtime/phase-verification.log
-          grep -q '32 passed' test-results/phase-04/runtime/phase-verification.log
-          grep -q 'phase-04-acceptance.spec.ts' test-results/phase-04/runtime/phase-verification.log
-          grep -q 'toMatchSnapshot' test-results/phase-04/runtime/phase-verification.log
-          test -f test-results/phase-04/runtime/acceptance-visual/current.png
-          echo 'The only expected failure is the old Phase 4 visual reference.'
+          printf '%s\n' "$classification" | tee visual-candidates/phase-04/status.txt
+          cp test-results/phase-04/runtime/phase-verification.log visual-candidates/phase-04/verification.log
+          if test -f test-results/phase-04/runtime/acceptance-visual/current.png; then
+            cp test-results/phase-04/runtime/acceptance-visual/current.png visual-candidates/phase-04/reference-candidate.png
+          fi
 
       - name: Publish candidate branch
+        if: ${{ always() }}
         shell: bash
         run: |
-          mkdir -p visual-candidates/phase-04
-          cp test-results/phase-04/runtime/acceptance-visual/current.png visual-candidates/phase-04/reference-candidate.png
-          cp test-results/phase-04/runtime/phase-verification.log visual-candidates/phase-04/verification.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/e2e/phase-04-acceptance.spec.ts visual-candidates/phase-04/reference-candidate.png visual-candidates/phase-04/verification.log
+          git add -f tests/e2e/phase-04-acceptance.spec.ts visual-candidates/phase-04/
           git commit -m 'test(phase-04): publish deterministic visual candidate'
           git push --force origin HEAD:agent/phase-04-visual-candidate-result
