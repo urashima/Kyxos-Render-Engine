@@ -46,6 +46,8 @@ const metrics = {
   phase2RouteTotal: { gzipBytes: 0, rawBytes: 0 },
   phase3RouteJavascript: { gzipBytes: 0, rawBytes: 0 },
   phase3RouteTotal: { gzipBytes: 0, rawBytes: 0 },
+  phase4RouteJavascript: { gzipBytes: 0, rawBytes: 0 },
+  phase4RouteTotal: { gzipBytes: 0, rawBytes: 0 },
   total: { gzipBytes: 0, rawBytes: 0 },
 };
 
@@ -74,6 +76,7 @@ function routeClosure(key) {
 const phase1RouteFiles = routeClosure('src/acceptance/phase-01/index.ts');
 const phase2RouteFiles = routeClosure('src/acceptance/phase-02/index.ts');
 const phase3RouteFiles = routeClosure('src/acceptance/phase-03/index.ts');
+const phase4RouteFiles = routeClosure('src/acceptance/phase-04/index.ts');
 
 function addMeasurement(measurement, rawBytes, gzipBytes) {
   measurement.rawBytes += rawBytes;
@@ -103,6 +106,7 @@ function assertDynamicRoute(key) {
 assertDynamicRoute('src/acceptance/phase-01/index.ts');
 assertDynamicRoute('src/acceptance/phase-02/index.ts');
 assertDynamicRoute('src/acceptance/phase-03/index.ts');
+assertDynamicRoute('src/acceptance/phase-04/index.ts');
 assertDynamicRoute('src/acceptance/phase-00/index.ts');
 
 for (const filePath of files) {
@@ -137,6 +141,12 @@ for (const filePath of files) {
     phase3RouteFiles,
     metrics.phase3RouteJavascript,
     metrics.phase3RouteTotal,
+    values,
+  );
+  addRouteMeasurement(
+    phase4RouteFiles,
+    metrics.phase4RouteJavascript,
+    metrics.phase4RouteTotal,
     values,
   );
 }
