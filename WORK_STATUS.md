@@ -2,15 +2,15 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal`
-- **Current Commit:** `9a9746fe97c64cb26260b941c17a92ee42e1d7f0` (P4-10 implementation and runtime gates formatted)
+- **Current Commit:** `64ee9d09ff5c144c501f18ff95fe3f53e38d470f` (P4-10 formatting and zero-warning Lint normalization complete)
 - **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-09 verified; P4-10 automated verification in progress
 - **Current Task:** P4-10 — Static Accumulation full quality and native WebGPU verification
-- **Last Completed Task:** P4-10 implementation — deterministic CPU/WGSL running mean, owner-scoped GPU History, sampled accumulation Pass, convergence/reset lifecycle, SDK subpath, and native runtime gates
+- **Last Completed Task:** P4-10 implementation — deterministic CPU/WGSL running mean, owner-scoped GPU History, sampled accumulation Pass, convergence/reset lifecycle, public SDK subpath, and native runtime gates
 - **Next Action:** Run the complete read-only verification pipeline, fix any strict TypeScript/unit/WebGPU failures without weakening gates, then record P4-10 evidence and begin Phase 4 pipeline scheduling integration
-- **CI Status:** Run 29975609549 reached the new P4-10 gate and failed only on unformatted runtime E2E; formatting commit `9a9746fe97c64cb26260b941c17a92ee42e1d7f0` applied; fresh verification requested
+- **CI Status:** Run 29975764126 passed formatting and reached zero-warning Lint; three auto-fixable style violations were normalized by commit `64ee9d09ff5c144c501f18ff95fe3f53e38d470f`; fresh verification requested
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; P4-10 not yet accepted
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 19:59 PDT
+- **Last Updated:** 2026-07-22 20:02 PDT
 
 ## Phase Progress
 
