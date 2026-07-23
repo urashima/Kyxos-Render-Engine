@@ -155,6 +155,8 @@ export interface PbrDynamicTaaSurface {
 export interface PbrDynamicTaaOutput {
   /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */
   readonly acquireFrame: () => DynamicTaaGpuFrame;
+  /** Optional jittered View-Projection supplied by the temporal owner for this frame. */
+  readonly acquireViewProjectionMatrix?: () => Mat4;
   /** Optional borrowed output Surface contract. PBR never creates or disposes this Surface. */
   readonly surface?: PbrDynamicTaaSurface;
 }
@@ -352,6 +354,16 @@ export class PbrRenderFeature implements RenderFeature {
     if (options.dynamicTaaOutput !== undefined) {
       if (typeof options.dynamicTaaOutput.acquireFrame !== 'function') {
         throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {
+          code: 'INVALID_ARGUMENT',
+          module: 'renderer',
+          recoverable: false,
+        });
+      }
+      if (
+        options.dynamicTaaOutput.acquireViewProjectionMatrix !== undefined &&
+        typeof options.dynamicTaaOutput.acquireViewProjectionMatrix !== 'function'
+      ) {
+        throw new KyxosEngineError('PBR Dynamic TAA View-Projection provider must be a function.', {
           code: 'INVALID_ARGUMENT',
           module: 'renderer',
           recoverable: false,
@@ -1185,7 +1197,9 @@ export class PbrRenderFeature implements RenderFeature {
         material: material.snapshot,
         normalYDirection: material.normalSource?.normalYDirection ?? 'up',
         output: this.#output,
-        viewProjectionMatrix: this.#camera.viewProjectionMatrix(),
+        viewProjectionMatrix:
+          this.#dynamicTaaOutput?.acquireViewProjectionMatrix?.() ??
+          this.#camera.viewProjectionMatrix(),
         worldMatrix: item.worldMatrix,
       }),
     );
