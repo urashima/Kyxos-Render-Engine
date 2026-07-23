@@ -2375,3 +2375,33 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   authoritative Current image.
 - Freeze only that reviewed image as `visual-baselines/phase-04/reference.png`, retain
   `maxDiffPixels: 0`, and require the resulting exact Head to pass all 33 cases.
+
+## 2026-07-23 01:25 PDT — P4-12 canonical visual reviewed and frozen
+
+### Completed
+
+- Required a new authoritative capture after the control-surface refinement instead of freezing the
+  earlier native-button image.
+- Reviewed the fixed 1440×1600 image: Temporal PBR output, Sleeping state, diagnostics, sliders,
+  three-column controls, destructive-action emphasis, and state timeline have no blocking visual
+  defect or viewport overflow.
+- Froze the exact reviewed image as `visual-baselines/phase-04/reference.png`; the browser assertion
+  remains `maxDiffPixels: 0`.
+
+### Validation
+
+- Run `29990674489`, job `89152534050`: 32 / 33 pinned cases passed on exact styled Head
+  `1202548b8dbe98072262d8e10caacbd8e4449978`.
+- The sole expected failure remained the absent initial Reference. All lifecycle and lower-level
+  WebGPU tests passed.
+- Artifact `8557009402`, digest
+  `sha256:55c5f93749a849daf96776c3db33eea9c1889d1578701a18e9d2b6435f879a12`,
+  supplied the reviewed Current. The frozen 1440×1600 PNG is 448,041 bytes with SHA-256
+  `62d14e111d43559674075961036fd794b5fb198269a98e862f40c8e3f99250e5`.
+
+### Next
+
+- Push the reviewed Reference and require the exact Head to pass all 33 browser/WebGPU cases with
+  zero visual difference.
+- Promote that green Run's visual, performance, lifecycle, dependency, Technical QA, and Owner
+  records into the fail-closed Phase 4 acceptance package.
