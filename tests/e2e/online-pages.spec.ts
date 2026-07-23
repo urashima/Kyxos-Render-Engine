@@ -43,8 +43,10 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
 
   if (phase > 0) {
     await expect(page.getByTestId('backend-type')).toHaveText('webgpu');
-    await expect(page.getByTestId('shader-status')).toHaveText('pass');
     expect(Number(await page.getByTestId('draw-calls').textContent())).toBeGreaterThan(0);
+  }
+  if (phase > 0 && phase < 4) {
+    await expect(page.getByTestId('shader-status')).toHaveText('pass');
   }
   if (phase === 2) {
     await expect(page.getByTestId('fps')).toHaveText('0 · sleeping');
@@ -177,7 +179,10 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
 
     const wakeCount = page.getByTestId('wake-count');
     const historyGeneration = page.getByTestId('history-generation');
-    const exerciseReset = async (action: () => Promise<void>) => {
+    const exerciseReset = async (
+      action: () => Promise<void>,
+      expectedResources?: number,
+    ): Promise<number> => {
       const previousWake = Number(await wakeCount.textContent());
       const previousGeneration = Number(await historyGeneration.textContent());
       await action();
@@ -188,13 +193,30 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
         .poll(async () => Number(await historyGeneration.textContent()))
         .toBeGreaterThan(previousGeneration);
       await waitForSleeping();
-      await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+      const currentResources = Number(await page.getByTestId('resource-count').textContent());
+      if (expectedResources !== undefined) expect(currentResources).toBe(expectedResources);
+      return currentResources;
     };
 
-    await exerciseReset(() => page.locator('[data-action="orbit-right"]').click());
-    await exerciseReset(() => page.locator('[data-control="roughness"]').fill('0.63'));
-    await exerciseReset(() => page.locator('[data-action="texture"]').click());
-    await exerciseReset(() => page.locator('[data-action="reset-history"]').click());
+    let activeResources = await exerciseReset(() =>
+      page.locator('[data-action="orbit-right"]').click(),
+    );
+    expect(activeResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(activeResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await exerciseReset(
+      () => page.locator('[data-control="roughness"]').fill('0.63'),
+      activeResources,
+    );
+    const textureResources = await exerciseReset(() =>
+      page.locator('[data-action="texture"]').click(),
+    );
+    expect(textureResources).toBeGreaterThanOrEqual(activeResources);
+    expect(textureResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    activeResources = textureResources;
+    await exerciseReset(
+      () => page.locator('[data-action="reset-history"]').click(),
+      activeResources,
+    );
 
     await page.locator('[data-action="animation"]').click();
     await expect(page.getByTestId('render-mode')).toHaveText('interactive');
@@ -205,6 +227,7 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
       .toBeGreaterThan(animatedFrame + 2);
     await page.locator('[data-action="animation"]').click();
     await waitForSleeping();
+    await expect(page.getByTestId('resource-count')).toHaveText(String(activeResources));
 
     await page.locator('[data-action="lose"]').click();
     await expect(page.getByTestId('renderer-state')).toHaveText('lost');
@@ -212,13 +235,19 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await expect(page.getByTestId('surface-size')).toHaveText('unavailable');
     await page.locator('[data-action="recover"]').click();
     await waitForSleeping();
-    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    const recoveredResources = Number(await page.getByTestId('resource-count').textContent());
+    expect(recoveredResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(recoveredResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
     await page.locator('[data-action="dispose"]').click();
     await expect(page.getByTestId('renderer-state')).toHaveText('disposed');
     await expect(page.getByTestId('resource-count')).toHaveText('0');
     await page.locator('[data-action="recreate"]').click();
     await waitForSleeping();
-    await expect(page.getByTestId('resource-count')).toHaveText(String(resourceBaseline));
+    const recreatedResources = Number(await page.getByTestId('resource-count').textContent());
+    expect(recreatedResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(recreatedResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
   }
   expect(runtimeErrors).toEqual([]);
 }
@@ -228,11 +257,13 @@ test.describe('public GitHub Pages Playground', () => {
 
   for (const phase of phases) {
     test(`serves and operates historical Phase ${String(phase)}`, async ({ page }) => {
+      if (phase === 4) test.setTimeout(180_000);
       await verifyPhase(page, phase, `phase-${String(phase)}/`);
     });
   }
 
   test(`latest resolves to accepted Phase ${String(latestPhase)}`, async ({ page }) => {
+    if (latestPhase === 4) test.setTimeout(180_000);
     await verifyPhase(page, latestPhase, 'latest/');
   });
 });

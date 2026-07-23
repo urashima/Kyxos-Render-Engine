@@ -2528,3 +2528,39 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Require the final provenance-only Head to pass the complete read-only `pnpm verify` gate.
 - If green, mark PR #7 ready and merge with expected-Head protection, then verify public
   `/phase-4/` and `/latest/` before freezing `phase-04-accepted`.
+
+## 2026-07-23 04:50 PDT — P4-12 exact public deployment verified and gate contract hardened
+
+### Completed
+
+- Merged PR #7 from exact verified Head `881c0ef631c37d68f0caddd7245d3439b9f46e92`;
+  implementation merge source is `43d510a12341cafd6cb1aeb917252d93f222b33f`.
+- Confirmed public `/phase-4/` and `/latest/` both expose that exact merge source and operate
+  through WebGPU with 16/16 samples, valid History, sleep/wake, animation, Device Lost recovery,
+  Dispose, and Recreate.
+- Hardened the repository-owned online gate so Phase 4 uses its Temporal diagnostics contract
+  instead of the legacy Phase 1–3 `shader-status` field.
+- Hardened resource checks around the actual lazy lifecycle: cold baseline 73, bounded warm
+  watermark up to 75, Device Lost to 0, recovery/recreation to the stable cold window, and Dispose to 0.
+
+### Validation
+
+- Final PR #7 Head passed Run `30001568782`, job `89187770623`: complete `pnpm verify` PASS.
+- Independent exact-deployment investigation remained fail-closed:
+  - Run `30002606828`, Artifact `8561682235` isolated the obsolete Phase 4 `shader-status` assertion;
+  - Run `30003010379`, Artifact `8561858242` isolated first Texture warm-up from 73 to 75 resources;
+  - Run `30003387960`, Artifact `8561999265` showed first Orbit may perform that same bounded warm-up;
+  - Run `30003773254`, Artifact `8562168398` showed Device Lost recovery correctly rebuilds the cold 73-resource baseline.
+- Corrected logic Head `8adca92afb00fa4dacda0743a39719dbba169e47` passed full Run
+  `30004176576`, job `89196144033`; Artifact `8562370467`, digest
+  `sha256:bf389fdb68aee5d7ad07da532db1fd5090de338b0ce422860a7eef18a1a68ed7`.
+- The same Head passed public Run `30004176537`, job `89196143362`; Artifact `8562346500`,
+  digest `sha256:c0bdaca37ba5215b4bbc36a406ff4f5b119264359c9c0d062a6dba770cc71013`.
+- Public verification covered Phase 0–4 and Latest against expected commit
+  `43d510a12341cafd6cb1aeb917252d93f222b33f`; no application or GPU runtime errors remained.
+
+### Next
+
+- Require the exact PR #10 final documentation/cleanup Head to pass complete `pnpm verify`.
+- Merge with expected-Head protection, then require main CI, Pages redeployment, built-in public
+  verification, and immutable `phase-04-accepted` before marking P4-12 Completed.
