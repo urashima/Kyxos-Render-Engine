@@ -31,6 +31,21 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Verify payload part 00
+        run: test "$(sha256sum .github/taa-patch/part-00.txt | cut -d' ' -f1)" = 52741923aff09d03a5df1507580c146473d9d1e487f5ae02451c24e04f9c785c
+
+      - name: Verify payload part 01
+        run: test "$(sha256sum .github/taa-patch/part-01.txt | cut -d' ' -f1)" = 6636476c1892952a204c98443ecc2bca9710cb7dc800c1d36ee31b90343bdd07
+
+      - name: Verify payload part 02
+        run: test "$(sha256sum .github/taa-patch/part-02.txt | cut -d' ' -f1)" = fa16c20ac7765c60f7268f88bf8ae53c32a6d19263dc1a26e5868ce6fc895dc8
+
+      - name: Verify payload part 03
+        run: test "$(sha256sum .github/taa-patch/part-03.txt | cut -d' ' -f1)" = 134679c7d82b2da67d655fa6481326397f3afa9aecb085681a8d09074f786159
+
+      - name: Verify payload part 04
+        run: test "$(sha256sum .github/taa-patch/part-04.txt | cut -d' ' -f1)" = 086385051c71f3d17b09ac9270ee87567adbb7f8f7dca10bb0e34a7774bf6972
+
       - name: Restore atomic source payload
         shell: bash
         run: |
@@ -51,38 +66,38 @@ jobs:
           if marker not in content:
               content += '''\n\n## 2026-07-23 06:30 PDT — P4-13 public Dynamic TAA tuning hotfix started
 
-          ### Trigger
+### Trigger
 
-          - Owner visual review of the accepted public `/phase-4/` route found persistent object shimmer while
-            Dynamic TAA remained active.
-          - The accepted Playground exposed material and lifecycle controls but no live Resolve/Jitter parameters,
-            so the defect could not be isolated without another code change.
+- Owner visual review of the accepted public `/phase-4/` route found persistent object shimmer while
+  Dynamic TAA remained active.
+- The accepted Playground exposed material and lifecycle controls but no live Resolve/Jitter parameters,
+  so the defect could not be isolated without another code change.
 
-          ### Implemented
+### Implemented
 
-          - Added public immutable Dynamic TAA settings with accepted defaults unchanged.
-          - Added live public-SDK updates for Jitter Scale, History Weight, absolute/relative Depth rejection,
-            Normal rejection cosine, Responsive History reduction, and Responsive Mask.
-          - Parameter updates reset Temporal History and wake rendering without rebuilding the Renderer, Surface,
-            Pipelines, Bind Groups, or GPU History resources.
-          - Added Default, Stable, Sharp, and No Jitter presets, paired range/number inputs, live diagnostics, and
-            copyable exact JSON configuration to the Phase 4 Playground.
-          - Added unit and browser coverage for validation, uniform packing, public exports, History reset, resource
-            stability, preset restoration, and the unchanged accepted visual baseline.
+- Added public immutable Dynamic TAA settings with accepted defaults unchanged.
+- Added live public-SDK updates for Jitter Scale, History Weight, absolute/relative Depth rejection,
+  Normal rejection cosine, Responsive History reduction, and Responsive Mask.
+- Parameter updates reset Temporal History and wake rendering without rebuilding the Renderer, Surface,
+  Pipelines, Bind Groups, or GPU History resources.
+- Added Default, Stable, Sharp, and No Jitter presets, paired range/number inputs, live diagnostics, and
+  copyable exact JSON configuration to the Phase 4 Playground.
+- Added unit and browser coverage for validation, uniform packing, public exports, History reset, resource
+  stability, preset restoration, and the unchanged accepted visual baseline.
 
-          ### Boundaries
+### Boundaries
 
-          - `phase-04-accepted` remains immutable at the original accepted source.
-          - Accepted default values, Shader math, CPU/WGSL reference cases, visual threshold, and Phase 0–4 routes
-            remain unchanged.
-          - Phase 5 Draft PR #12 is paused while PR #13 is verified and deployed for owner tuning.
+- `phase-04-accepted` remains immutable at the original accepted source.
+- Accepted default values, Shader math, CPU/WGSL reference cases, visual threshold, and Phase 0–4 routes
+  remain unchanged.
+- Phase 5 Draft PR #12 is paused while PR #13 is verified and deployed for owner tuning.
 
-          ### Next
+### Next
 
-          - Require the exact implementation Head to pass complete `pnpm verify`.
-          - Merge PR #13 with expected-Head protection, deploy exact Pages, independently verify the public panel,
-            then leave P4-13 In Development while the owner tunes and reports the copied parameter configuration.
-          '''
+- Require the exact implementation Head to pass complete `pnpm verify`.
+- Merge PR #13 with expected-Head protection, deploy exact Pages, independently verify the public panel,
+  then leave P4-13 In Development while the owner tunes and reports the copied parameter configuration.
+'''
               path.write_text(content + '\n', encoding='utf-8')
 
       - name: Remove temporary transport workflows and payload
