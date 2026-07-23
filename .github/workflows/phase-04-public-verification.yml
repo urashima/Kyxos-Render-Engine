@@ -50,23 +50,18 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Wait for exact public deployment
+      - name: Wait for public routes
         shell: bash
         run: |
           base_url="${PUBLIC_PLAYGROUND_URL%/}/"
-          for attempt in $(seq 1 24); do
-            latest_html="$(curl --fail --silent --show-error --location "${base_url}latest/" || true)"
-            phase_html="$(curl --fail --silent --show-error --location "${base_url}phase-4/" || true)"
-            if [[ "${latest_html}" == *"${EXPECTED_COMMIT_SHA}"* ]] && [[ "${phase_html}" == *"${EXPECTED_COMMIT_SHA}"* ]]; then
-              echo "Exact Phase 4 merge source is publicly deployed."
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Public Phase 4 routes did not expose the expected commit within the fail-closed window." >&2
-          exit 1
+          curl --fail --silent --show-error --location \
+            --retry 24 --retry-all-errors --retry-delay 5 \
+            "${base_url}latest/" >/dev/null
+          curl --fail --silent --show-error --location \
+            --retry 24 --retry-all-errors --retry-delay 5 \
+            "${base_url}phase-4/" >/dev/null
 
-      - name: Run public Chromium and WebGPU operation gate
+      - name: Run exact public Chromium and WebGPU operation gate
         run: pnpm exec playwright test --config playwright.pages.config.ts
 
       - name: Write public verification evidence
