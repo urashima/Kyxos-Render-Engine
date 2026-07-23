@@ -10,11 +10,13 @@ new_reset = """    await page.getByRole('button', { name: 'Reset scene' }).click
 if old_reset not in source:
     raise SystemExit('Frozen visual reset sequence source was not found.')
 source = source.replace(old_reset, new_reset, 1)
-old_hover = """    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
-    await page.evaluate(() => document.fonts.ready);"""
-new_hover = """    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
+old_capture = """    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitForSleeping(page);
+    const currentVisual = await page.screenshot({"""
+new_capture = """    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitForSleeping(page);
     await page.getByRole('button', { name: 'Orbit right' }).hover();
-    await page.evaluate(() => document.fonts.ready);"""
-if old_hover not in source:
-    raise SystemExit('Frozen visual hover insertion point was not found.')
-path.write_text(source.replace(old_hover, new_hover, 1), encoding='utf-8')
+    const currentVisual = await page.screenshot({"""
+if old_capture not in source:
+    raise SystemExit('Frozen visual capture insertion point was not found.')
+path.write_text(source.replace(old_capture, new_capture, 1), encoding='utf-8')
