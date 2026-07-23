@@ -97,13 +97,19 @@ jobs:
       - name: Commit exact verified source checkpoint
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uxo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git diff --cached --check
+          git diff --cached --check > /tmp/phase-04-taa-diff-check.txt 2>&1
+          CHECK_STATUS=$?
           git status --short | tee /tmp/phase-04-taa-commit-status.txt
           git diff --cached --stat | tee /tmp/phase-04-taa-commit-stat.txt
+          cat /tmp/phase-04-taa-diff-check.txt
+          if [ "$CHECK_STATUS" -ne 0 ]; then
+            exit "$CHECK_STATUS"
+          fi
+          set -e
           git commit -m 'feat(phase-04): expose complete Dynamic TAA tuning panel'
           git push origin HEAD:refs/heads/agent/phase-04-taa-tuning-panel
 
@@ -113,6 +119,7 @@ jobs:
         with:
           name: phase-04-taa-tuning-commit-v5-${{ github.run_attempt }}
           path: |
+            /tmp/phase-04-taa-diff-check.txt
             /tmp/phase-04-taa-commit-status.txt
             /tmp/phase-04-taa-commit-stat.txt
           if-no-files-found: ignore
