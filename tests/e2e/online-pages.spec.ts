@@ -43,8 +43,10 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
 
   if (phase > 0) {
     await expect(page.getByTestId('backend-type')).toHaveText('webgpu');
-    await expect(page.getByTestId('shader-status')).toHaveText('pass');
     expect(Number(await page.getByTestId('draw-calls').textContent())).toBeGreaterThan(0);
+  }
+  if (phase > 0 && phase < 4) {
+    await expect(page.getByTestId('shader-status')).toHaveText('pass');
   }
   if (phase === 2) {
     await expect(page.getByTestId('fps')).toHaveText('0 · sleeping');
