@@ -2,15 +2,15 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal`
-- **Current Commit:** `5fccda949efff554789b1ff886043cca21d22425` (P4-11 Temporal PBR orchestration normalized for verification)
+- **Current Commit:** `bff1f624a01c362bf6d38eaf053cc368114fb14c` (P4-11 strict optional-property narrowing complete)
 - **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-10 verified; P4-11 automated verification in progress
 - **Current Task:** P4-11 — Ordered Scheduler-driven PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction
 - **Last Completed Task:** P4-10 — Static Accumulation deterministic CPU/WGSL, GPU History, convergence/reset lifecycle, SDK subpath, and native multi-frame evidence
-- **Next Action:** Run the complete read-only verification pipeline for the new single-Surface Temporal PBR feature, fix strict TypeScript/unit/native failures without weakening gates, then add browser-level orchestration evidence
-- **CI Status:** P4-10 Run 29976105827 PASS; P4-11 transaction-only Run 29976899350 PASS; full Temporal PBR composition verification requested
+- **Next Action:** Run the complete read-only verification pipeline for the single-Surface Temporal PBR feature, fix any unit/native failures without weakening gates, then add browser-level orchestration evidence
+- **CI Status:** Run 29977647547 passed formatting and Lint; strict TypeScript found two optional-property narrowing issues, corrected by commit `bff1f624a01c362bf6d38eaf053cc368114fb14c`; fresh verification requested
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; P4-11 not yet accepted
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 20:41 PDT
+- **Last Updated:** 2026-07-22 20:44 PDT
 
 ## Phase Progress
 
