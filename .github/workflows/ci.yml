@@ -1,4 +1,4 @@
-name: Apply deterministic Device Lost patch
+name: Phase verification
 
 # One-shot branch repair; the job restores the standard read-only workflow before pushing.
 on:
