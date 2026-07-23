@@ -19,6 +19,7 @@ export type EngineModule =
   | 'core'
   | 'environment'
   | 'geometry'
+  | 'lighting'
   | 'material'
   | 'renderer'
   | 'scene'
