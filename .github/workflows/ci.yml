@@ -1,29 +1,49 @@
-name: Integrate P4-12 formatting
+name: Phase verification
 
 on:
+  push:
+    branches:
+      - main
+      - 'agent/**'
   pull_request:
     branches:
       - main
 
+concurrency:
+  group: phase-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  integrate:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+  verify:
+    name: Full quality and acceptance gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out repository
+        uses: actions/checkout@v7
         with:
-          ref: agent/phase-04-temporal
-          fetch-depth: 0
-          persist-credentials: true
-      - uses: actions/setup-node@v7
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: 24.14.0
-      - run: corepack enable && pnpm --version
-      - run: pnpm install --frozen-lockfile
-      - name: Format and restore standard CI
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Format P4-12 verification workspace
         run: |
           pnpm exec prettier --write \
             WORK_STATUS.md \
@@ -33,80 +53,28 @@ jobs:
             packages/sdk/src/temporal-pbr-canvas-renderer.ts \
             apps/playground/src/acceptance/phase-04/index.ts \
             apps/playground/src/acceptance/phase-04/phase-04.css
-          rm -f .github/workflows/format-p4-12-final.yml
-          cat > .github/workflows/ci.yml <<'YAML'
-          name: Phase verification
 
-          on:
-            push:
-              branches:
-                - main
-                - 'agent/**'
-            pull_request:
-              branches:
-                - main
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
-          concurrency:
-            group: phase-verification-${{ github.workflow }}-${{ github.ref }}
-            cancel-in-progress: true
+      - name: Run complete verification pipeline
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
 
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              name: Full quality and acceptance gate
-              runs-on: ubuntu-latest
-              timeout-minutes: 20
-              env:
-                CI: 'true'
-
-              steps:
-                - name: Check out repository
-                  uses: actions/checkout@v7
-                  with:
-                    persist-credentials: false
-
-                - name: Install Node.js
-                  uses: actions/setup-node@v7
-                  with:
-                    node-version: 24.14.0
-
-                - name: Enable pinned pnpm
-                  run: |
-                    corepack enable
-                    pnpm --version
-
-                - name: Install dependencies from lockfile
-                  run: pnpm install --frozen-lockfile
-
-                - name: Install Playwright Chromium
-                  run: pnpm exec playwright install --with-deps chromium
-
-                - name: Run complete verification pipeline
-                  shell: bash
-                  run: |
-                    set -o pipefail
-                    mkdir -p test-results/phase-04/runtime
-                    pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
-
-                - name: Upload browser diagnostics
-                  if: ${{ !cancelled() }}
-                  uses: actions/upload-artifact@v7
-                  with:
-                    name: phase-browser-diagnostics-${{ github.run_attempt }}
-                    path: |
-                      playwright-report/
-                      test-results/phase-00/runtime/
-                      test-results/phase-01/runtime/
-                      test-results/phase-02/runtime/
-                      test-results/phase-03/runtime/
-                      test-results/phase-04/runtime/
-                    if-no-files-found: ignore
-                    retention-days: 7
-          YAML
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/workflows WORK_STATUS.md docs/execution/DECISIONS.md docs/execution/WORK_LOG.md packages/sdk/src apps/playground/src
-          git commit -m "style(phase-04): normalize P4-12 public route"
-          git push origin HEAD:agent/phase-04-temporal
+      - name: Upload browser diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-browser-diagnostics-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/phase-00/runtime/
+            test-results/phase-01/runtime/
+            test-results/phase-02/runtime/
+            test-results/phase-03/runtime/
+            test-results/phase-04/runtime/
+          if-no-files-found: ignore
+          retention-days: 7
