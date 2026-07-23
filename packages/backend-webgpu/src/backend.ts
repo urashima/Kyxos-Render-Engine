@@ -736,7 +736,17 @@ export class WebGpuBackend implements GraphicsBackend {
   }
 
   debugSimulateDeviceLoss(): void {
-    this.#requireDevice('simulate Device Lost for diagnostics').destroy();
+    const device = this.#requireDevice('simulate Device Lost for diagnostics');
+    const generation = this.#deviceGeneration;
+    device.destroy();
+    this.#handleDeviceLost(
+      generation,
+      Object.freeze({
+        message: 'WebGPU Device Lost was simulated for diagnostics.',
+        reason: 'destroyed',
+        recoverable: true,
+      }),
+    );
   }
 
   createSurface(descriptor: BackendSurfaceDescriptor): BackendSurfaceHandle {
@@ -1537,7 +1547,11 @@ export class WebGpuBackend implements GraphicsBackend {
       recoverable: boolean;
     }>,
   ): void {
-    if (this.#state === 'disposed' || generation !== this.#deviceGeneration) {
+    if (
+      this.#state === 'disposed' ||
+      this.#state === 'lost' ||
+      generation !== this.#deviceGeneration
+    ) {
       return;
     }
     this.#device = undefined;

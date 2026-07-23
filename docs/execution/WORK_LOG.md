@@ -2318,3 +2318,32 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 ### Next
 
 - Implement the public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground with observable Scheduler modes, RAF state, Dirty flags, History validity, sample count, Resize, wake/reset, Device Lost recovery, performance/resource reports, and fixed visual evidence.
+
+## 2026-07-23 01:00 PDT — P4-12 lifecycle stabilization ready for authoritative CI
+
+### Completed
+
+- Applied the one-shot lifecycle patch to production source and removed its generator, trigger, and
+  CI-side mutation steps; the standard workflow is read-only again.
+- Made diagnostic Device Lost synchronous and idempotent, released active resources immediately,
+  and ignored the later native `device.lost` resolution for the same generation.
+- Made Phase 4 Surface diagnostics safe while the Renderer is Lost, asserted the unavailable state,
+  and changed canonical capture to a fixed 1440×1600 viewport after explicit sleep.
+
+### Validation
+
+- Local `pnpm verify` passed formatting, zero-warning Lint, strict TypeScript, 62 unit files / 275
+  tests, documentation and architecture gates, frozen Phase 0–3 Schemas, fourteen Shader mirrors,
+  build, Bundle budgets, and isolated Phase 0–4 Pages generation.
+- Playwright discovered all 33 pinned cases. They could not launch locally because the workspace has
+  no Chromium executable and the restricted browser download returned a truncated zero-byte
+  archive; no browser assertion executed or failed.
+- `pnpm check:docs` reports five contiguous task ledgers and seven execution documents. Phase 4
+  remains In Development and no acceptance, deployment, or tag is claimed.
+
+### Next
+
+- Push this exact lifecycle checkpoint and require the standard GitHub Actions environment to pass
+  all 33 browser/WebGPU cases.
+- If green, promote the canonical Phase 4 visual, performance, and lifecycle outputs into the
+  fail-closed P4-12 acceptance package.

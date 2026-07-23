@@ -444,12 +444,17 @@ function updateDiagnostics(root: ParentNode, runtime: AcceptanceRuntime): void {
       : resources.activeCount === runtime.baselineResources
         ? 'stable'
         : 'changed';
-  const surface = renderer.getSurfaceInfo();
-  requireElement(root, '[data-testid="surface-size"]').textContent = surface.size.suspended
-    ? 'suspended'
-    : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`;
-  requireElement(root, '[data-testid="surface-dpr"]').textContent =
-    surface.size.devicePixelRatio.toFixed(2);
+  if (base.state === 'ready') {
+    const surface = renderer.getSurfaceInfo();
+    requireElement(root, '[data-testid="surface-size"]').textContent = surface.size.suspended
+      ? 'suspended'
+      : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`;
+    requireElement(root, '[data-testid="surface-dpr"]').textContent =
+      surface.size.devicePixelRatio.toFixed(2);
+  } else {
+    requireElement(root, '[data-testid="surface-size"]').textContent = 'unavailable';
+    requireElement(root, '[data-testid="surface-dpr"]').textContent = '—';
+  }
   const activePasses =
     mode === 'sleeping'
       ? 'NO ACTIVE PASS'

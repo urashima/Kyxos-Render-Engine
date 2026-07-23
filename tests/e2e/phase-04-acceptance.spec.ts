@@ -6,7 +6,7 @@ const ROUTE_SETTLE_TIMEOUT_MS = 60_000;
 const ROUTE_LIFECYCLE_TIMEOUT_MS = 180_000;
 const CPU_FRAME_BUDGET_MS = 16.7;
 const STATIC_TO_SLEEP_BUDGET_MS = 10_000;
-const FIXED_VIEWPORT = { height: 1400, width: 1440 };
+const FIXED_VIEWPORT = { height: 1600, width: 1440 };
 const RESIZED_VIEWPORT = { height: 1100, width: 1180 };
 const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
 
@@ -175,8 +175,11 @@ test.describe('Phase 4 public temporal acceptance route', () => {
         }
       `,
     });
-    const currentVisual = await page.getByTestId('phase-04-acceptance').screenshot({
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitForSleeping(page);
+    const currentVisual = await page.screenshot({
       animations: 'disabled',
+      fullPage: false,
     });
     const visualDirectory = path.join(runtimeDirectory, 'acceptance-visual');
     await mkdir(visualDirectory, { recursive: true });
@@ -187,6 +190,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await page.getByRole('button', { name: 'Simulate Device Lost' }).click();
     await expect(page.getByTestId('renderer-state')).toHaveText('lost');
     await expect(page.getByTestId('resource-count')).toHaveText('0');
+    await expect(page.getByTestId('surface-size')).toHaveText('unavailable');
     await page.getByRole('button', { name: 'Recover renderer' }).click();
     await waitForSleeping(page);
     await recordSettled('device-recovery');

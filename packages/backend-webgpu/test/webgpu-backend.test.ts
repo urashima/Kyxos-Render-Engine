@@ -325,18 +325,31 @@ describe('WebGpuBackend device lifecycle', () => {
     expect(adapter.requestDevice).toHaveBeenCalledTimes(2);
   });
 
-  it('simulates Device Lost for diagnostics without exposing the native device', async () => {
+  it('simulates Device Lost synchronously and ignores the later native loss resolution', async () => {
     const device = new FakeDevice();
     const backend = createWebGpuBackendForPlatform(
       {},
       new FakePlatform(true, [new FakeAdapter([], [device])]),
     );
+    const onLost = vi.fn();
+    backend.on('lost', onLost);
     await backend.initialize();
+    backend.createBuffer({ size: 64, usage: ['vertex'] });
 
     backend.debugSimulateDeviceLoss();
+
     expect(device.destroy).toHaveBeenCalledTimes(1);
-    device.lose({ message: 'diagnostic loss', reason: 'destroyed', recoverable: true });
-    await vi.waitFor(() => expect(backend.state).toBe('lost'));
+    expect(backend.state).toBe('lost');
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    expect(onLost).toHaveBeenCalledExactlyOnceWith({
+      message: 'WebGPU Device Lost was simulated for diagnostics.',
+      reason: 'destroyed',
+      recoverable: true,
+    });
+
+    device.lose({ message: 'native destroyed', reason: 'destroyed', recoverable: true });
+    await Promise.resolve();
+    expect(onLost).toHaveBeenCalledTimes(1);
   });
 
   it('cancels in-flight initialization and ignores expected loss after idempotent disposal', async () => {
