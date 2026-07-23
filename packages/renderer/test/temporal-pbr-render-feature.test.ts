@@ -75,7 +75,10 @@ describe('TemporalPbrRenderFeature', () => {
     const writeBuffer = backend.writeBuffer.bind(backend);
     const jitteredMatrices: number[][] = [];
     vi.spyOn(backend, 'writeBuffer').mockImplementation((handle, data, offset) => {
-      if (data instanceof Float32Array && data.byteLength === PBR_OBJECT_UNIFORM_LAYOUT.byteLength) {
+      if (
+        data instanceof Float32Array &&
+        data.byteLength === PBR_OBJECT_UNIFORM_LAYOUT.byteLength
+      ) {
         jitteredMatrices.push(Array.from(data.slice(0, 16)));
       }
       writeBuffer(handle, data, offset);
@@ -243,7 +246,7 @@ describe('TemporalPbrRenderFeature', () => {
     expect(backend.getResourceStatistics().byKind.surface?.activeCount).toBe(1);
     feature.render({
       backend,
-      dirtyFlags: ['device'],
+      dirtyFlags: ['accumulation'],
       frameIndex: 1,
       temporal: temporal('interactive', 0, 2, true),
       timestamp: 16,

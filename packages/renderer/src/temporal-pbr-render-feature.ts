@@ -7,10 +7,10 @@ import { TemporalCameraMatrixTracker } from '@kyxos/render-camera';
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Mat4 } from '@kyxos/render-math';
 import {
-  createTemporalJitterSample,
   type TemporalConvergenceOptions,
   type TemporalConvergenceSnapshot,
   type TemporalHistorySignatureDescriptor,
+  createTemporalJitterSample,
 } from '@kyxos/render-temporal';
 
 import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
@@ -20,10 +20,7 @@ import type {
   RenderFeatureInitializationContext,
 } from './extensions.js';
 import { PbrRenderFeature } from './pbr-render-feature.js';
-import type {
-  PbrRenderFeatureDiagnostics,
-  PbrRenderFeatureOptions,
-} from './pbr-render-feature.js';
+import type { PbrRenderFeatureDiagnostics, PbrRenderFeatureOptions } from './pbr-render-feature.js';
 import { TemporalPipelineTransaction } from './temporal-pipeline-transaction.js';
 import type { TemporalPipelineTransactionDiagnostics } from './temporal-pipeline-transaction.js';
 
@@ -31,19 +28,14 @@ export const TEMPORAL_PBR_RENDER_FEATURE_ID = 'kyxos.pbr-temporal' as const;
 
 const TEMPORAL_JITTER_SEQUENCE_LENGTH = 256;
 
-export type TemporalPbrRenderFeatureOptions = Omit<
-  PbrRenderFeatureOptions,
-  'dynamicTaaOutput'
-> &
+export type TemporalPbrRenderFeatureOptions = Omit<PbrRenderFeatureOptions, 'dynamicTaaOutput'> &
   TemporalConvergenceOptions & {
     readonly convergenceError?: (context: RenderFeatureFrameContext) => number | undefined;
     readonly height: number;
     readonly ownerId: string;
     readonly reportConvergence?: (snapshot: TemporalConvergenceSnapshot) => void;
     readonly responsiveMask?: (context: RenderFeatureFrameContext) => number;
-    readonly signature: (
-      context: RenderFeatureFrameContext,
-    ) => TemporalHistorySignatureDescriptor;
+    readonly signature: (context: RenderFeatureFrameContext) => TemporalHistorySignatureDescriptor;
     readonly width: number;
   };
 
@@ -78,14 +70,11 @@ function jitterSampleIndex(context: RenderFeatureFrameContext): number {
 export class TemporalPbrRenderFeature implements RenderFeature {
   readonly #cameraTracker: TemporalCameraMatrixTracker;
   readonly #convergenceError:
-    | ((context: RenderFeatureFrameContext) => number | undefined)
-    | undefined;
+    ((context: RenderFeatureFrameContext) => number | undefined) | undefined;
   readonly #pbr: PbrRenderFeature;
   readonly #reportConvergence: ((snapshot: TemporalConvergenceSnapshot) => void) | undefined;
   readonly #responsiveMask: ((context: RenderFeatureFrameContext) => number) | undefined;
-  readonly #signature: (
-    context: RenderFeatureFrameContext,
-  ) => TemporalHistorySignatureDescriptor;
+  readonly #signature: (context: RenderFeatureFrameContext) => TemporalHistorySignatureDescriptor;
   readonly #transaction: TemporalPipelineTransaction;
   readonly id = TEMPORAL_PBR_RENDER_FEATURE_ID;
   #activeFrame: DynamicTaaGpuFrame | undefined;
@@ -266,7 +255,10 @@ export class TemporalPbrRenderFeature implements RenderFeature {
   #requireActiveFrame(): DynamicTaaGpuFrame {
     const frame = this.#activeFrame;
     if (frame === undefined) {
-      throw error('Temporal PBR frame is unavailable outside the current transaction.', 'INVALID_STATE');
+      throw error(
+        'Temporal PBR frame is unavailable outside the current transaction.',
+        'INVALID_STATE',
+      );
     }
     return frame;
   }
