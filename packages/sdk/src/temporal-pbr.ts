@@ -19,3 +19,12 @@ export {
   type TemporalPipelineTransactionDiagnostics,
   type TemporalPipelineTransactionOptions,
 } from '@kyxos/render-renderer';
+
+export type { CreateKyxosTemporalPbrRendererOptions } from './create-temporal-pbr-renderer.js';
+export { createKyxosTemporalPbrRenderer } from './create-temporal-pbr-renderer.js';
+export type {
+  KyxosTemporalPbrCanvasRendererOptions,
+  KyxosTemporalPbrRendererDiagnostics,
+  TemporalPbrRevisionState,
+} from './temporal-pbr-canvas-renderer.js';
+export { KyxosTemporalPbrCanvasRenderer } from './temporal-pbr-canvas-renderer.js';
