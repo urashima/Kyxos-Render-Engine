@@ -28,10 +28,10 @@ jobs:
       PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
 
     steps:
-      - name: Check out deployed Phase 4 source
+      - name: Check out verification source
         uses: actions/checkout@v7
         with:
-          ref: 43d510a12341cafd6cb1aeb917252d93f222b33f
+          ref: agent/phase-04-public-verification
           persist-credentials: false
 
       - name: Install Node.js
