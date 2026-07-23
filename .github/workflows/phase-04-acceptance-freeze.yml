@@ -1,0 +1,101 @@
+name: Phase 4 acceptance freeze verification
+
+on:
+  push:
+    branches:
+      - agent/phase-04-acceptance-freeze
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: phase-04-acceptance-freeze-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify exact accepted deployment source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      EXPECTED_COMMIT_SHA: a1b004d4e7862873c653478af528201a898f906b
+      PAGES_LATEST_PHASE: '4'
+      PAGES_PHASES: 0,1,2,3,4
+      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
+
+    steps:
+      - name: Check out accepted candidate
+        uses: actions/checkout@v7
+        with:
+          ref: a1b004d4e7862873c653478af528201a898f906b
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for exact deployment in browser runtime
+        shell: bash
+        run: |
+          base_url="${PUBLIC_PLAYGROUND_URL%/}/"
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error --location "${base_url}latest/" >/dev/null \
+              && curl --fail --silent --show-error --location "${base_url}phase-4/" >/dev/null; then
+              set +e
+              pnpm exec playwright test --config playwright.pages.config.ts
+              status=$?
+              set -e
+              if [ "$status" -eq 0 ]; then
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo 'Exact accepted candidate did not pass the public operation gate.' >&2
+          exit 1
+
+      - name: Write acceptance-freeze evidence
+        shell: bash
+        run: |
+          mkdir -p test-results/phase-04/public
+          cat > test-results/phase-04/public/acceptance-freeze.json <<EOF
+          {
+            "schemaVersion": 1,
+            "phase": "04",
+            "status": "PASS",
+            "acceptedSource": "${EXPECTED_COMMIT_SHA}",
+            "latestPhase": 4,
+            "phases": [0, 1, 2, 3, 4],
+            "publicUrl": "${PUBLIC_PLAYGROUND_URL}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowJob": "Verify exact accepted deployment source"
+          }
+          EOF
+
+      - name: Upload acceptance-freeze evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-acceptance-freeze-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/phase-04/public/
+            test-results/pages/
+          if-no-files-found: ignore
+          retention-days: 7
