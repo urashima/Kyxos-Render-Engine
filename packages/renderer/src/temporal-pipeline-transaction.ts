@@ -29,7 +29,6 @@ const EMPTY_STATISTICS: BackendRenderPassStatistics = Object.freeze({
 });
 
 const HISTORY_RESET_PRIORITY: readonly DirtyFlag[] = Object.freeze([
-  'device' as DirtyFlag,
   'viewport',
   'camera',
   'animation',
@@ -119,7 +118,10 @@ function resetReason(dirtyFlags: readonly DirtyFlag[]): TemporalHistoryInvalidat
 
 function validateConvergenceError(value: number | undefined): void {
   if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
-    throw error('Temporal pipeline convergence error must be finite and non-negative.', 'INVALID_ARGUMENT');
+    throw error(
+      'Temporal pipeline convergence error must be finite and non-negative.',
+      'INVALID_ARGUMENT',
+    );
   }
 }
 
@@ -197,7 +199,10 @@ export class TemporalPipelineTransaction implements Disposable {
     if (this.#open !== undefined) {
       throw error('Temporal pipeline already has an open frame.', 'INVALID_STATE');
     }
-    if (input.temporal.targetSamples !== this.#staticHistory.getDiagnostics().convergence.targetSamples) {
+    if (
+      input.temporal.targetSamples !==
+      this.#staticHistory.getDiagnostics().convergence.targetSamples
+    ) {
       throw error(
         'Temporal scheduler targetSamples must match Static Accumulation targetSamples.',
         'INVALID_ARGUMENT',
