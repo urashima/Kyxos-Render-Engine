@@ -1,4 +1,4 @@
-import { MockBackend, ManualFrameDriver } from '@kyxos/render-testing';
+import { ManualFrameDriver, MockBackend } from '@kyxos/render-testing';
 import { describe, expect, it } from 'vitest';
 
 import { createCubeGeometry } from '../src/index.js';
