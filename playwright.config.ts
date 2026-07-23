@@ -55,7 +55,8 @@ export default defineConfig({
     {
       name: 'chromium-temporal',
       snapshotPathTemplate: '{testDir}/../../visual-baselines/phase-04/{arg}{ext}',
-      testMatch: /phase-04-(?:present|static-accumulation(?:-runtime)?|temporal)\.spec\.ts/,
+      testMatch:
+        /phase-04-(?:pbr-temporal-pipeline|present|static-accumulation(?:-runtime)?|temporal)\.spec\.ts/,
       use: chromiumUse,
     },
   ],
