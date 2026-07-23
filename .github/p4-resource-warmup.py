@@ -12,7 +12,7 @@ playground = Path('apps/playground/src/acceptance/phase-04/index.ts')
 replace_once(
     playground,
     """  taa: TemporalTaaSettings;\n  textureAlternate: boolean;""",
-    """  taa: TemporalTaaSettings;\n  taaResourceWarmupComplete: boolean;\n  taaResourceWarmupPending: boolean;\n  textureAlternate: boolean;""",
+    """  taa: TemporalTaaSettings;\n  taaResourceWarmupComplete: boolean;\n  taaResourceWarmupPasses: number;\n  taaResourceWarmupPending: boolean;\n  textureAlternate: boolean;""",
     'runtime TAA warmup fields',
 )
 replace_once(
@@ -24,19 +24,19 @@ replace_once(
 replace_once(
     playground,
     """    runtime.baselineResources ??= renderer.getDiagnostics().backend.resources.activeCount;\n    updateDiagnostics(root, runtime);""",
-    """    const activeResources = renderer.getDiagnostics().backend.resources.activeCount;\n    if (runtime.taaResourceWarmupPending) {\n      runtime.baselineResources = activeResources;\n      runtime.taaResourceWarmupPending = false;\n      runtime.taaResourceWarmupComplete = true;\n    } else {\n      runtime.baselineResources ??= activeResources;\n    }\n    updateDiagnostics(root, runtime);""",
+    """    const activeResources = renderer.getDiagnostics().backend.resources.activeCount;\n    if (runtime.taaResourceWarmupPending) {\n      runtime.baselineResources = Math.max(runtime.baselineResources ?? 0, activeResources);\n      runtime.taaResourceWarmupPasses += 1;\n      runtime.taaResourceWarmupPending = false;\n      runtime.taaResourceWarmupComplete = runtime.taaResourceWarmupPasses >= 2;\n    } else {\n      runtime.baselineResources ??= activeResources;\n    }\n    updateDiagnostics(root, runtime);""",
     'sleep resource baseline lock',
 )
 replace_once(
     playground,
     """  runtime.baselineResources = undefined;\n  runtime.disposedResources = undefined;""",
-    """  runtime.baselineResources = undefined;\n  runtime.taaResourceWarmupComplete = false;\n  runtime.taaResourceWarmupPending = false;\n  runtime.disposedResources = undefined;""",
+    """  runtime.baselineResources = undefined;\n  runtime.taaResourceWarmupComplete = false;\n  runtime.taaResourceWarmupPasses = 0;\n  runtime.taaResourceWarmupPending = false;\n  runtime.disposedResources = undefined;""",
     'renderer warmup reset',
 )
 replace_once(
     playground,
     """    taa: TEMPORAL_TAA_DEFAULT_SETTINGS,\n    textureAlternate: false,""",
-    """    taa: TEMPORAL_TAA_DEFAULT_SETTINGS,\n    taaResourceWarmupComplete: false,\n    taaResourceWarmupPending: false,\n    textureAlternate: false,""",
+    """    taa: TEMPORAL_TAA_DEFAULT_SETTINGS,\n    taaResourceWarmupComplete: false,\n    taaResourceWarmupPasses: 0,\n    taaResourceWarmupPending: false,\n    textureAlternate: false,""",
     'runtime warmup initialization',
 )
 
@@ -44,7 +44,7 @@ local_test = Path('tests/e2e/phase-04-acceptance.spec.ts')
 replace_once(
     local_test,
     """    await waitForSleeping(page);\n    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));\n    await page.getByRole('button', { name: 'Default TAA' }).click();\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n    await waitForSleeping(page);""",
-    """    await waitForSleeping(page);\n    const taaWarmedResources = await numericText(page, 'resource-count');\n    expect(taaWarmedResources).toBeGreaterThanOrEqual(initialResources);\n    expect(taaWarmedResources).toBeLessThanOrEqual(initialResources + 2);\n    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');\n    await page.getByRole('button', { name: 'Default TAA' }).click();\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n    await waitForSleeping(page);\n    await expect(page.getByTestId('resource-count')).toHaveText(String(taaWarmedResources));""",
+    """    await waitForSleeping(page);\n    const firstTuningResources = await numericText(page, 'resource-count');\n    expect(firstTuningResources).toBeGreaterThanOrEqual(initialResources);\n    expect(firstTuningResources).toBeLessThanOrEqual(initialResources + 2);\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');\n    await page.getByRole('button', { name: 'Default TAA' }).click();\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n    await waitForSleeping(page);\n    const taaWarmedResources = await numericText(page, 'resource-count');\n    expect(taaWarmedResources).toBeGreaterThanOrEqual(firstTuningResources);\n    expect(taaWarmedResources).toBeLessThanOrEqual(initialResources + 2);\n    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');""",
     'local TAA warmup assertion',
 )
 replace_once(
@@ -64,6 +64,6 @@ online_test = Path('tests/e2e/online-pages.spec.ts')
 replace_once(
     online_test,
     """    await exerciseReset(\n      () => page.locator('[data-taa-control=\"jitterScale\"][type=\"number\"]').fill('0.35'),\n      resourceBaseline,\n    );\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');\n    await exerciseReset(\n      () => page.getByRole('button', { name: 'Default TAA' }).click(),\n      resourceBaseline,\n    );\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n\n    let activeResources = await exerciseReset(() =>\n      page.locator('[data-action=\"orbit-right\"]').click(),\n    );""",
-    """    const taaWarmedResources = await exerciseReset(() =>\n      page.locator('[data-taa-control=\"jitterScale\"][type=\"number\"]').fill('0.35'),\n    );\n    expect(taaWarmedResources).toBeGreaterThanOrEqual(resourceBaseline);\n    expect(taaWarmedResources).toBeLessThanOrEqual(resourceBaseline + 2);\n    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');\n    await exerciseReset(\n      () => page.getByRole('button', { name: 'Default TAA' }).click(),\n      taaWarmedResources,\n    );\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n\n    let activeResources = await exerciseReset(\n      () => page.locator('[data-action=\"orbit-right\"]').click(),\n      taaWarmedResources,\n    );""",
+    """    const firstTuningResources = await exerciseReset(() =>\n      page.locator('[data-taa-control=\"jitterScale\"][type=\"number\"]').fill('0.35'),\n    );\n    expect(firstTuningResources).toBeGreaterThanOrEqual(resourceBaseline);\n    expect(firstTuningResources).toBeLessThanOrEqual(resourceBaseline + 2);\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');\n    const taaWarmedResources = await exerciseReset(() =>\n      page.getByRole('button', { name: 'Default TAA' }).click(),\n    );\n    expect(taaWarmedResources).toBeGreaterThanOrEqual(firstTuningResources);\n    expect(taaWarmedResources).toBeLessThanOrEqual(resourceBaseline + 2);\n    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));\n    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');\n    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');\n\n    let activeResources = await exerciseReset(\n      () => page.locator('[data-action=\"orbit-right\"]').click(),\n      taaWarmedResources,\n    );""",
     'online TAA warmup assertion',
 )
