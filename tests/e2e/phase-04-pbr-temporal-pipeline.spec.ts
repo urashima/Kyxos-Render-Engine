@@ -71,15 +71,14 @@ test.describe('Phase 4 native PBR temporal pipeline', () => {
           width: 64,
         });
         const driver = new ManualFrameDriver();
-        const frames: Array<{
+        const frames: {
           dirtyFlags: readonly string[];
           mode: string;
           sampleIndex: number;
           statistics: ReturnType<typeof feature.render>;
-        }> = [];
+        }[] = [];
         let frameIndex = 0;
-        let scheduler!: InstanceType<typeof TemporalFrameScheduler>;
-        scheduler = new TemporalFrameScheduler({
+        const scheduler = new TemporalFrameScheduler({
           convergence: { targetSamples: 2 },
           driver,
           onFrame: (frame) => {
