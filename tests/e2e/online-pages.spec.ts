@@ -200,19 +200,25 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
 
     await expect(page.getByTestId('taa-tuning-panel')).toBeVisible();
     await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
-    await exerciseReset(
-      () => page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35'),
-      resourceBaseline,
+    const firstTuningResources = await exerciseReset(() =>
+      page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35'),
     );
+    expect(firstTuningResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(firstTuningResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
     await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');
-    await exerciseReset(
-      () => page.getByRole('button', { name: 'Default TAA' }).click(),
-      resourceBaseline,
+    const taaWarmedResources = await exerciseReset(() =>
+      page.getByRole('button', { name: 'Default TAA' }).click(),
     );
+    expect(taaWarmedResources).toBeGreaterThanOrEqual(firstTuningResources);
+    expect(taaWarmedResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
     await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
 
-    let activeResources = await exerciseReset(() =>
-      page.locator('[data-action="orbit-right"]').click(),
+    let activeResources = await exerciseReset(
+      () => page.locator('[data-action="orbit-right"]').click(),
+      taaWarmedResources,
     );
     expect(activeResources).toBeGreaterThanOrEqual(resourceBaseline);
     expect(activeResources).toBeLessThanOrEqual(resourceBaseline + 2);

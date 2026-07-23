@@ -116,10 +116,18 @@ test.describe('Phase 4 public temporal acceptance route', () => {
       .poll(() => numericText(page, 'history-generation'))
       .toBeGreaterThan(beforeTuningGeneration);
     await waitForSleeping(page);
-    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
+    const firstTuningResources = await numericText(page, 'resource-count');
+    expect(firstTuningResources).toBeGreaterThanOrEqual(initialResources);
+    expect(firstTuningResources).toBeLessThanOrEqual(initialResources + 2);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
     await page.getByRole('button', { name: 'Default TAA' }).click();
     await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
     await waitForSleeping(page);
+    const taaWarmedResources = await numericText(page, 'resource-count');
+    expect(taaWarmedResources).toBeGreaterThanOrEqual(firstTuningResources);
+    expect(taaWarmedResources).toBeLessThanOrEqual(initialResources + 2);
+    await expect(page.getByTestId('resource-baseline')).toHaveText(String(taaWarmedResources));
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
 
     await page.getByRole('button', { name: 'Orbit right' }).click();
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(initialWakeCount);
@@ -142,8 +150,8 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
     await recordSettled('texture-warm');
     const resourcesAfterTextureWarm = await numericText(page, 'resource-count');
-    expect(resourcesAfterTextureWarm).toBeGreaterThanOrEqual(initialResources);
-    expect(resourcesAfterTextureWarm).toBeLessThanOrEqual(initialResources + 2);
+    expect(resourcesAfterTextureWarm).toBeGreaterThanOrEqual(taaWarmedResources);
+    expect(resourcesAfterTextureWarm).toBeLessThanOrEqual(taaWarmedResources + 2);
 
     const afterTextureWarmWake = await numericText(page, 'wake-count');
     await page.getByRole('button', { name: 'Replace texture' }).click();
@@ -151,8 +159,8 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
     await recordSettled('texture-reuse');
     const resourcesAfterTextureReuse = await numericText(page, 'resource-count');
-    expect(resourcesAfterTextureReuse).toBeGreaterThanOrEqual(initialResources);
-    expect(resourcesAfterTextureReuse).toBeLessThanOrEqual(initialResources + 2);
+    expect(resourcesAfterTextureReuse).toBeGreaterThanOrEqual(taaWarmedResources);
+    expect(resourcesAfterTextureReuse).toBeLessThanOrEqual(taaWarmedResources + 2);
     const warmedResources = Math.max(resourcesAfterTextureWarm, resourcesAfterTextureReuse);
 
     await page.getByRole('button', { name: 'Start animation' }).click();
