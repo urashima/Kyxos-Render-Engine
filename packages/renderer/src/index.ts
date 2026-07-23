@@ -17,6 +17,7 @@ export {
   type DynamicTaaPresentPassDiagnostics,
   type DynamicTaaPresentPassInput,
   type DynamicTaaPresentPassOptions,
+  type TemporalPresentColorFrame,
 } from './dynamic-taa-present-pass.js';
 export {
   DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT,

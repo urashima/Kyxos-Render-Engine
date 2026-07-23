@@ -9,6 +9,7 @@ import type {
   BackendSurfaceHandle,
   BackendSurfaceInfo,
   BackendSurfaceResize,
+  BackendTextureHandle,
   GraphicsBackend,
 } from '@kyxos/render-backend-api';
 import { KyxosEngineError } from '@kyxos/render-core';
@@ -19,7 +20,6 @@ import {
   createPbrOutputTransform,
 } from '@kyxos/render-material-pbr';
 
-import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
 import { PHASE_04_TAA_PRESENT_WGSL } from './generated/phase-04-taa-present.wgsl.js';
 
 const FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
@@ -42,9 +42,16 @@ export interface DynamicTaaPresentPassOptions {
   readonly surface: BackendSurfaceDescriptor;
 }
 
+export interface TemporalPresentColorFrame {
+  readonly ownerId: string;
+  readonly resourceGeneration: number;
+  readonly size: { readonly height: number; readonly width: number };
+  readonly writeColorTexture: BackendTextureHandle;
+}
+
 export interface DynamicTaaPresentPassInput {
-  /** Resolved Color is read from the open frame's write target before History commit. */
-  readonly frame: DynamicTaaGpuFrame;
+  /** Linear-HDR Color is read from the open frame's write target before History commit. */
+  readonly frame: TemporalPresentColorFrame;
 }
 
 export interface DynamicTaaPresentPassDiagnostics {
@@ -315,7 +322,7 @@ export class DynamicTaaPresentPass implements Disposable {
   #resolveBindGroup(
     backend: GraphicsBackend,
     resources: DynamicTaaPresentResources,
-    frame: DynamicTaaGpuFrame,
+    frame: TemporalPresentColorFrame,
   ): BackendBindGroupHandle {
     if (this.#bindingResourceGeneration !== frame.resourceGeneration) {
       const errors = this.#destroyHandles(backend, [...this.#bindGroups.values()]);
