@@ -16,7 +16,9 @@ async function numericText(page: import('@playwright/test').Page, testId: string
 }
 
 test.describe('Phase 4 public temporal acceptance route', () => {
-  test('wakes, accumulates, sleeps, disposes, and recreates through the public SDK', async ({ page }) => {
+  test('wakes, accumulates, sleeps, disposes, and recreates through the public SDK', async ({
+    page,
+  }) => {
     const runtimeErrors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') runtimeErrors.push(message.text());
@@ -35,9 +37,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
 
     await page.getByRole('button', { name: 'Orbit right' }).click();
-    await expect
-      .poll(() => numericText(page, 'wake-count'))
-      .toBeGreaterThan(initialWakeCount);
+    await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(initialWakeCount);
     await expect
       .poll(() => numericText(page, 'history-generation'))
       .toBeGreaterThan(initialGeneration);
