@@ -1,2 +1,2 @@
 Temporary trigger for the Phase 4 deterministic visual candidate capture. Do not merge.
-Trigger revision: 2
+Trigger revision: 3
