@@ -1,0 +1,85 @@
+name: Apply Phase 4 TAA resource warmup repair
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: phase-04-taa-resource-warmup
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-tuning-resource-warmup
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply deterministic repair
+        run: python .github/p4-resource-warmup.py
+
+      - name: Remove temporary repair transport
+        run: |
+          rm .github/p4-resource-warmup.py
+          rm .github/workflows/apply-phase-04-resource-warmup.yml
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Format exact repair files
+        run: |
+          pnpm exec prettier --write \
+            apps/playground/src/acceptance/phase-04/index.ts \
+            tests/e2e/phase-04-acceptance.spec.ts \
+            tests/e2e/online-pages.spec.ts
+
+      - name: Run complete verification pipeline
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/resource-warmup-verify.log
+
+      - name: Commit verified repair
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f test-results/phase-04/runtime/resource-warmup-verify.log
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix(phase-04): lock resource baseline after TAA warmup'
+          git push origin HEAD:agent/phase-04-tuning-resource-warmup
+
+      - name: Upload repair diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-taa-resource-warmup-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
