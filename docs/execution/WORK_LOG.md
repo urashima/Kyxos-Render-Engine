@@ -2254,3 +2254,45 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Implement P4-10 owner-scoped Static Accumulation with deterministic CPU/WGSL parity, sample-count and
   convergence limits, complete Dirty Event reset semantics, Resize and Device Lost restoration, and
   exact resource disposal. Do not yet integrate the final Phase 4 route or acceptance freeze.
+
+## 2026-07-22 20:10 PDT — P4-10 Static Accumulation passed
+
+### Completed
+
+- Added a deterministic linear-HDR arithmetic running mean with fail-closed History reset and
+  frozen CPU/WGSL reference cases for first-sample and accepted-history behavior.
+- Added owner-scoped Static Accumulation GPU History with two `rgba16float` ping-pong Textures,
+  a dedicated Sampler, sample-limit/error-threshold convergence, signature mismatch reset,
+  every declared Dirty invalidation, atomic Resize rollback, Device Lost detachment/recovery,
+  and idempotent zero-resource disposal.
+- Added a sampled full-screen Static Accumulation Pass with a 16-byte Uniform, role-cached Bind
+  Groups, exact Shader mirror, compile rollback, owner/extent validation, and no ownership of
+  History or Backend.
+- Exposed the feature through `@kyxos/render-sdk/static-accumulation` without exposing native
+  WebGPU objects or importing product code.
+- Added native Backend lifecycle and raw WebGPU three-frame `rgba16float` readback gates. The
+  Playwright Phase 4 project explicitly discovers the reference, lifecycle, and runtime specs.
+
+### Validation
+
+- Verified checkpoint Head `f2c5078a949a83dd1162df24452ac33625f96100` passed Run
+  `29976105827`, job `89108077012`: formatting, zero-warning Lint, strict TypeScript,
+  57 unit files / 266 tests, package and architecture boundaries, frozen Phase 0–3 Schemas,
+  fourteen exact Shader mirrors, build, Bundle, Pages, and all 31 pinned Chromium/WebGPU cases.
+- Artifact `8551514765`, digest
+  `sha256:42c00bddb999a1ed7bb283dbf6aacecc8e58064f0c0cafcc038b0476fd4ad2f3`, contains the complete
+  verification log plus Static Accumulation reference, lifecycle, and runtime evidence.
+- Deterministic CPU/WGSL reference parity is exact across all sixteen output values with zero
+  compilation messages and maximum absolute difference `0`.
+- Three-frame native HDR accumulation produced CPU `[0.5, 0.5, 0.4166666667, 1]` and GPU
+  `[0.5, 0.5, 0.416748046875, 1]`; maximum half-float difference is `0.00008138021`, below the
+  fixed `0.002` tolerance.
+- Runtime lifecycle reached sample-limit convergence at exactly 3/3 samples, rejected another
+  frame while converged, reset to zero on Material invalidation, and destroyed exactly 12/12
+  resources with zero active Handles after Pass, History, source Texture, and Backend disposal.
+
+### Next
+
+- Implement P4-11 temporal pipeline orchestration: ordered PBR MRT → Dynamic TAA Resolve →
+  optional Static Accumulation → final Present → atomic History commit/cancel, driven by the
+  Temporal Scheduler metadata. Preserve direct Phase 3 Surface mode as the default.

@@ -348,3 +348,23 @@
   in temporal mode. The accepted direct Surface PBR path remains unchanged. WebGL2 can implement the
   same owner-neutral contract with its supported HDR format and output Surface.
 - **ADR required:** No; this refines the existing temporal transaction and resource-ownership contract.
+
+## ED-038 — Keep Static Accumulation owner-scoped and downstream of Dynamic TAA
+
+- **Status:** Accepted
+- **Date:** 2026-07-22
+- **Decision:** Accumulate the already resolved linear-HDR Dynamic TAA Color through a separate
+  two-Texture `rgba16float` ping-pong History using an arithmetic running mean. Keep convergence,
+  sample count, reset, Resize, Device Lost, and disposal with the Static History owner; keep the
+  sampled Pass stateless except for Shader/Pipeline/Uniform/Bind Group resources.
+- **Candidates:** Accumulate directly inside PBR; reuse Dynamic TAA Color roles as Static History;
+  add an independent downstream accumulation transaction.
+- **Reason:** PBR ownership would mix scene rendering with temporal policy, while reusing Dynamic
+  roles would couple interactive rejection History to static convergence and make reset/cancel
+  semantics ambiguous. A downstream transaction preserves dynamic/static isolation and permits
+  Present to choose the current temporal result without changing the accepted direct Surface path.
+- **Impact:** WebGPU adds two `rgba16float` Textures, one Sampler, one full-screen Triangle, one
+  16-byte Uniform, one Pipeline, and at most two role Bind Groups only when Static Accumulation is
+  enabled. WebGL2 may implement the same public transaction with its declared HDR fallback.
+- **ADR required:** No; this implements the Phase 4 architecture already mandated by ADR-005 and
+  does not change dependency direction or public product scope.
