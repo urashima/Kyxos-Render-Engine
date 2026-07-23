@@ -24,6 +24,7 @@
 - [`PHASE_02_TASKS.md`](./docs/execution/PHASE_02_TASKS.md)
 - [`PHASE_03_TASKS.md`](./docs/execution/PHASE_03_TASKS.md)
 - [`PHASE_04_TASKS.md`](./docs/execution/PHASE_04_TASKS.md)
+- [`PHASE_05_TASKS.md`](./docs/execution/PHASE_05_TASKS.md)
 
 ## Source-of-truth order
 

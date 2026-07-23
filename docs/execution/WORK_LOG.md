@@ -2564,3 +2564,35 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Require the exact PR #10 final documentation/cleanup Head to pass complete `pnpm verify`.
 - Merge with expected-Head protection, then require main CI, Pages redeployment, built-in public
   verification, and immutable `phase-04-accepted` before marking P4-12 Completed.
+
+## 2026-07-23 05:25 PDT — Phase 4 accepted; P5-01 contract frozen
+
+### Completed
+
+- Accepted Phase 4 only after the corrected online gate merge source was publicly deployed and
+  independently verified through Phase 0–4 and Latest Chromium/WebGPU operations.
+- Frozen immutable `phase-04-accepted` at exact deployed source
+  `a1b004d4e7862873c653478af528201a898f906b`.
+- Closed temporary non-merge PRs #8, #9, and #11 after their evidence/transport purpose completed.
+- Completed P5-01 by freezing one consolidated Lighting/Shadow/PostFX architecture, quality,
+  Temporal integration, resource lifecycle, and acceptance contract.
+- Created the authoritative Phase 5 task ledger and moved the unique current task to P5-02.
+
+### Validation
+
+- Exact accepted-source public Run `30005805890`, job `89201389040`: PASS.
+- Artifact `8563074882`, digest
+  `sha256:9d0e36756ddb73258754d4bf1efce91ab1d160418543a7233931a2996f92b401`,
+  records Phase 0–4 and Latest against accepted source `a1b004d4e7862873c653478af528201a898f906b`.
+- Tag-freeze Run `30006347236`, job `89203145349`: public re-verification and immutable Tag push PASS.
+- Tag-freeze Artifact `8563213931`, digest
+  `sha256:26a31a57fb5eb6bc2cf13d48deac16d402d7a4e2551340a583bfc08c5c6d5b1c`.
+- GitHub resolves `phase-04-accepted` to the accepted source; the tagged online test contains the
+  corrected Phase 4 Temporal and lazy-resource lifecycle contract.
+- P5-01 keeps one Phase 5 research document and introduces no duplicate execution/status document.
+
+### Next
+
+- Implement P5-02 portable Directional/Spot Light descriptors and deterministic Scene registry.
+- Require validation, ownership, layer-mask, versioning, package-export, boundary, and lifecycle tests
+  before adding any Shadow GPU resource or render pass.
