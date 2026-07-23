@@ -1,9 +1,9 @@
 name: Integrate P4-12 formatting
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/phase-04-temporal
+      - main
 
 permissions:
   contents: write
