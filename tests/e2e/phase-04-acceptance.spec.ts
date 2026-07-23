@@ -59,7 +59,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await page.locator('[data-control="roughness"]').fill('0.63');
     await expect(page.locator('[data-output="roughness"]')).toHaveText('0.63');
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterCameraWake);
-    await waitForSleeping(pae);
+    await waitForSleeping(page);
 
     const afterMaterialWake = await numericText(page, 'wake-count');
     await page.getByRole('button', { name: 'Replace texture' }).click();
@@ -87,7 +87,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
 
     await expect(page.getByTestId('active-passes')).toHaveText('NO ACTIVE PASS');
-    await expect(page.getByTestId('static-to-sleep')).not.toHaveText('—");
+    await expect(page.getByTestId('static-to-sleep')).not.toHaveText('—');
     await expect(page.getByTestId('resource-count')).toHaveText(String(warmedResources));
 
     const evidenceBeforeDispose = {
@@ -114,7 +114,7 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await waitForSleeping(page);
     await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
     await expect(page.locator('[data-testid="gpu-error"]')).toBeHidden();
-    expect(runtimeErors).toEqual([]);
+    expect(runtimeErrors).toEqual([]);
 
     const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
     await mkdir(runtimeDirectory, { recursive: true });
