@@ -121,3 +121,10 @@ export {
   type StaticAccumulationPassInput,
   type StaticAccumulationPassOptions,
 } from './static-accumulation-pass.js';
+export {
+  TemporalPipelineTransaction,
+  type TemporalPipelineExecuteInput,
+  type TemporalPipelineExecuteResult,
+  type TemporalPipelineTransactionDiagnostics,
+  type TemporalPipelineTransactionOptions,
+} from './temporal-pipeline-transaction.js';
