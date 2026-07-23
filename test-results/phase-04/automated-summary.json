@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "04",
   "sourceCheckpoint": "d11b1e4c18722d7aaf4e950b53085e9ac2d12e03",
-  "generatedAt": "2026-07-23T01:35:00-07:00",
+  "generatedAt": "2026-07-23T03:30:00-07:00",
   "status": "PASS",
   "remoteCi": {
     "runId": 29991223373,
@@ -125,8 +125,9 @@
   },
   "requiredFailures": [],
   "notes": [
-    "Run 29991223373 passed all 33 browser/WebGPU cases and the zero-difference Phase 4 visual gate.",
-    "Artifact 8557205445 was downloaded and its runtime, lifecycle, performance, and visual evidence promoted without changing thresholds.",
+    "Run 29991223373 passed all 33 browser/WebGPU cases and the original zero-difference Phase 4 visual gate.",
+    "Run 29998770570 isolated a variable post-animation camera input; its two repaired candidates have zero thresholded cross-retry differences at 0.2.",
+    "Artifact 8560223373 supplies the reviewed deterministic visual now frozen without changing thresholds.",
     "GPU timestamp duration remains unavailable through the public diagnostics contract and is not synthesized."
   ]
 }

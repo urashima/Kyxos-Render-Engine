@@ -2466,3 +2466,35 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   complete read-only `pnpm verify` gate.
 - If unchanged and green, inspect PR #7 reviews, mark it ready, merge with expected-Head protection,
   then require public `/phase-4/` and `/latest/` verification before freezing `phase-04-accepted`.
+
+## 2026-07-23 03:30 PDT — P4-12 deterministic visual input repaired
+
+### Completed
+
+- Traced the post-provenance visual drift to the acceptance script inheriting a variable number of
+  animation RAF orbit increments before the frozen screenshot.
+- Preserved the zero-pixel visual contract and added a public `Reset scene` → fixed `Orbit right` →
+  fixed Roughness `0.63` sequence after animation verification.
+- Reviewed the resulting 1440×1600 Temporal PBR acceptance candidate and approved it for baseline
+  promotion; no renderer implementation, visual threshold, or accepted Phase 0–3 artifact changed.
+
+### Validation
+
+- Repair Commit `c11354126b935d951d61e7992d84212494c3efb5` ran through GitHub Actions Run
+  `29998770570`, job `89178678725`.
+- Formatting, zero-warning lint, strict typecheck, 62 unit files / 275 tests, architecture and
+  documentation governance, all builds and budgets, Pages build verification, and 32 nonvisual
+  browser/WebGPU cases passed.
+- The old Reference was the sole failure: 1,945 differing pixels on the first attempt and 1,948 on
+  retry, exactly where the now-fixed camera/highlight state changed.
+- Artifact `8560223373`, digest
+  `sha256:2b45479e55901ec57298feea17abc4bf924fece9f9201c5202180f5d3e9276f3`,
+  preserves both attempts and the authoritative candidate.
+- The two candidate attempts differ only in low-order GPU values: 3,360 raw pixels, maximum channel
+  delta 4, and **0** pixels at the frozen Playwright threshold `0.2`.
+
+### Next
+
+- Freeze the reviewed candidate as Phase 4 Reference and Current with a zero-difference image.
+- Require the exact baseline-promotion Head to pass the complete `pnpm verify` pipeline before
+  recording final CI provenance.

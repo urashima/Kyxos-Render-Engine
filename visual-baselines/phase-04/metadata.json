@@ -23,17 +23,17 @@
   "files": {
     "reference": {
       "path": "reference.png",
-      "bytes": 448041,
+      "bytes": 448368,
       "height": 1600,
       "width": 1440,
-      "sha256": "62d14e111d43559674075961036fd794b5fb198269a98e862f40c8e3f99250e5"
+      "sha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea"
     },
     "current": {
       "path": "current.png",
-      "bytes": 448011,
+      "bytes": 448368,
       "height": 1600,
       "width": 1440,
-      "sha256": "833e86883d567de7fd44879e3b791200b7d002a65c82cde0091d82bf8dfebf9a"
+      "sha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea"
     },
     "difference": {
       "path": "difference.png",
@@ -55,13 +55,26 @@
     "verificationJobId": 89154307231,
     "verificationCommit": "d11b1e4c18722d7aaf4e950b53085e9ac2d12e03",
     "verificationArtifactId": 8557205445,
-    "verificationArtifactDigest": "sha256:9fbf6138349649d271f6fd2aa6e705e1fb1be34bd2e45f43fa3d8a22079922e1"
+    "verificationArtifactDigest": "sha256:9fbf6138349649d271f6fd2aa6e705e1fb1be34bd2e45f43fa3d8a22079922e1",
+    "deterministicVisualRepair": {
+      "cause": "The prior frozen visual inherited a variable number of animation RAF orbit increments before capture.",
+      "repairCommit": "c11354126b935d951d61e7992d84212494c3efb5",
+      "candidateRunId": 29998770570,
+      "candidateJobId": 89178678725,
+      "candidateArtifactId": 8560223373,
+      "candidateArtifactDigest": "sha256:2b45479e55901ec57298feea17abc4bf924fece9f9201c5202180f5d3e9276f3",
+      "firstAttemptSha256": "1b350490a6842437137eda3efd2d852b4bae9525fc5e97039016064440d89909",
+      "retrySha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea",
+      "crossRetryThreshold": 0.2,
+      "crossRetryDiffPixels": 0,
+      "reviewStatus": "PASS"
+    }
   },
   "subjectiveReview": {
     "status": "PASS",
     "temporalPbr": "The fixed sphere matrix has coherent silhouettes, PBR response, and no visible ghost trails or stale-scene residue.",
     "diagnostics": "Scheduler, RAF, samples, History, resources, performance, and timeline remain legible.",
-    "controls": "The dark three-column controls are aligned, unclipped, and distinguish destructive lifecycle actions.",
+    "controls": "The fixed public Reset scene, Orbit right, and Roughness 0.63 sequence is visible, aligned, unclipped, and repeatable.",
     "defects": []
   }
 }
