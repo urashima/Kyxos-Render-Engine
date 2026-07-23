@@ -1,0 +1,190 @@
+name: Phase 4 provenance sync
+
+on:
+  push:
+    branches:
+      - agent/phase-04-worklog-export
+
+concurrency:
+  group: phase-04-provenance-sync
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Verify and push provenance-only synchronization
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+
+    steps:
+      - name: Check out Phase 4 branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Append canonical provenance and synchronize ledgers
+        shell: python
+        run: |
+          from pathlib import Path
+
+          work_log = Path('docs/execution/WORK_LOG.md')
+          marker = '## 2026-07-23 02:30 PDT — P4-12 evidence Head verified'
+          entry = '''
+
+          ## 2026-07-23 02:30 PDT — P4-12 evidence Head verified
+
+          ### Completed
+
+          - Verified the exact fail-closed Phase 4 evidence Head without changing implementation, assertions,
+            tolerances, visual thresholds, budgets, or accepted Phase 0–3 artifacts.
+          - Confirmed the committed Phase 4 acceptance package, online operation gate, task ledger, and
+            documentation-governance rules are internally consistent.
+          - Updated PR #7 summary to the verified Owner Acceptance Passed — Deployment Pending state.
+
+          ### Validation
+
+          - Evidence Head `49ff7f1170b3596fd56d6cb3dc3f9653fa38eed1` passed GitHub Actions Run
+            `29993831789`, job `89162655128`: complete `pnpm verify` PASS.
+          - The read-only gate passed lockfile installation, formatting, zero-warning lint, strict typecheck,
+            62 unit files / 275 tests, documentation governance, dependency boundaries and negative fixture,
+            architecture checks, Phase 0–4 acceptance schemas, 14 canonical WGSL modules, all builds, bundle
+            budgets, Pages build verification, and all 33 pinned Chromium/WebGPU cases.
+          - Artifact `8558240090`, digest
+            `sha256:431724dfbcb252a7e1e7e58fecc9649a1b65308584b9449d9914a5bd0cb7df9b`,
+            preserves the authoritative browser diagnostics for the exact evidence Head.
+          - P4-12 is development-complete. Phase 4 remains deployment-pending and has no accepted Tag.
+
+          ### Next
+
+          - Push this provenance-only task/status/log synchronization and require its exact Head to pass the
+            complete read-only `pnpm verify` gate.
+          - If unchanged and green, inspect PR #7 reviews, mark it ready, merge with expected-Head protection,
+            then require public `/phase-4/` and `/latest/` verification before freezing `phase-04-accepted`.
+          '''
+          existing = work_log.read_text(encoding='utf-8')
+          if marker not in existing:
+              work_log.write_text(existing.rstrip() + entry + '\n', encoding='utf-8')
+
+          Path('WORK_STATUS.md').write_text('''# Kyxos Render Engine Work Status
+
+          - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (Deployment Pending)
+          - **Current Branch:** `agent/phase-04-temporal` / Draft PR #7
+          - **Overall Progress:** 4 / 15 phases accepted; P4-01 through P4-12 development and pre-deployment evidence complete
+          - **Current Task:** Phase 4 final provenance, merge, public Pages verification, and immutable acceptance freeze
+          - **Last Completed Task:** P4-12 — public Temporal PBR Canvas lifecycle, independent acceptance Playground, and fail-closed evidence package
+          - **Next Action:** Require the exact provenance-only Head to pass `pnpm verify`, then mark PR #7 ready and merge with expected-Head protection
+          - **CI Status:** Evidence Head passed complete `pnpm verify`; final provenance-only Head pending
+          - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 Owner Acceptance Passed — Deployment Pending; merge, public verification, and accepted tag pending
+          - **Known Blockers:** None
+          - **Last Updated:** 2026-07-23 02:30 PDT
+
+          `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
+          source of truth for the current Commit; this file contains only human-readable current state and one
+          Next Action.
+
+          ## Phase Progress
+
+          | Phase | Status             | Branch                               | PR  | CI          | Acceptance     | Tag                 |
+          | ----: | ------------------ | ------------------------------------ | --- | ----------- | -------------- | ------------------- |
+          |    00 | Phase Accepted     | `agent/phase-00-foundation`          | #1  | PASS        | Phase Accepted | `phase-00-accepted` |
+          |    01 | Phase Accepted     | `agent/phase-01-webgpu-core`         | #2  | PASS        | Phase Accepted | `phase-01-accepted` |
+          |    02 | Phase Accepted     | `agent/phase-02-scene-camera`        | #3  | PASS        | Phase Accepted | `phase-02-accepted` |
+          |    03 | Phase Accepted     | `agent/phase-03-pbr-ibl`             | #5  | PASS        | Phase Accepted | `phase-03-accepted` |
+          |    04 | Deployment Pending | `agent/phase-04-temporal`            | #7  | IN PROGRESS | Owner PASS     | —                   |
+          |    05 | Planned            | `agent/phase-05-lighting-postfx`     | —   | —           | Planned        | —                   |
+          |    06 | Planned            | `agent/phase-06-assets`              | —   | —           | Planned        | —                   |
+          |    07 | Planned            | `agent/phase-07-animation`           | —   | —           | Planned        | —                   |
+          |    08 | Planned            | `agent/phase-08-material-extensions` | —   | —           | Planned        | —                   |
+          |    09 | Planned            | `agent/phase-09-sss`                 | —   | —           | Planned        | —                   |
+          |    10 | Planned            | `agent/phase-10-webgl2`              | —   | —           | Planned        | —                   |
+          |    11 | Planned            | `agent/phase-11-texture-lab`         | —   | —           | Planned        | —                   |
+          |    12 | Planned            | `agent/phase-12-advanced-features`   | —   | —           | Planned        | —                   |
+          |    13 | Planned            | `agent/phase-13-production`          | —   | —           | Planned        | —                   |
+          |    14 | Planned            | `agent/phase-14-release`             | —   | —           | Planned        | —                   |
+          ''', encoding='utf-8')
+
+          Path('docs/execution/PHASE_04_TASKS.md').write_text('''# Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
+
+          Phase status: **Deployment Pending**  
+          Branch: `agent/phase-04-temporal`  
+          Pull request: `#7`  
+          Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
+
+          This file is the authoritative Phase 4 task ledger. It records scope, dependencies, verification, and
+          status only. Detailed checkpoint history, Commit SHAs, CI Runs, and Artifact digests remain in
+          [`WORK_LOG.md`](./WORK_LOG.md). Research rationale is consolidated in one Phase 4 document:
+          [`phase-04-temporal-state-contract.md`](../research/phase-04-temporal-state-contract.md).
+
+          | ID    | Task                                                                                                        | Depends on        | Verification                                                                                        | Status    |
+          | ----- | ----------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------- | --------- |
+          | P4-01 | Add owner-scoped Temporal History and opt-in Interactive → Stabilizing → Accumulating → Sleeping scheduling | Phase 3 Accepted  | Deterministic scheduler transitions, dirty coalescing, convergence, suspension, and owner isolation | Completed |
+          | P4-02 | Add deterministic Halton jitter and Current/Previous temporal Camera matrix tracking                        | P4-01             | Fixed sample vectors, unjittered canonical Camera, generation/reset and prior-matrix tests          | Completed |
+          | P4-03 | Freeze Dynamic TAA neighborhood clamp, depth/normal rejection, and responsive weighting CPU/WGSL parity     | P4-02             | Accepted/rejected branches and float32 WebGPU compute/readback parity                               | Completed |
+          | P4-04 | Add validated offscreen Color attachments and owner-scoped `rgba16float` Dynamic TAA GPU History            | P4-01,P4-03       | Attachment validation, atomic Resize, Device Lost restoration, and exact resource release           | Completed |
+          | P4-05 | Add deterministic Current-Depth Camera reprojection to Previous jittered View-Projection                    | P4-02,P4-03       | Stationary/moving/rejected/background CPU/WGSL reference parity                                     | Completed |
+          | P4-06 | Add ordered MRT and complete Current plus resolved Color/Depth/Normal ping-pong target ownership            | P4-04,P4-05       | Ordered format/count validation, whole-set role swaps, rollback, Resize, recovery, and disposal     | Completed |
+          | P4-07 | Implement sampled Dynamic TAA Resolve using Current and prior Color/Depth/Normal History                    | P4-03,P4-05,P4-06 | Native MRT → Resolve submissions; accepted, depth-rejected, and normal-rejected GPU pixels          | Completed |
+          | P4-08 | Add opt-in forward PBR temporal MRT output while preserving the accepted direct Surface path                | P4-06,P4-07       | Exact owner/extent validation, separate HDR/Normal Pipelines, SDK composition, native cube evidence | Completed |
+          | P4-09 | Add final Present pass with Exposure, Khronos PBR Neutral, and exactly one linear-to-sRGB conversion        | P4-07,P4-08       | Real Canvas submission, CPU/GPU output parity, single Surface ownership, zero-resource cleanup      | Completed |
+          | P4-10 | Add owner-scoped Static Accumulation running mean, sample/error convergence, and complete reset semantics   | P4-07,P4-09       | CPU/WGSL parity, native multi-frame readback, convergence, invalidation, Resize, recovery, disposal | Completed |
+          | P4-11 | Orchestrate PBR MRT → Dynamic TAA → optional Static Accumulation → Present → atomic commit/cancel           | P4-08,P4-09,P4-10 | Real Scheduler/WebGPU mode sequence, ordered draw counts, failure cancellation, exact lifecycle     | Completed |
+          | P4-12 | Expose public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground                   | P4-11             | SDK-only route, public operations, reviewed zero-diff visual, fail-closed evidence/checker and CI   | Completed |
+
+          ## Deployment and acceptance gate
+
+          All Phase 4 development tasks are complete and the exact evidence Head passed the complete read-only
+          `pnpm verify` pipeline. Phase 4 remains **Deployment Pending** until all of the following are true:
+
+          - the provenance-only final PR Head passes the complete pinned CI gate without source drift;
+          - PR #7 is marked ready and merged with expected-Head protection;
+          - GitHub Pages deploys the verified merge source;
+          - public `/phase-4/` and `/latest/` pass the required Chromium/WebGPU operation sequence;
+          - immutable `phase-04-accepted` targets the deployed accepted source.
+
+          ## Required boundaries
+
+          - The accepted Phase 3 direct Surface path remains the default and is not rewritten.
+          - Temporal output is opt-in; Present is the sole Canvas Surface owner in temporal mode.
+          - Dynamic and Static History are independent owners with atomic commit/cancel and explicit reset causes.
+          - Renderer Core contains no global permanent RAF; browser scheduling stays behind the injected driver.
+          - No Phase 4 acceptance, deployment, or tag may be claimed before the complete public gate passes.
+          ''', encoding='utf-8')
+
+      - name: Format canonical documents
+        run: pnpm exec prettier --write WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+
+      - name: Run complete verification pipeline
+        run: pnpm verify
+
+      - name: Commit and push verified provenance
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+          if git diff --cached --quiet; then
+            echo 'No provenance changes to push.'
+            exit 0
+          fi
+          git commit -m 'docs(phase-04): record evidence head provenance'
+          git push origin HEAD:agent/phase-04-temporal
