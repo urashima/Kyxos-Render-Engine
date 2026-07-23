@@ -11,9 +11,13 @@ export {
 
 export {
   TEMPORAL_PBR_RENDER_FEATURE_ID,
+  TEMPORAL_TAA_DEFAULT_SETTINGS,
   TemporalPbrRenderFeature,
+  createTemporalTaaSettings,
   type TemporalPbrRenderFeatureDiagnostics,
   type TemporalPbrRenderFeatureOptions,
+  type TemporalTaaSettings,
+  type TemporalTaaSettingsDescriptor,
   type TemporalPipelineExecuteInput,
   type TemporalPipelineExecuteResult,
   type TemporalPipelineTransactionDiagnostics,

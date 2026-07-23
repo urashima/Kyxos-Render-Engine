@@ -198,6 +198,19 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
       return currentResources;
     };
 
+    await expect(page.getByTestId('taa-tuning-panel')).toBeVisible();
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
+    await exerciseReset(
+      () => page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35'),
+      resourceBaseline,
+    );
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');
+    await exerciseReset(
+      () => page.getByRole('button', { name: 'Default TAA' }).click(),
+      resourceBaseline,
+    );
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
+
     let activeResources = await exerciseReset(() =>
       page.locator('[data-action="orbit-right"]').click(),
     );

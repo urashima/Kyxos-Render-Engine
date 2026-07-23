@@ -21,6 +21,7 @@ import {
 import type {
   PbrDirectionalLightDescriptor,
   PbrEnvironmentDescriptor,
+  TemporalTaaSettingsDescriptor,
 } from '@kyxos/render-renderer';
 import { Scene } from '@kyxos/render-scene';
 import type {
@@ -61,6 +62,7 @@ export interface CreateKyxosTemporalPbrRendererOptions extends TemporalConvergen
   readonly renderScale?: number;
   readonly requiredFeatures?: readonly BackendFeature[];
   readonly stabilizationMs?: number;
+  readonly taa?: TemporalTaaSettingsDescriptor;
 }
 
 function canvasDimension(
@@ -164,6 +166,7 @@ function composeTemporalPbrRenderer(
       viewport: revisions.viewport,
     }),
     ...(options.stableSamples === undefined ? {} : { stableSamples: options.stableSamples }),
+    ...(options.taa === undefined ? {} : { taa: options.taa }),
     surface: {
       ...(options.alphaMode === undefined ? {} : { alphaMode: options.alphaMode }),
       ...(options.colorSpace === undefined ? {} : { colorSpace: options.colorSpace }),

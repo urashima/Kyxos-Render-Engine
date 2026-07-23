@@ -10,9 +10,10 @@ import type {
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 import type { Mat4 } from '@kyxos/render-math';
-import { TEMPORAL_TAA_DEFAULT_OPTIONS } from '@kyxos/render-temporal';
+import type { TemporalTaaResolveOptions } from '@kyxos/render-temporal';
 
 import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
+import { createTemporalTaaSettings } from './temporal-taa-settings.js';
 import { PHASE_04_TAA_RESOLVE_WGSL } from './generated/phase-04-taa-resolve.wgsl.js';
 
 const FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
@@ -34,6 +35,7 @@ export interface DynamicTaaResolvePassOptions {
 export interface DynamicTaaResolvePassInput {
   readonly currentInverseViewProjection: Mat4;
   readonly frame: DynamicTaaGpuFrame;
+  readonly options?: Partial<TemporalTaaResolveOptions>;
   readonly previousViewProjection: Mat4;
   readonly responsiveMask?: number;
 }
@@ -97,6 +99,7 @@ function copyMatrix(target: Float32Array, offset: number, matrix: Mat4, label: s
 
 export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput): Float32Array {
   const responsiveMask = validateResponsiveMask(input.responsiveMask ?? 0);
+  const options = createTemporalTaaSettings(input.options).resolve;
   const { frame } = input;
   if (
     !Number.isSafeInteger(frame.size.width) ||
@@ -113,11 +116,11 @@ export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput)
   values[33] = frame.size.height;
   values[34] = frame.historyValid ? 1 : 0;
   values[35] = responsiveMask;
-  values[36] = TEMPORAL_TAA_DEFAULT_OPTIONS.baseHistoryWeight;
-  values[37] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthAbsoluteThreshold;
-  values[38] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthRelativeThreshold;
-  values[39] = TEMPORAL_TAA_DEFAULT_OPTIONS.normalRejectionCosine;
-  values[40] = TEMPORAL_TAA_DEFAULT_OPTIONS.responsiveHistoryReduction;
+  values[36] = options.baseHistoryWeight;
+  values[37] = options.depthAbsoluteThreshold;
+  values[38] = options.depthRelativeThreshold;
+  values[39] = options.normalRejectionCosine;
+  values[40] = options.responsiveHistoryReduction;
   return values;
 }
 

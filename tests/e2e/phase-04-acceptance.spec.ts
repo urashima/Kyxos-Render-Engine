@@ -95,6 +95,31 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     expect(initialResources).toBeGreaterThan(0);
     expect(initialSurface).not.toBeNull();
     await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
+    await expect(page.getByTestId('taa-tuning-panel')).toBeVisible();
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
+    for (const control of [
+      'jitterScale',
+      'baseHistoryWeight',
+      'depthAbsoluteThreshold',
+      'depthRelativeThreshold',
+      'normalRejectionCosine',
+      'responsiveHistoryReduction',
+      'responsiveMask',
+    ]) {
+      await expect(page.locator(`[data-taa-control="${control}"][type="number"]`)).toBeVisible();
+    }
+
+    const beforeTuningGeneration = await numericText(page, 'history-generation');
+    await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35');
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('0.35');
+    await expect
+      .poll(() => numericText(page, 'history-generation'))
+      .toBeGreaterThan(beforeTuningGeneration);
+    await waitForSleeping(page);
+    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
+    await page.getByRole('button', { name: 'Default TAA' }).click();
+    await expect(page.getByTestId('taa-current-jitter')).toHaveText('1.00');
+    await waitForSleeping(page);
 
     await page.getByRole('button', { name: 'Orbit right' }).click();
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(initialWakeCount);
@@ -182,10 +207,14 @@ test.describe('Phase 4 public temporal acceptance route', () => {
         [data-testid="wake-count"] {
           visibility: hidden !important;
         }
+        [data-testid="taa-tuning-panel"] {
+          display: none !important;
+        }
       `,
     });
     await page.evaluate(() => window.scrollTo(0, 0));
     await waitForSleeping(page);
+    await page.getByRole('button', { name: 'Orbit right' }).hover();
     const currentVisual = await page.screenshot({
       animations: 'disabled',
       fullPage: false,

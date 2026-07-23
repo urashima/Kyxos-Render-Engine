@@ -28,6 +28,12 @@ export {
   type DynamicTaaResolvePassOptions,
 } from './dynamic-taa-resolve-pass.js';
 export {
+  TEMPORAL_TAA_DEFAULT_SETTINGS,
+  createTemporalTaaSettings,
+  type TemporalTaaSettings,
+  type TemporalTaaSettingsDescriptor,
+} from './temporal-taa-settings.js';
+export {
   EnvironmentGpuCache,
   EnvironmentGpuLease,
   type EnvironmentGpuCacheDiagnostics,

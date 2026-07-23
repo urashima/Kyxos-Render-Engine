@@ -10,10 +10,17 @@ import {
   type TemporalConvergenceOptions,
   type TemporalConvergenceSnapshot,
   type TemporalHistorySignatureDescriptor,
+  type TemporalJitterSample,
+  type TemporalVec2,
   createTemporalJitterSample,
 } from '@kyxos/render-temporal';
 
 import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
+import { createTemporalTaaSettings } from './temporal-taa-settings.js';
+import type {
+  TemporalTaaSettings,
+  TemporalTaaSettingsDescriptor,
+} from './temporal-taa-settings.js';
 import type {
   RenderFeature,
   RenderFeatureFrameContext,
@@ -36,12 +43,14 @@ export type TemporalPbrRenderFeatureOptions = Omit<PbrRenderFeatureOptions, 'dyn
     readonly reportConvergence?: (snapshot: TemporalConvergenceSnapshot) => void;
     readonly responsiveMask?: (context: RenderFeatureFrameContext) => number;
     readonly signature: (context: RenderFeatureFrameContext) => TemporalHistorySignatureDescriptor;
+    readonly taa?: TemporalTaaSettingsDescriptor;
     readonly width: number;
   };
 
 export interface TemporalPbrRenderFeatureDiagnostics {
   readonly pbr: PbrRenderFeatureDiagnostics | null;
   readonly pipeline: TemporalPipelineTransactionDiagnostics;
+  readonly taa: TemporalTaaSettings;
 }
 
 function error(message: string, code: 'ALREADY_DISPOSED' | 'INVALID_STATE'): KyxosEngineError {
@@ -61,6 +70,23 @@ function jitterSampleIndex(context: RenderFeatureFrameContext): number {
   return ((positive - 1) % TEMPORAL_JITTER_SEQUENCE_LENGTH) + 1;
 }
 
+function scaleJitterSample(sample: TemporalJitterSample, scale: number): TemporalJitterSample {
+  if (scale === 1) return sample;
+  const rasterOffsetPixels = Object.freeze([
+    sample.rasterOffsetPixels[0] * scale,
+    sample.rasterOffsetPixels[1] * scale,
+  ]) as TemporalVec2;
+  const unitSample = Object.freeze([
+    rasterOffsetPixels[0] + 0.5,
+    rasterOffsetPixels[1] + 0.5,
+  ]) as TemporalVec2;
+  return Object.freeze({
+    rasterOffsetPixels,
+    sampleIndex: sample.sampleIndex,
+    unitSample,
+  });
+}
+
 /**
  * Product-neutral PBR temporal feature.
  *
@@ -77,6 +103,7 @@ export class TemporalPbrRenderFeature implements RenderFeature {
   readonly #signature: (context: RenderFeatureFrameContext) => TemporalHistorySignatureDescriptor;
   readonly #transaction: TemporalPipelineTransaction;
   readonly id = TEMPORAL_PBR_RENDER_FEATURE_ID;
+  #taaSettings: TemporalTaaSettings;
   #activeFrame: DynamicTaaGpuFrame | undefined;
   #activeViewProjection: Mat4 | undefined;
   #disposed = false;
@@ -92,6 +119,7 @@ export class TemporalPbrRenderFeature implements RenderFeature {
       responsiveMask,
       signature,
       stableSamples,
+      taa,
       targetSamples,
       width,
       ...pbrOptions
@@ -100,6 +128,7 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     this.#convergenceError = convergenceError;
     this.#reportConvergence = reportConvergence;
     this.#responsiveMask = responsiveMask;
+    this.#taaSettings = createTemporalTaaSettings(taa);
     this.#transaction = new TemporalPipelineTransaction({
       ...(errorThreshold === undefined ? {} : { errorThreshold }),
       height,
@@ -132,6 +161,17 @@ export class TemporalPbrRenderFeature implements RenderFeature {
   get pbr(): PbrRenderFeature {
     this.#assertActive();
     return this.#pbr;
+  }
+
+  get taaSettings(): TemporalTaaSettings {
+    this.#assertActive();
+    return this.#taaSettings;
+  }
+
+  setTaaSettings(descriptor: TemporalTaaSettingsDescriptor): TemporalTaaSettings {
+    this.#assertActive();
+    this.#taaSettings = createTemporalTaaSettings(descriptor, this.#taaSettings);
+    return this.#taaSettings;
   }
 
   async initialize(context: RenderFeatureInitializationContext): Promise<void> {
@@ -168,7 +208,10 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     }
     const matrices = this.#cameraTracker.update({
       historyGeneration: temporal.historyGeneration,
-      jitter: createTemporalJitterSample(jitterSampleIndex(context)),
+      jitter: scaleJitterSample(
+        createTemporalJitterSample(jitterSampleIndex(context)),
+        this.#taaSettings.jitterScale,
+      ),
       viewport: {
         height: surface.size.physicalHeight,
         width: surface.size.physicalWidth,
@@ -193,10 +236,12 @@ export class TemporalPbrRenderFeature implements RenderFeature {
           this.#activeViewProjection = undefined;
         }
       },
-      ...(this.#responsiveMask === undefined
-        ? {}
-        : { responsiveMask: this.#responsiveMask(context) }),
+      responsiveMask: Math.max(
+        this.#taaSettings.responsiveMask,
+        this.#responsiveMask?.(context) ?? 0,
+      ),
       signature: this.#signature(context),
+      taaResolveOptions: this.#taaSettings.resolve,
       temporal,
     });
     if (temporal.mode === 'accumulating') {
@@ -211,6 +256,7 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     return Object.freeze({
       pbr: pipeline.state === 'ready' ? this.#pbr.getDiagnostics() : null,
       pipeline,
+      taa: this.#taaSettings,
     });
   }
 

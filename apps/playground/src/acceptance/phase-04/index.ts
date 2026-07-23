@@ -13,8 +13,16 @@ import type {
   EnvironmentCubeFaceData,
   PbrMaterialDescriptor,
 } from '@kyxos/render-sdk';
-import { createKyxosTemporalPbrRenderer } from '@kyxos/render-sdk/temporal-pbr';
-import type { KyxosTemporalPbrCanvasRenderer } from '@kyxos/render-sdk/temporal-pbr';
+import {
+  TEMPORAL_TAA_DEFAULT_SETTINGS,
+  createKyxosTemporalPbrRenderer,
+  createTemporalTaaSettings,
+} from '@kyxos/render-sdk/temporal-pbr';
+import type {
+  KyxosTemporalPbrCanvasRenderer,
+  TemporalTaaSettings,
+  TemporalTaaSettingsDescriptor,
+} from '@kyxos/render-sdk/temporal-pbr';
 
 import { acceptancePhaseHref, acceptanceRouteLabel } from '../../routing.js';
 import './phase-04.css';
@@ -22,6 +30,76 @@ import './phase-04.css';
 const COMMIT_SHA = import.meta.env.VITE_COMMIT_SHA ?? 'local-working-tree';
 const TARGET_SAMPLES = 16;
 const SPHERE = createUvSphereGeometry({ heightSegments: 28, radius: 0.9, widthSegments: 48 });
+
+type TaaControlKey =
+  | 'baseHistoryWeight'
+  | 'depthAbsoluteThreshold'
+  | 'depthRelativeThreshold'
+  | 'jitterScale'
+  | 'normalRejectionCosine'
+  | 'responsiveHistoryReduction'
+  | 'responsiveMask';
+
+type TaaPresetId = 'default' | 'no-jitter' | 'sharp' | 'stable';
+
+const TAA_CONTROL_KEYS: readonly TaaControlKey[] = Object.freeze([
+  'jitterScale',
+  'baseHistoryWeight',
+  'depthAbsoluteThreshold',
+  'depthRelativeThreshold',
+  'normalRejectionCosine',
+  'responsiveHistoryReduction',
+  'responsiveMask',
+]);
+
+const TAA_CONTROL_DIGITS: Readonly<Record<TaaControlKey, number>> = Object.freeze({
+  baseHistoryWeight: 2,
+  depthAbsoluteThreshold: 4,
+  depthRelativeThreshold: 3,
+  jitterScale: 2,
+  normalRejectionCosine: 2,
+  responsiveHistoryReduction: 2,
+  responsiveMask: 2,
+});
+
+const TAA_PRESETS: Readonly<Record<TaaPresetId, TemporalTaaSettingsDescriptor>> = Object.freeze({
+  default: Object.freeze({
+    baseHistoryWeight: TEMPORAL_TAA_DEFAULT_SETTINGS.resolve.baseHistoryWeight,
+    depthAbsoluteThreshold: TEMPORAL_TAA_DEFAULT_SETTINGS.resolve.depthAbsoluteThreshold,
+    depthRelativeThreshold: TEMPORAL_TAA_DEFAULT_SETTINGS.resolve.depthRelativeThreshold,
+    jitterScale: TEMPORAL_TAA_DEFAULT_SETTINGS.jitterScale,
+    normalRejectionCosine: TEMPORAL_TAA_DEFAULT_SETTINGS.resolve.normalRejectionCosine,
+    responsiveHistoryReduction: TEMPORAL_TAA_DEFAULT_SETTINGS.resolve.responsiveHistoryReduction,
+    responsiveMask: TEMPORAL_TAA_DEFAULT_SETTINGS.responsiveMask,
+  }),
+  'no-jitter': Object.freeze({
+    baseHistoryWeight: 0.9,
+    depthAbsoluteThreshold: 0.001,
+    depthRelativeThreshold: 0.01,
+    jitterScale: 0,
+    normalRejectionCosine: 0.85,
+    responsiveHistoryReduction: 0.8,
+    responsiveMask: 0,
+  }),
+  sharp: Object.freeze({
+    baseHistoryWeight: 0.82,
+    depthAbsoluteThreshold: 0.0005,
+    depthRelativeThreshold: 0.006,
+    jitterScale: 0.65,
+    normalRejectionCosine: 0.9,
+    responsiveHistoryReduction: 0.9,
+    responsiveMask: 0.1,
+  }),
+  stable: Object.freeze({
+    baseHistoryWeight: 0.94,
+    depthAbsoluteThreshold: 0.002,
+    depthRelativeThreshold: 0.02,
+    jitterScale: 0.35,
+    normalRejectionCosine: 0.8,
+    responsiveHistoryReduction: 0.75,
+    responsiveMask: 0,
+  }),
+});
 
 interface AcceptanceRuntime {
   accumulationStartedAt: number | undefined;
@@ -39,6 +117,7 @@ interface AcceptanceRuntime {
   renderer: KyxosTemporalPbrCanvasRenderer | undefined;
   roughness: number;
   staticToSleepMs: number | undefined;
+  taa: TemporalTaaSettings;
   textureAlternate: boolean;
   wakeCount: number;
 }
@@ -268,6 +347,81 @@ function acceptanceMarkup(): string {
           </ol>
         </section>
       </div>
+
+      <section class="panel taa-tuning-panel" data-testid="taa-tuning-panel">
+        <div class="panel-heading">
+          <div><span class="section-index">05</span><h2>Dynamic TAA tuning</h2></div>
+          <span class="pass-badge">LIVE · HISTORY RESET ONLY</span>
+        </div>
+        <p class="taa-tuning-intro">
+          Every active Dynamic TAA parameter is exposed below. Changes are applied through the public SDK,
+          reset History, and keep the current Renderer and GPU resources alive. Start with <b>No Jitter</b>
+          to isolate projection jitter, then compare <b>Stable</b> and <b>Sharp</b>.
+        </p>
+        <div class="taa-preset-row" aria-label="TAA presets">
+          <button data-taa-preset="default">Default TAA</button>
+          <button data-taa-preset="stable">Stable</button>
+          <button data-taa-preset="sharp">Sharp</button>
+          <button data-taa-preset="no-jitter">No Jitter</button>
+          <button data-action="copy-taa">Copy config</button>
+        </div>
+        <div class="taa-tuning-grid">
+          <label class="taa-control-card">
+            <span><b>Jitter Scale</b><output data-taa-output="jitterScale">1.00</output></span>
+            <div><input data-taa-control="jitterScale" type="range" min="0" max="1" step="0.01" value="1"><input data-taa-control="jitterScale" type="number" min="0" max="1" step="0.01" value="1"></div>
+            <small>0 disables subpixel camera jitter; 1 uses the full Halton ±0.5 px pattern.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Base History Weight</b><output data-taa-output="baseHistoryWeight">0.90</output></span>
+            <div><input data-taa-control="baseHistoryWeight" type="range" min="0" max="1" step="0.01" value="0.9"><input data-taa-control="baseHistoryWeight" type="number" min="0" max="1" step="0.01" value="0.9"></div>
+            <small>Higher values smooth more but can increase ghosting; lower values react faster.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Depth Absolute Threshold</b><output data-taa-output="depthAbsoluteThreshold">0.0010</output></span>
+            <div><input data-taa-control="depthAbsoluteThreshold" type="range" min="0" max="0.02" step="0.0001" value="0.001"><input data-taa-control="depthAbsoluteThreshold" type="number" min="0" max="0.02" step="0.0001" value="0.001"></div>
+            <small>Minimum depth mismatch tolerated before rejecting reprojected History.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Depth Relative Threshold</b><output data-taa-output="depthRelativeThreshold">0.010</output></span>
+            <div><input data-taa-control="depthRelativeThreshold" type="range" min="0" max="0.1" step="0.001" value="0.01"><input data-taa-control="depthRelativeThreshold" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
+            <small>Depth-scaled rejection tolerance for distant or large-depth surfaces.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Normal Rejection Cosine</b><output data-taa-output="normalRejectionCosine">0.85</output></span>
+            <div><input data-taa-control="normalRejectionCosine" type="range" min="-1" max="1" step="0.01" value="0.85"><input data-taa-control="normalRejectionCosine" type="number" min="-1" max="1" step="0.01" value="0.85"></div>
+            <small>History is rejected when current and previous normals fall below this dot product.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Responsive History Reduction</b><output data-taa-output="responsiveHistoryReduction">0.80</output></span>
+            <div><input data-taa-control="responsiveHistoryReduction" type="range" min="0" max="1" step="0.01" value="0.8"><input data-taa-control="responsiveHistoryReduction" type="number" min="0" max="1" step="0.01" value="0.8"></div>
+            <small>How strongly the responsive mask reduces History contribution.</small>
+          </label>
+          <label class="taa-control-card">
+            <span><b>Responsive Mask</b><output data-taa-output="responsiveMask">0.00</output></span>
+            <div><input data-taa-control="responsiveMask" type="range" min="0" max="1" step="0.01" value="0"><input data-taa-control="responsiveMask" type="number" min="0" max="1" step="0.01" value="0"></div>
+            <small>Constant test mask: 0 keeps normal History, 1 applies the full responsive reduction.</small>
+          </label>
+        </div>
+        <div class="taa-live-config">
+          <div>
+            <span>Active Jitter / History</span>
+            <strong><b data-testid="taa-current-jitter">1.00</b> / <b data-testid="taa-current-history">0.90</b></strong>
+          </div>
+          <div>
+            <span>Depth Absolute / Relative</span>
+            <strong><b data-testid="taa-current-depth-absolute">0.0010</b> / <b data-testid="taa-current-depth-relative">0.010</b></strong>
+          </div>
+          <div>
+            <span>Normal rejection</span>
+            <strong data-testid="taa-current-normal">0.85</strong>
+          </div>
+          <div>
+            <span>Responsive reduction / mask</span>
+            <strong><b data-testid="taa-current-responsive-reduction">0.80</b> / <b data-testid="taa-current-responsive-mask">0.00</b></strong>
+          </div>
+          <pre data-testid="taa-config-json" aria-label="Current TAA configuration"></pre>
+        </div>
+      </section>
     </main>
   `;
 }
@@ -365,6 +519,72 @@ function populateScene(
     [2.05, 0, 0],
   );
   return control;
+}
+
+function taaSettingsDescriptor(settings: TemporalTaaSettings): TemporalTaaSettingsDescriptor {
+  return Object.freeze({
+    baseHistoryWeight: settings.resolve.baseHistoryWeight,
+    depthAbsoluteThreshold: settings.resolve.depthAbsoluteThreshold,
+    depthRelativeThreshold: settings.resolve.depthRelativeThreshold,
+    jitterScale: settings.jitterScale,
+    normalRejectionCosine: settings.resolve.normalRejectionCosine,
+    responsiveHistoryReduction: settings.resolve.responsiveHistoryReduction,
+    responsiveMask: settings.responsiveMask,
+  });
+}
+
+function taaValue(settings: TemporalTaaSettings, key: TaaControlKey): number {
+  switch (key) {
+    case 'jitterScale':
+      return settings.jitterScale;
+    case 'responsiveMask':
+      return settings.responsiveMask;
+    default:
+      return settings.resolve[key];
+  }
+}
+
+function syncTaaPanel(root: ParentNode, settings: TemporalTaaSettings): void {
+  for (const key of TAA_CONTROL_KEYS) {
+    const value = taaValue(settings, key);
+    for (const input of root.querySelectorAll<HTMLInputElement>(`[data-taa-control="${key}"]`)) {
+      input.value = String(value);
+    }
+    requireElement(root, `[data-taa-output="${key}"]`).textContent = value.toFixed(
+      TAA_CONTROL_DIGITS[key],
+    );
+  }
+  requireElement(root, '[data-testid="taa-current-jitter"]').textContent =
+    settings.jitterScale.toFixed(2);
+  requireElement(root, '[data-testid="taa-current-history"]').textContent =
+    settings.resolve.baseHistoryWeight.toFixed(2);
+  requireElement(root, '[data-testid="taa-current-depth-absolute"]').textContent =
+    settings.resolve.depthAbsoluteThreshold.toFixed(4);
+  requireElement(root, '[data-testid="taa-current-depth-relative"]').textContent =
+    settings.resolve.depthRelativeThreshold.toFixed(3);
+  requireElement(root, '[data-testid="taa-current-normal"]').textContent =
+    settings.resolve.normalRejectionCosine.toFixed(2);
+  requireElement(root, '[data-testid="taa-current-responsive-reduction"]').textContent =
+    settings.resolve.responsiveHistoryReduction.toFixed(2);
+  requireElement(root, '[data-testid="taa-current-responsive-mask"]').textContent =
+    settings.responsiveMask.toFixed(2);
+  requireElement(root, '[data-testid="taa-config-json"]').textContent = JSON.stringify(
+    taaSettingsDescriptor(settings),
+    null,
+    2,
+  );
+}
+
+function applyTaaSettings(
+  root: ParentNode,
+  runtime: AcceptanceRuntime,
+  descriptor: TemporalTaaSettingsDescriptor,
+  replaceCurrent = false,
+): void {
+  const base = replaceCurrent ? TEMPORAL_TAA_DEFAULT_SETTINGS : runtime.taa;
+  const next = createTemporalTaaSettings(descriptor, base);
+  runtime.taa = runtime.renderer?.setTemporalTaaSettings(taaSettingsDescriptor(next)) ?? next;
+  syncTaaPanel(root, runtime.taa);
 }
 
 function updateTimeline(root: ParentNode, mode: string): void {
@@ -569,9 +789,12 @@ async function createRenderer(root: ParentNode, runtime: AcceptanceRuntime): Pro
       ownerId: 'phase-04-temporal-acceptance',
       powerPreference: 'high-performance',
       stabilizationMs: 120,
+      taa: taaSettingsDescriptor(runtime.taa),
       targetSamples: TARGET_SAMPLES,
     });
     runtime.renderer = renderer;
+    runtime.taa = renderer.getTemporalTaaSettings();
+    syncTaaPanel(root, runtime.taa);
     bindRendererEvents(root, runtime, renderer);
     runtime.material = populateScene(runtime, renderer);
     renderer.requestFrame('geometry');
@@ -613,6 +836,18 @@ function bindControls(root: HTMLElement, runtime: AcceptanceRuntime): void {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
     const value = Number(input.value);
+    const taaControl = input.dataset['taaControl'] as TaaControlKey | undefined;
+    if (taaControl !== undefined) {
+      try {
+        applyTaaSettings(root, runtime, { [taaControl]: value });
+        setError(root, undefined);
+      } catch (error) {
+        setError(root, error instanceof Error ? error.message : 'Invalid TAA tuning value.');
+        syncTaaPanel(root, runtime.taa);
+      }
+      updateDiagnostics(root, runtime);
+      return;
+    }
     if (input.dataset['control'] === 'roughness') {
       runtime.roughness = value;
       runtime.material?.update({ roughnessFactor: value });
@@ -630,6 +865,13 @@ function bindControls(root: HTMLElement, runtime: AcceptanceRuntime): void {
     const target = event.target;
     if (!(target instanceof HTMLButtonElement)) return;
     try {
+      const preset = target.dataset['taaPreset'] as TaaPresetId | undefined;
+      if (preset !== undefined) {
+        applyTaaSettings(root, runtime, TAA_PRESETS[preset], true);
+        setError(root, undefined);
+        updateDiagnostics(root, runtime);
+        return;
+      }
       switch (target.dataset['action']) {
         case 'orbit-left':
           runtime.renderer?.orbit(-0.22, 0);
@@ -679,6 +921,15 @@ function bindControls(root: HTMLElement, runtime: AcceptanceRuntime): void {
         case 'recreate':
           await createRenderer(root, runtime);
           break;
+        case 'copy-taa': {
+          const configuration = JSON.stringify(taaSettingsDescriptor(runtime.taa), null, 2);
+          await navigator.clipboard.writeText(configuration);
+          target.textContent = 'Copied';
+          window.setTimeout(() => {
+            target.textContent = 'Copy config';
+          }, 1200);
+          break;
+        }
         default:
           return;
       }
@@ -754,9 +1005,11 @@ export async function mountPhase04Acceptance(root: HTMLElement): Promise<void> {
     renderer: undefined,
     roughness: 0.22,
     staticToSleepMs: undefined,
+    taa: TEMPORAL_TAA_DEFAULT_SETTINGS,
     textureAlternate: false,
     wakeCount: 0,
   };
+  syncTaaPanel(root, runtime.taa);
   bindControls(root, runtime);
   bindPointerCamera(root, runtime);
   await createRenderer(root, runtime);

@@ -1,6 +1,5 @@
 import type { Mat4 } from '@kyxos/render-math';
 import { identityMat4 } from '@kyxos/render-math';
-import { TEMPORAL_TAA_DEFAULT_OPTIONS } from '@kyxos/render-temporal';
 import { MockBackend } from '@kyxos/render-testing';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -37,6 +36,13 @@ describe('DynamicTaaResolvePass', () => {
     const packed = packDynamicTaaResolveUniforms({
       currentInverseViewProjection,
       frame,
+      options: {
+        baseHistoryWeight: 0.72,
+        depthAbsoluteThreshold: 0.002,
+        depthRelativeThreshold: 0.03,
+        normalRejectionCosine: 0.78,
+        responsiveHistoryReduction: 0.64,
+      },
       previousViewProjection,
       responsiveMask: 0.25,
     });
@@ -54,11 +60,11 @@ describe('DynamicTaaResolvePass', () => {
     expect(Array.from(packed.slice(16, 32))).toEqual(previousViewProjection);
     expect(Array.from(packed.slice(32, 36))).toEqual([5, 3, 0, 0.25]);
     expect(Array.from(packed.slice(36, 41))).toEqual([
-      Math.fround(TEMPORAL_TAA_DEFAULT_OPTIONS.baseHistoryWeight),
-      Math.fround(TEMPORAL_TAA_DEFAULT_OPTIONS.depthAbsoluteThreshold),
-      Math.fround(TEMPORAL_TAA_DEFAULT_OPTIONS.depthRelativeThreshold),
-      Math.fround(TEMPORAL_TAA_DEFAULT_OPTIONS.normalRejectionCosine),
-      Math.fround(TEMPORAL_TAA_DEFAULT_OPTIONS.responsiveHistoryReduction),
+      Math.fround(0.72),
+      Math.fround(0.002),
+      Math.fround(0.03),
+      Math.fround(0.78),
+      Math.fround(0.64),
     ]);
     expect(Array.from(packed.slice(41))).toEqual([0, 0, 0]);
     expect(() =>
