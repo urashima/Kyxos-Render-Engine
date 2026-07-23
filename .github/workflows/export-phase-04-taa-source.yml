@@ -1,0 +1,61 @@
+name: Export Phase 4 TAA tuning sources
+
+on:
+  push:
+    branches:
+      - agent/phase-04-taa-tuning-panel
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: Export selected source files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out tuning branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-taa-tuning-panel
+          persist-credentials: false
+
+      - name: Stage selected files
+        shell: bash
+        run: |
+          mkdir -p export
+          while IFS= read -r path; do
+            mkdir -p "export/$(dirname "$path")"
+            cp "$path" "export/$path"
+          done <<'EOF'
+          WORK_STATUS.md
+          docs/execution/PHASE_04_TASKS.md
+          docs/execution/WORK_LOG.md
+          packages/temporal/src/index.ts
+          packages/renderer/src/index.ts
+          packages/renderer/src/dynamic-taa-resolve-pass.ts
+          packages/renderer/src/temporal-pipeline-transaction.ts
+          packages/renderer/src/temporal-pbr-render-feature.ts
+          packages/renderer/test/dynamic-taa-resolve-pass.test.ts
+          packages/renderer/test/temporal-pbr-render-feature.test.ts
+          packages/sdk/src/temporal-pbr.ts
+          packages/sdk/src/index.ts
+          packages/sdk/src/create-temporal-pbr-renderer.ts
+          packages/sdk/src/temporal-pbr-canvas-renderer.ts
+          packages/sdk/test/temporal-pbr-consumer.test.ts
+          apps/playground/src/acceptance/phase-04/index.ts
+          apps/playground/src/acceptance/phase-04/phase-04.css
+          tests/e2e/phase-04-acceptance.spec.ts
+          tests/e2e/online-pages.spec.ts
+          EOF
+
+      - name: Upload selected source files
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-taa-tuning-sources
+          path: export/
+          if-no-files-found: error
+          retention-days: 2
