@@ -582,8 +582,15 @@ export class PbrRenderFeature implements RenderFeature {
     const surfaceInfo = this.#resolveSurfaceInfo(context.backend, resources);
     if (surfaceInfo.size.suspended) return EMPTY_STATISTICS;
     const surfaceDepthTexture = resources.depthTexture;
-    if (this.#dynamicTaaOutput === undefined && surfaceDepthTexture === undefined) {
-      throw this.#error('PBR depth Texture is unavailable for a visible Surface.', 'INVALID_STATE');
+    const surfaceHandle = resources.surface;
+    if (
+      this.#dynamicTaaOutput === undefined &&
+      (surfaceDepthTexture === undefined || surfaceHandle === undefined)
+    ) {
+      throw this.#error(
+        'PBR Surface and depth Texture are unavailable for direct rendering.',
+        'INVALID_STATE',
+      );
     }
 
     let fallbackDrawCount = 0;
@@ -606,7 +613,7 @@ export class PbrRenderFeature implements RenderFeature {
             depthAttachment: { texture: surfaceDepthTexture as BackendTextureHandle },
             draws,
             label: 'phase-03-pbr-pass',
-            surface: resources.surface,
+            surface: surfaceHandle as BackendSurfaceHandle,
           }
         : this.#createDynamicTaaRenderPass(surfaceInfo, draws);
     const commandEncoder = context.backend.createCommandEncoder({

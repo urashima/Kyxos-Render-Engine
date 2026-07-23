@@ -174,10 +174,9 @@ export class TemporalPbrRenderFeature implements RenderFeature {
         width: surface.size.physicalWidth,
       },
     });
+    const convergenceError = this.#convergenceError?.(context);
     const result = this.#transaction.execute({
-      ...(this.#convergenceError === undefined
-        ? {}
-        : { convergenceError: this.#convergenceError(context) }),
+      ...(convergenceError === undefined ? {} : { convergenceError }),
       currentInverseViewProjection: matrices.currentInverseViewProjection,
       dirtyFlags: context.dirtyFlags,
       previousViewProjection: matrices.previousViewProjection,
