@@ -24,12 +24,7 @@ test.describe('Phase 4 native PBR temporal pipeline', () => {
         const { createWebGpuBackend } = (await import(
           /* @vite-ignore */ backendUrl
         )) as typeof import('../../packages/backend-webgpu/src/index.js');
-        const {
-          MeshRendererStore,
-          PerspectiveCamera,
-          Scene,
-          createCubeGeometry,
-        } = (await import(
+        const { MeshRendererStore, PerspectiveCamera, Scene, createCubeGeometry } = (await import(
           /* @vite-ignore */ sdkUrl
         )) as typeof import('../../packages/sdk/src/index.js');
         const { TemporalFrameScheduler, TemporalPbrRenderFeature } = (await import(
