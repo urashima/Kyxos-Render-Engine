@@ -133,7 +133,8 @@ describe('TemporalPbrRenderFeature', () => {
       expect.objectContaining({ converged: true, reason: 'sample-limit', sampleCount: 2 }),
     );
     expect(jitteredMatrices).toHaveLength(3);
-    expect(jitteredMatrices[0]).not.toEqual(jitteredMatrices[1]);
+    // Static accumulation intentionally restarts its deterministic Halton sequence at sample 1.
+    expect(jitteredMatrices[0]).toEqual(jitteredMatrices[1]);
     expect(jitteredMatrices[1]).not.toEqual(jitteredMatrices[2]);
 
     const labels = executeFrame.mock.calls.map(
@@ -237,7 +238,10 @@ describe('TemporalPbrRenderFeature', () => {
 
     backend.simulateLoss({ message: 'forced PBR temporal loss' });
     feature.onBackendLost();
-    expect(feature.getDiagnostics().pipeline.state).toBe('detached');
+    expect(feature.getDiagnostics()).toMatchObject({
+      pbr: null,
+      pipeline: { state: 'detached' },
+    });
     expect(backend.getResourceStatistics().activeCount).toBe(0);
 
     await backend.initialize();
