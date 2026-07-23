@@ -3,7 +3,10 @@ import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { float16BitsToFloat32, float32ToFloat16Bits } from '../../packages/environment/src/index.js';
+import {
+  float16BitsToFloat32,
+  float32ToFloat16Bits,
+} from '../../packages/environment/src/index.js';
 import { PHASE_04_STATIC_ACCUMULATION_WGSL } from '../../packages/renderer/src/generated/phase-04-static-accumulation.wgsl.js';
 import { accumulateStaticSample } from '../../packages/temporal/src/index.js';
 
@@ -202,7 +205,8 @@ test.describe('Phase 4 Static Accumulation runtime', () => {
     const gpu = await page.evaluate(
       async ({ inputs, source }) => {
         const adapter = await navigator.gpu?.requestAdapter();
-        if (adapter === null || adapter === undefined) throw new Error('WebGPU adapter unavailable.');
+        if (adapter === null || adapter === undefined)
+          throw new Error('WebGPU adapter unavailable.');
         const device = await adapter.requestDevice();
         const module = device.createShaderModule({
           code: source,
@@ -232,17 +236,13 @@ test.describe('Phase 4 Static Accumulation runtime', () => {
             format: 'rgba16float',
             size: { height: 1, width: 1 },
             usage:
-              textureUsage.copySource |
-              textureUsage.renderAttachment |
-              textureUsage.textureBinding,
+              textureUsage.copySource | textureUsage.renderAttachment | textureUsage.textureBinding,
           }),
           device.createTexture({
             format: 'rgba16float',
             size: { height: 1, width: 1 },
             usage:
-              textureUsage.copySource |
-              textureUsage.renderAttachment |
-              textureUsage.textureBinding,
+              textureUsage.copySource | textureUsage.renderAttachment | textureUsage.textureBinding,
           }),
         ];
         const uniform = device.createBuffer({
