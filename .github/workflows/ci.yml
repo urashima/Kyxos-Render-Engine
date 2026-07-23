@@ -10,11 +10,11 @@ on:
       - main
 
 concurrency:
-  group: phase-verification-${{ github.head_ref || github.ref_name }}
+  group: phase-verification-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -28,9 +28,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
-          ref: agent/phase-04-taa-tuning-panel
-          fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Install Node.js
         uses: actions/setup-node@v7
@@ -48,30 +46,12 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Format exact governance file
-        run: pnpm exec prettier --write WORK_STATUS.md
-
       - name: Run complete verification pipeline
         shell: bash
         run: |
           set -o pipefail
           mkdir -p test-results/phase-04/runtime
           pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
-
-      - name: Commit canonical formatting and restore CI
-        if: ${{ github.event_name == 'pull_request' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          git restore --worktree --staged .
-          pnpm exec prettier --write WORK_STATUS.md
-          git checkout origin/main -- .github/workflows/ci.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add WORK_STATUS.md .github/workflows/ci.yml
-          git diff --cached --check
-          git commit -m 'docs(phase-04): format TAA tuning status'
-          git push origin HEAD:agent/phase-04-taa-tuning-panel
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
