@@ -112,3 +112,11 @@ export {
   type StaticAccumulationGpuHistoryOptions,
   type StaticAccumulationGpuHistorySize,
 } from './static-accumulation-gpu-history.js';
+export {
+  STATIC_ACCUMULATION_UNIFORM_LAYOUT,
+  StaticAccumulationPass,
+  packStaticAccumulationUniforms,
+  type StaticAccumulationPassDiagnostics,
+  type StaticAccumulationPassInput,
+  type StaticAccumulationPassOptions,
+} from './static-accumulation-pass.js';
