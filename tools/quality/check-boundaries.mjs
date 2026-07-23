@@ -120,11 +120,21 @@ function workspaceTarget(specifier, entries) {
   return entries.find(({ name }) => specifier === name || specifier.startsWith(`${name}/`));
 }
 
+function isPublicWorkspaceSpecifier(specifier, target) {
+  if (specifier === target.name) return true;
+  const exportsField = target.manifest.exports;
+  if (exportsField === null || typeof exportsField !== 'object' || Array.isArray(exportsField)) {
+    return false;
+  }
+  const subpath = `.${specifier.slice(target.name.length)}`;
+  return Object.hasOwn(exportsField, subpath);
+}
+
 function validateImport({ entries, filePath, owner, specifier }) {
   const violations = [];
   const target = workspaceTarget(specifier, entries);
   if (target !== undefined) {
-    if (specifier !== target.name) {
+    if (!isPublicWorkspaceSpecifier(specifier, target)) {
       violations.push({ code: 'PRIVATE_SUBPATH', filePath, owner, specifier });
     }
     if (target.name !== owner && !allowedDependencies.get(owner)?.has(target.name)) {
