@@ -1,0 +1,53 @@
+name: Normalize P4-11 PBR composition
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-format-p4-11-pbr.yml
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Normalize implementation and tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('packages/renderer/test/temporal-pbr-render-feature.test.ts')
+          source = path.read_text().replace("dirtyFlags: ['device']", "dirtyFlags: ['accumulation']")
+          path.write_text(source)
+          PY
+          pnpm exec eslint --fix \
+            packages/renderer/src/pbr-render-feature.ts \
+            packages/renderer/src/temporal-pbr-render-feature.ts \
+            packages/renderer/src/temporal-pipeline-transaction.ts \
+            packages/renderer/test/temporal-pbr-render-feature.test.ts
+          pnpm exec prettier --write \
+            packages/renderer/src/pbr-render-feature.ts \
+            packages/renderer/src/temporal-pbr-render-feature.ts \
+            packages/renderer/src/temporal-pipeline-transaction.ts \
+            packages/renderer/test/temporal-pbr-render-feature.test.ts
+      - name: Commit normalized composition
+        run: |
+          git rm .github/workflows/agent-format-p4-11-pbr.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/renderer/src/pbr-render-feature.ts packages/renderer/src/temporal-pbr-render-feature.ts packages/renderer/src/temporal-pipeline-transaction.ts packages/renderer/test/temporal-pbr-render-feature.test.ts
+          git commit -m 'style(phase-04): normalize temporal PBR composition'
+          git push origin HEAD:agent/phase-04-temporal
