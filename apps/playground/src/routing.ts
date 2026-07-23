@@ -1,7 +1,7 @@
-export type PlaygroundPhase = 0 | 1 | 2 | 3;
+export type PlaygroundPhase = 0 | 1 | 2 | 3 | 4;
 
 function parseSupportedPhase(value: string | undefined): PlaygroundPhase | undefined {
-  return value !== undefined && /^0?[0-3]$/.test(value)
+  return value !== undefined && /^0?[0-4]$/.test(value)
     ? (Number(value) as PlaygroundPhase)
     : undefined;
 }
