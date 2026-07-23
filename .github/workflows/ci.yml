@@ -47,14 +47,16 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
 
           backend_path = Path('packages/backend-webgpu/src/backend.ts')
           backend = backend_path.read_text()
-          old_debug = """  debugSimulateDeviceLoss(): void {
-            this.#requireDevice('simulate Device Lost for diagnostics').destroy();
-          }
-          """
-          new_debug = """  debugSimulateDeviceLoss(): void {
+          debug_pattern = re.compile(
+              r"  debugSimulateDeviceLoss\(\): void \{\n"
+              r"\s+this\.#requireDevice\('simulate Device Lost for diagnostics'\)\.destroy\(\);\n"
+              r"  \}"
+          )
+          debug_replacement = """  debugSimulateDeviceLoss(): void {
             const device = this.#requireDevice('simulate Device Lost for diagnostics');
             const generation = this.#deviceGeneration;
             device.destroy();
@@ -66,44 +68,36 @@ jobs:
                 recoverable: true,
               }),
             );
-          }
-          """
-          if old_debug not in backend:
-              raise SystemExit('Expected debugSimulateDeviceLoss implementation was not found.')
-          backend = backend.replace(old_debug, new_debug, 1)
-          old_guard = """    if (this.#state === 'disposed' || generation !== this.#deviceGeneration) {
-              return;
-            }
-          """
-          new_guard = """    if (
+          }"""
+          backend, debug_count = debug_pattern.subn(debug_replacement, backend, count=1)
+          if debug_count != 1:
+              raise SystemExit(f'Expected one debugSimulateDeviceLoss replacement, got {debug_count}.')
+
+          guard_pattern = re.compile(
+              r"    if \(this\.#state === 'disposed' \|\| generation !== this\.#deviceGeneration\) \{\n"
+              r"\s+return;\n"
+              r"    \}"
+          )
+          guard_replacement = """    if (
               this.#state === 'disposed' ||
               this.#state === 'lost' ||
               generation !== this.#deviceGeneration
             ) {
               return;
-            }
-          """
-          if old_guard not in backend:
-              raise SystemExit('Expected Device Lost guard was not found.')
-          backend_path.write_text(backend.replace(old_guard, new_guard, 1))
+            }"""
+          backend, guard_count = guard_pattern.subn(guard_replacement, backend, count=1)
+          if guard_count != 1:
+              raise SystemExit(f'Expected one Device Lost guard replacement, got {guard_count}.')
+          backend_path.write_text(backend)
 
           test_path = Path('packages/backend-webgpu/test/webgpu-backend.test.ts')
           test = test_path.read_text()
-          old_test = """  it('simulates Device Lost for diagnostics without exposing the native device', async () => {
-            const device = new FakeDevice();
-            const backend = createWebGpuBackendForPlatform(
-              {},
-              new FakePlatform(true, [new FakeAdapter([], [device])]),
-            );
-            await backend.initialize();
-
-            backend.debugSimulateDeviceLoss();
-            expect(device.destroy).toHaveBeenCalledTimes(1);
-            device.lose({ message: 'diagnostic loss', reason: 'destroyed', recoverable: true });
-            await vi.waitFor(() => expect(backend.state).toBe('lost'));
-          });
-          """
-          new_test = """  it('simulates Device Lost synchronously and ignores the later native loss resolution', async () => {
+          start_marker = "  it('simulates Device Lost for diagnostics without exposing the native device'"
+          start = test.find(start_marker)
+          end = test.find('\n  it(', start + len(start_marker))
+          if start < 0 or end < 0:
+              raise SystemExit('Expected diagnostic Device Lost test boundaries were not found.')
+          replacement = """  it('simulates Device Lost synchronously and ignores the later native loss resolution', async () => {
             const device = new FakeDevice();
             const backend = createWebGpuBackendForPlatform(
               {},
@@ -130,9 +124,8 @@ jobs:
             expect(onLost).toHaveBeenCalledTimes(1);
           });
           """
-          if old_test not in test:
-              raise SystemExit('Expected diagnostic Device Lost test was not found.')
-          test_path.write_text(test.replace(old_test, new_test, 1))
+          test_path.write_text(test[:start] + replacement + test[end:])
+          print(f'patched debug={debug_count}, guard={guard_count}, test=1')
 
       - name: Format patched source
         run: pnpm exec prettier --write packages/backend-webgpu/src/backend.ts packages/backend-webgpu/test/webgpu-backend.test.ts
