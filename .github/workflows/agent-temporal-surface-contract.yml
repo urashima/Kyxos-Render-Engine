@@ -1,0 +1,102 @@
+name: Add borrowed temporal surface contract
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-temporal-surface-contract.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Apply borrowed Surface contract
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const pbrPath = 'packages/renderer/src/pbr-render-feature.ts';
+          let pbr = await readFile(pbrPath, 'utf8');
+          pbr = pbr.replace(
+            "export interface PbrDynamicTaaOutput {\n  /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */\n  readonly acquireFrame: () => DynamicTaaGpuFrame;\n}\n",
+            "export interface PbrDynamicTaaSurface {\n  readonly getSurfaceInfo: () => BackendSurfaceInfo;\n  readonly resize: (resize: BackendSurfaceResize) => BackendSurfaceInfo;\n}\n\nexport interface PbrDynamicTaaOutput {\n  /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */\n  readonly acquireFrame: () => DynamicTaaGpuFrame;\n  /** Optional borrowed output Surface contract. PBR never creates or disposes this Surface. */\n  readonly surface?: PbrDynamicTaaSurface;\n}\n",
+          );
+          pbr = pbr.replace(
+            '  readonly surface: BackendSurfaceHandle;\n',
+            '  readonly surface: BackendSurfaceHandle | undefined;\n',
+          );
+          pbr = pbr.replace(
+            "    if (\n      options.dynamicTaaOutput !== undefined &&\n      typeof options.dynamicTaaOutput.acquireFrame !== 'function'\n    ) {\n      throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {\n        code: 'INVALID_ARGUMENT',\n        module: 'renderer',\n        recoverable: false,\n      });\n    }\n",
+            "    if (options.dynamicTaaOutput !== undefined) {\n      if (typeof options.dynamicTaaOutput.acquireFrame !== 'function') {\n        throw new KyxosEngineError('PBR Dynamic TAA output requires an acquireFrame function.', {\n          code: 'INVALID_ARGUMENT',\n          module: 'renderer',\n          recoverable: false,\n        });\n      }\n      const borrowedSurface = options.dynamicTaaOutput.surface;\n      if (\n        borrowedSurface !== undefined &&\n        (typeof borrowedSurface.getSurfaceInfo !== 'function' ||\n          typeof borrowedSurface.resize !== 'function')\n      ) {\n        throw new KyxosEngineError(\n          'PBR Dynamic TAA borrowed Surface requires getSurfaceInfo and resize functions.',\n          {\n            code: 'INVALID_ARGUMENT',\n            module: 'renderer',\n            recoverable: false,\n          },\n        );\n      }\n    }\n",
+          );
+          pbr = pbr.replace(
+            "      const surface = backend.createSurface(this.#surfaceDescriptor);\n      created.push(surface);\n      const surfaceInfo = backend.getSurfaceInfo(surface);\n",
+            "      const borrowedSurface = this.#dynamicTaaOutput?.surface;\n      const surface =\n        borrowedSurface === undefined ? backend.createSurface(this.#surfaceDescriptor) : undefined;\n      if (surface !== undefined) created.push(surface);\n      const surfaceInfo =\n        surface === undefined ? borrowedSurface?.getSurfaceInfo() : backend.getSurfaceInfo(surface);\n      if (surfaceInfo === undefined) {\n        throw this.#error('PBR Surface information is unavailable.', 'INVALID_STATE');\n      }\n",
+          );
+          pbr = pbr.replace(
+            '    const surfaceInfo = context.backend.getSurfaceInfo(resources.surface);\n',
+            '    const surfaceInfo = this.#resolveSurfaceInfo(context.backend, resources);\n',
+          );
+          pbr = pbr.replace(
+            "    return backend.getSurfaceInfo(resources.surface);\n",
+            "    return this.#resolveSurfaceInfo(backend, resources);\n",
+          );
+          pbr = pbr.replace(
+            "    const surfaceInfo = backend.resizeSurface(resources.surface, resize);\n",
+            "    const surfaceInfo =\n      resources.surface === undefined\n        ? this.#dynamicTaaOutput?.surface?.resize(resize)\n        : backend.resizeSurface(resources.surface, resize);\n    if (surfaceInfo === undefined) {\n      throw this.#error('PBR borrowed Surface cannot be resized.', 'INVALID_STATE');\n    }\n",
+          );
+          pbr = pbr.replace(
+            "        ...resources.pipelines.values(),\n        resources.shader,\n        resources.surface,\n      );\n",
+            "        ...resources.pipelines.values(),\n        resources.shader,\n      );\n      if (resources.surface !== undefined) handles.push(resources.surface);\n",
+          );
+          const helperMarker = '  #createDynamicTaaRenderPass(\n';
+          if (!pbr.includes('#resolveSurfaceInfo(')) {
+            throw new Error('PBR Surface call replacements failed.');
+          }
+          if (!pbr.includes('  #resolveSurfaceInfo(\n')) {
+            const helper = `  #resolveSurfaceInfo(\n    backend: GraphicsBackend,\n    resources: PbrRenderResources,\n  ): BackendSurfaceInfo {\n    if (resources.surface !== undefined) return backend.getSurfaceInfo(resources.surface);\n    const surfaceInfo = this.#dynamicTaaOutput?.surface?.getSurfaceInfo();\n    if (surfaceInfo === undefined) {\n      throw this.#error('PBR borrowed Surface information is unavailable.', 'INVALID_STATE');\n    }\n    return surfaceInfo;\n  }\n\n`;
+            const index = pbr.indexOf(helperMarker);
+            if (index < 0) throw new Error('PBR helper insertion marker not found.');
+            pbr = pbr.slice(0, index) + helper + pbr.slice(index);
+          }
+          await writeFile(pbrPath, pbr);
+
+          const transactionPath = 'packages/renderer/src/temporal-pipeline-transaction.ts';
+          let transaction = await readFile(transactionPath, 'utf8');
+          transaction = transaction.replace(
+            '  BackendRenderPassStatistics,\n  BackendSurfaceDescriptor,\n  GraphicsBackend,',
+            '  BackendRenderPassStatistics,\n  BackendSurfaceDescriptor,\n  BackendSurfaceInfo,\n  BackendSurfaceResize,\n  GraphicsBackend,',
+          );
+          const initializeMarker = '  execute(input: TemporalPipelineExecuteInput): TemporalPipelineExecuteResult {';
+          if (!transaction.includes('  getSurfaceInfo(): BackendSurfaceInfo {')) {
+            const methods = `  getSurfaceInfo(): BackendSurfaceInfo {\n    this.#assertActive();\n    const surface = this.#present.getDiagnostics().surface;\n    if (surface === null) {\n      throw error('Temporal pipeline Surface is unavailable.', 'INVALID_STATE', true);\n    }\n    return surface;\n  }\n\n  resize(resize: BackendSurfaceResize): BackendSurfaceInfo {\n    this.#assertActive();\n    if (this.#open !== undefined) {\n      throw error('Temporal pipeline cannot resize during an open frame.', 'INVALID_STATE');\n    }\n    const previous = this.getSurfaceInfo();\n    const next = this.#present.resize(resize);\n    if (next.size.suspended) return next;\n\n    try {\n      this.#dynamicHistory.resize(next.size.physicalWidth, next.size.physicalHeight);\n      this.#staticHistory.resize(next.size.physicalWidth, next.size.physicalHeight);\n      return next;\n    } catch (cause) {\n      const rollbackErrors: unknown[] = [];\n      const previousResize: BackendSurfaceResize = {\n        cssHeight: previous.size.cssHeight,\n        cssWidth: previous.size.cssWidth,\n        devicePixelRatio: previous.size.devicePixelRatio,\n        renderScale: previous.size.renderScale,\n      };\n      for (const rollback of [\n        () => this.#present.resize(previousResize),\n        () =>\n          this.#dynamicHistory.resize(\n            previous.size.physicalWidth,\n            previous.size.physicalHeight,\n          ),\n        () =>\n          this.#staticHistory.resize(\n            previous.size.physicalWidth,\n            previous.size.physicalHeight,\n          ),\n      ]) {\n        try {\n          rollback();\n        } catch (rollbackCause) {\n          rollbackErrors.push(rollbackCause);\n        }\n      }\n      if (rollbackErrors.length > 0) {\n        throw new AggregateError(\n          [cause, ...rollbackErrors],\n          'Temporal pipeline Resize and rollback failed.',\n          { cause },\n        );\n      }\n      throw cause;\n    }\n  }\n\n`;
+            const index = transaction.indexOf(initializeMarker);
+            if (index < 0) throw new Error('Temporal transaction method insertion marker not found.');
+            transaction = transaction.slice(0, index) + methods + transaction.slice(index);
+          }
+          await writeFile(transactionPath, transaction);
+          NODE
+          pnpm exec prettier --write packages/renderer/src/pbr-render-feature.ts packages/renderer/src/temporal-pipeline-transaction.ts
+      - name: Commit borrowed Surface contract
+        run: |
+          git rm .github/workflows/agent-temporal-surface-contract.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/renderer/src/pbr-render-feature.ts packages/renderer/src/temporal-pipeline-transaction.ts
+          git commit -m 'feat(temporal): borrow Present Surface in PBR mode'
+          git push origin HEAD:agent/phase-04-temporal
