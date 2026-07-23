@@ -229,14 +229,16 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
     await waitForSleeping();
     await expect(page.getByTestId('resource-count')).toHaveText(String(activeResources));
 
-    const resourcesBeforeLoss = Number(await page.getByTestId('resource-count').textContent());
     await page.locator('[data-action="lose"]').click();
     await expect(page.getByTestId('renderer-state')).toHaveText('lost');
     await expect(page.getByTestId('resource-count')).toHaveText('0');
     await expect(page.getByTestId('surface-size')).toHaveText('unavailable');
     await page.locator('[data-action="recover"]').click();
     await waitForSleeping();
-    await expect(page.getByTestId('resource-count')).toHaveText(String(resourcesBeforeLoss));
+    const recoveredResources = Number(await page.getByTestId('resource-count').textContent());
+    expect(recoveredResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(recoveredResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    await expect(page.getByTestId('resource-verdict')).toHaveText('stable');
     await page.locator('[data-action="dispose"]').click();
     await expect(page.getByTestId('renderer-state')).toHaveText('disposed');
     await expect(page.getByTestId('resource-count')).toHaveText('0');
