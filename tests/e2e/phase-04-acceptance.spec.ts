@@ -53,6 +53,14 @@ test.describe('Phase 4 public temporal acceptance route', () => {
     await page.getByRole('button', { name: 'Replace texture' }).click();
     await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterMaterialWake);
     await waitForSleeping(page);
+    const warmedResources = await numericText(page, 'resource-count');
+    expect(warmedResources).toBeGreaterThanOrEqual(initialResources);
+
+    const afterTextureWarmWake = await numericText(page, 'wake-count');
+    await page.getByRole('button', { name: 'Replace texture' }).click();
+    await expect.poll(() => numericText(page, 'wake-count')).toBeGreaterThan(afterTextureWarmWake);
+    await waitForSleeping(page);
+    await expect(page.getByTestId('resource-count')).toHaveText(String(warmedResources));
 
     await page.getByRole('button', { name: 'Start animation' }).click();
     await expect(page.getByRole('button', { name: 'Stop animation' })).toHaveAttribute(
@@ -68,19 +76,21 @@ test.describe('Phase 4 public temporal acceptance route', () => {
 
     await expect(page.getByTestId('active-passes')).toHaveText('NO ACTIVE PASS');
     await expect(page.getByTestId('static-to-sleep')).not.toHaveText('—');
-    await expect(page.getByTestId('resource-count')).toHaveText(String(initialResources));
+    await expect(page.getByTestId('resource-count')).toHaveText(String(warmedResources));
 
     const evidenceBeforeDispose = {
       backend: await page.getByTestId('backend-type').textContent(),
       drawCalls: await page.getByTestId('draw-calls').textContent(),
       frameIndex: await page.getByTestId('frame-index').textContent(),
       historyGeneration: await page.getByTestId('history-generation').textContent(),
+      initialResources,
       mode: await page.getByTestId('render-mode').textContent(),
       resources: await page.getByTestId('resource-count').textContent(),
       samples: await page.getByTestId('sample-count').textContent(),
       staticToSleep: await page.getByTestId('static-to-sleep').textContent(),
       triangles: await page.getByTestId('triangles').textContent(),
       wakeCount: await page.getByTestId('wake-count').textContent(),
+      warmedResources,
     };
 
     await page.getByRole('button', { name: 'Dispose' }).click();
