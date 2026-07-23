@@ -1,29 +1,34 @@
 name: Phase verification
 
 on:
+  push:
+    branches:
+      - main
+      - 'agent/**'
   pull_request:
     branches:
       - main
 
+concurrency:
+  group: phase-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
-    name: Integrate and verify P4-10
-    if: ${{ github.head_ref == 'agent/phase-04-temporal' }}
+    name: Full quality and acceptance gate
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     env:
       CI: 'true'
 
     steps:
-      - name: Check out Phase 4 branch
+      - name: Check out repository
         uses: actions/checkout@v7
         with:
-          ref: agent/phase-04-temporal
-          fetch-depth: 2
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Install Node.js
         uses: actions/setup-node@v7
@@ -38,14 +43,6 @@ jobs:
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Integrate P4-10 public exports and runtime gates
-        run: node tools/execution/integrate-p4-10.mjs
-
-      - name: Auto-fix repository style
-        run: |
-          pnpm exec eslint . --fix
-          pnpm format
-
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -56,93 +53,17 @@ jobs:
           mkdir -p test-results/phase-04/runtime
           pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
 
-      - name: Commit verified P4-10 integration
-        run: |
-          cat > .github/workflows/ci.yml <<'YAML'
-          name: Phase verification
-
-          on:
-            push:
-              branches:
-                - main
-                - 'agent/**'
-            pull_request:
-              branches:
-                - main
-
-          concurrency:
-            group: phase-verification-${{ github.workflow }}-${{ github.ref }}
-            cancel-in-progress: true
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              name: Full quality and acceptance gate
-              runs-on: ubuntu-latest
-              timeout-minutes: 20
-              env:
-                CI: 'true'
-
-              steps:
-                - name: Check out repository
-                  uses: actions/checkout@v7
-                  with:
-                    persist-credentials: false
-
-                - name: Install Node.js
-                  uses: actions/setup-node@v7
-                  with:
-                    node-version: 24.14.0
-
-                - name: Enable pinned pnpm
-                  run: |
-                    corepack enable
-                    pnpm --version
-
-                - name: Install dependencies from lockfile
-                  run: pnpm install --frozen-lockfile
-
-                - name: Install Playwright Chromium
-                  run: pnpm exec playwright install --with-deps chromium
-
-                - name: Run complete verification pipeline
-                  shell: bash
-                  run: |
-                    set -o pipefail
-                    mkdir -p test-results/phase-04/runtime
-                    pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-verification.log
-
-                - name: Upload browser diagnostics
-                  if: ${{ !cancelled() }}
-                  uses: actions/upload-artifact@v7
-                  with:
-                    name: phase-browser-diagnostics-${{ github.run_attempt }}
-                    path: |
-                      playwright-report/
-                      test-results/phase-00/runtime/
-                      test-results/phase-01/runtime/
-                      test-results/phase-02/runtime/
-                      test-results/phase-03/runtime/
-                      test-results/phase-04/runtime/
-                    if-no-files-found: ignore
-                    retention-days: 7
-          YAML
-          git rm tools/execution/integrate-p4-10.mjs
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/ci.yml packages/renderer/src/index.ts packages/sdk/src/index.ts packages/sdk/test/sdk-only-consumer.test.ts tests/e2e/phase-04-static-accumulation.spec.ts tools/shader-build/validate-shaders.mjs
-          git commit -m 'feat(temporal): complete static accumulation checkpoint'
-          git push origin HEAD:agent/phase-04-temporal
-
-      - name: Upload Phase 4 diagnostics
+      - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: phase-04-p4-10-diagnostics-${{ github.run_attempt }}
+          name: phase-browser-diagnostics-${{ github.run_attempt }}
           path: |
             playwright-report/
+            test-results/phase-00/runtime/
+            test-results/phase-01/runtime/
+            test-results/phase-02/runtime/
+            test-results/phase-03/runtime/
             test-results/phase-04/runtime/
           if-no-files-found: ignore
           retention-days: 7
