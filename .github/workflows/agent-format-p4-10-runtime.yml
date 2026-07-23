@@ -1,0 +1,36 @@
+name: Format P4-10 runtime gate
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-format-p4-10-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write tests/e2e/phase-04-static-accumulation-runtime.spec.ts
+      - name: Commit formatted gate
+        run: |
+          git rm .github/workflows/agent-format-p4-10-runtime.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/e2e/phase-04-static-accumulation-runtime.spec.ts
+          git commit -m 'style(phase-04): format static accumulation runtime gate'
+          git push origin HEAD:agent/phase-04-temporal
