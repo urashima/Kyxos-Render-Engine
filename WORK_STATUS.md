@@ -2,15 +2,15 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal`
-- **Current Commit:** `bff1f624a01c362bf6d38eaf053cc368114fb14c` (P4-11 strict optional-property narrowing complete)
-- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-10 verified; P4-11 automated verification in progress
+- **Current Commit:** `43a6d0078a8fdbfdefcfe1a17a3fe68bd57299c7` (native Scheduler-driven PBR Temporal gate formatted)
+- **Overall Progress:** 4 / 15 phases accepted; Phase 4 checkpoints P4-01 through P4-10 verified; P4-11 native verification in progress
 - **Current Task:** P4-11 — Ordered Scheduler-driven PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction
-- **Last Completed Task:** P4-10 — Static Accumulation deterministic CPU/WGSL, GPU History, convergence/reset lifecycle, SDK subpath, and native multi-frame evidence
-- **Next Action:** Run the complete read-only verification pipeline for the single-Surface Temporal PBR feature, fix any unit/native failures without weakening gates, then add browser-level orchestration evidence
-- **CI Status:** Run 29977647547 passed formatting and Lint; strict TypeScript found two optional-property narrowing issues, corrected by commit `bff1f624a01c362bf6d38eaf053cc368114fb14c`; fresh verification requested
+- **Last Completed Task:** P4-11 unit integration — single borrowed Surface, jittered PBR matrices, transaction order, Resize, Device Lost, failure cancellation, and SDK subpath
+- **Next Action:** Run the complete read-only gate with the newly discovered native browser orchestration case, fix any runtime failure without weakening assertions, then record P4-11 evidence
+- **CI Status:** Run 29977959736 passed full unit/quality verification for P4-11 composition; native E2E initially stopped only on formatting and was normalized by commit `43a6d0078a8fdbfdefcfe1a17a3fe68bd57299c7`; fresh verification requested
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; P4-11 not yet accepted
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 20:44 PDT
+- **Last Updated:** 2026-07-22 21:01 PDT
 
 ## Phase Progress
 
