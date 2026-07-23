@@ -1,6 +1,6 @@
 # Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
 
-Phase status: **Phase Accepted — Post-Acceptance Tuning Hotfix In Development**
+Phase status: **Phase Accepted — Post-Acceptance Tuning Hotfix Deployment Pending**
 Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`
 Pull requests: `#7`, `#10`, `#13`
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
@@ -37,6 +37,18 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
 - Responsive History reduction.
 - Responsive Mask.
 - Default, Stable, Sharp, and No Jitter presets plus copyable exact configuration.
+
+## P4-13 verification and deployment gate
+
+- Exact implementation source passed complete `pnpm verify` in Run `30019258099`, job
+  `89247376501`; Artifact `8568677744` preserves the complete diagnostics.
+- All 33 pinned Chromium/WebGPU cases passed, including the unchanged Phase 4 visual reference at
+  `maxDiffPixels: 0` and threshold `0.2`.
+- The verified source is committed and the append-only WORK_LOG checkpoint is synchronized.
+- The final user-authored governance Head must pass the standard read-only CI before PR #13 may be
+  marked ready or merged.
+- P4-13 remains In Development until exact Pages deployment exposes the panel on `/phase-4/` and
+  `/latest/`, and the public online gate verifies the controls through WebGPU.
 
 ## Required boundaries
 
