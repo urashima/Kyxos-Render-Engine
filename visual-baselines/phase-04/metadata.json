@@ -65,6 +65,7 @@
       "candidateArtifactDigest": "sha256:2b45479e55901ec57298feea17abc4bf924fece9f9201c5202180f5d3e9276f3",
       "firstAttemptSha256": "1b350490a6842437137eda3efd2d852b4bae9525fc5e97039016064440d89909",
       "retrySha256": "0fd501b1e132aaae53b411d49f00bf18c5e4b71e3cbf7c49a297cf70c2b185ea",
+      "baselinePromotionCommit": "3fd19268484b8e050eda9350fe4d9658dc7b1fb6",
       "crossRetryThreshold": 0.2,
       "crossRetryDiffPixels": 0,
       "reviewStatus": "PASS"
