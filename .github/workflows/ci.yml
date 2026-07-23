@@ -59,6 +59,7 @@ jobs:
         with:
           name: phase-browser-diagnostics-${{ github.run_attempt }}
           path: |
+            docs/execution/WORK_LOG.md
             playwright-report/
             test-results/phase-00/runtime/
             test-results/phase-01/runtime/
