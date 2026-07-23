@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "checkpoint": "P4-10-lifecycle",
+  "accumulatedTextureId": 2,
+  "blockedCode": "INVALID_STATE",
+  "frames": [
+    {
+      "diagnostics": {
+        "convergence": {
+          "consecutiveStableSamples": 0,
+          "converged": false,
+          "errorThreshold": null,
+          "lastError": null,
+          "minimumSamples": 3,
+          "reason": null,
+          "sampleCount": 1,
+          "stableSamples": 2,
+          "targetSamples": 3
+        },
+        "estimatedGpuBytes": 16,
+        "frameOpen": false,
+        "history": {
+          "disposed": false,
+          "generation": 0,
+          "kind": "static",
+          "lastInvalidation": null,
+          "ownerId": "phase-04-static-accumulation-gate",
+          "sampleCount": 1,
+          "signature": {
+            "camera": 1,
+            "device": 1,
+            "environment": 1,
+            "geometry": 1,
+            "lighting": 1,
+            "materials": 1,
+            "postProcess": 1,
+            "scene": 1,
+            "viewport": 1
+          },
+          "valid": true
+        },
+        "ownerId": "phase-04-static-accumulation-gate",
+        "resourceGeneration": 1,
+        "size": {
+          "height": 1,
+          "width": 1
+        },
+        "state": "ready"
+      },
+      "statistics": {
+        "drawCalls": 1,
+        "instances": 1,
+        "triangles": 1,
+        "vertices": 3
+      }
+    },
+    {
+      "diagnostics": {
+        "convergence": {
+          "consecutiveStableSamples": 0,
+          "converged": false,
+          "errorThreshold": null,
+          "lastError": null,
+          "minimumSamples": 3,
+          "reason": null,
+          "sampleCount": 2,
+          "stableSamples": 2,
+          "targetSamples": 3
+        },
+        "estimatedGpuBytes": 16,
+        "frameOpen": false,
+        "history": {
+          "disposed": false,
+          "generation": 0,
+          "kind": "static",
+          "lastInvalidation": null,
+          "ownerId": "phase-04-static-accumulation-gate",
+          "sampleCount": 2,
+          "signature": {
+            "camera": 1,
+            "device": 1,
+            "environment": 1,
+            "geometry": 1,
+            "lighting": 1,
+            "materials": 1,
+            "postProcess": 1,
+            "scene": 1,
+            "viewport": 1
+          },
+          "valid": true
+        },
+        "ownerId": "phase-04-static-accumulation-gate",
+        "resourceGeneration": 1,
+        "size": {
+          "height": 1,
+          "width": 1
+        },
+        "state": "ready"
+      },
+      "statistics": {
+        "drawCalls": 1,
+        "instances": 1,
+        "triangles": 1,
+        "vertices": 3
+      }
+    },
+    {
+      "diagnostics": {
+        "convergence": {
+          "consecutiveStableSamples": 0,
+          "converged": true,
+          "errorThreshold": null,
+          "lastError": null,
+          "minimumSamples": 3,
+          "reason": "sample-limit",
+          "sampleCount": 3,
+          "stableSamples": 2,
+          "targetSamples": 3
+        },
+        "estimatedGpuBytes": 16,
+        "frameOpen": false,
+        "history": {
+          "disposed": false,
+          "generation": 0,
+          "kind": "static",
+          "lastInvalidation": null,
+          "ownerId": "phase-04-static-accumulation-gate",
+          "sampleCount": 3,
+          "signature": {
+            "camera": 1,
+            "device": 1,
+            "environment": 1,
+            "geometry": 1,
+            "lighting": 1,
+            "materials": 1,
+            "postProcess": 1,
+            "scene": 1,
+            "viewport": 1
+          },
+          "valid": true
+        },
+        "ownerId": "phase-04-static-accumulation-gate",
+        "resourceGeneration": 1,
+        "size": {
+          "height": 1,
+          "width": 1
+        },
+        "state": "ready"
+      },
+      "statistics": {
+        "drawCalls": 1,
+        "instances": 1,
+        "triangles": 1,
+        "vertices": 3
+      }
+    }
+  ],
+  "reset": {
+    "convergence": {
+      "consecutiveStableSamples": 0,
+      "converged": false,
+      "errorThreshold": null,
+      "lastError": null,
+      "minimumSamples": 3,
+      "reason": null,
+      "sampleCount": 0,
+      "stableSamples": 2,
+      "targetSamples": 3
+    },
+    "estimatedGpuBytes": 16,
+    "frameOpen": false,
+    "history": {
+      "disposed": false,
+      "generation": 1,
+      "kind": "static",
+      "lastInvalidation": "material",
+      "ownerId": "phase-04-static-accumulation-gate",
+      "sampleCount": 0,
+      "signature": null,
+      "valid": false
+    },
+    "ownerId": "phase-04-static-accumulation-gate",
+    "resourceGeneration": 1,
+    "size": {
+      "height": 1,
+      "width": 1
+    },
+    "state": "ready"
+  },
+  "resetFrameSummary": {
+    "historyValid": false,
+    "previousSampleCount": 0
+  },
+  "resourcesAfterDispose": {
+    "activeCount": 0,
+    "activeEstimatedBytes": 0,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      }
+    },
+    "createdTotal": 12,
+    "destroyedTotal": 12
+  },
+  "resourcesBeforeReset": {
+    "activeCount": 9,
+    "activeEstimatedBytes": 1227,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 2,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 16
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 1187
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 3,
+        "activeEstimatedBytes": 24
+      }
+    },
+    "createdTotal": 12,
+    "destroyedTotal": 3
+  },
+  "status": "PASS"
+}

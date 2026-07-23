@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "checkpoint": "P4-08",
+  "diagnostics": {
+    "environmentCache": {
+      "activeLeaseCount": 1,
+      "cachedEnvironmentCount": 1,
+      "estimatedGpuBytes": 100,
+      "generation": 1,
+      "gpuReadyEnvironmentCount": 1,
+      "identities": [
+        "[\"kyxos:pbr-black-environment\",\"1\",\"15c5accf\",1,1,1,1,1]"
+      ],
+      "state": "ready"
+    },
+    "environmentIdentity": null,
+    "environmentIntensity": 1,
+    "environmentRotation": 0,
+    "fallbackDrawCount": 1,
+    "gpuMeshCount": 1,
+    "gpuTextureSourceCount": 0,
+    "materialCount": 0,
+    "objectBindingCount": 1,
+    "outputTarget": "dynamic-taa",
+    "temporalOwnerId": "phase-04-pbr-temporal-gate",
+    "outputExposure": 0,
+    "outputExposureMultiplier": 1,
+    "outputToneMapping": "khronos-pbr-neutral",
+    "pipelineCount": 12,
+    "surface": {
+      "format": "rgba8unorm",
+      "size": {
+        "clamped": false,
+        "cssHeight": 2,
+        "cssWidth": 3,
+        "devicePixelRatio": 1,
+        "physicalHeight": 2,
+        "physicalWidth": 3,
+        "renderScale": 1,
+        "suspended": false
+      }
+    },
+    "textureSourceCount": 0,
+    "variantKeys": [
+      "pbr-metallic-roughness|alpha=blend|double-sided=0|normal-map=0",
+      "pbr-metallic-roughness|alpha=blend|double-sided=0|normal-map=1",
+      "pbr-metallic-roughness|alpha=blend|double-sided=1|normal-map=0",
+      "pbr-metallic-roughness|alpha=blend|double-sided=1|normal-map=1",
+      "pbr-metallic-roughness|alpha=mask|double-sided=0|normal-map=0",
+      "pbr-metallic-roughness|alpha=mask|double-sided=0|normal-map=1",
+      "pbr-metallic-roughness|alpha=mask|double-sided=1|normal-map=0",
+      "pbr-metallic-roughness|alpha=mask|double-sided=1|normal-map=1",
+      "pbr-metallic-roughness|alpha=opaque|double-sided=0|normal-map=0",
+      "pbr-metallic-roughness|alpha=opaque|double-sided=0|normal-map=1",
+      "pbr-metallic-roughness|alpha=opaque|double-sided=1|normal-map=0",
+      "pbr-metallic-roughness|alpha=opaque|double-sided=1|normal-map=1"
+    ],
+    "visibility": {
+      "disabledCount": 0,
+      "frustumCulledCount": 0,
+      "hiddenCount": 0,
+      "layerCulledCount": 0,
+      "opaqueCount": 1,
+      "totalCount": 1,
+      "transparentCount": 0,
+      "visibleCount": 1
+    }
+  },
+  "resourcesAfterDispose": {
+    "activeCount": 0,
+    "activeEstimatedBytes": 0,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      }
+    },
+    "createdTotal": 48,
+    "destroyedTotal": 48
+  },
+  "resourcesBeforeDispose": {
+    "activeCount": 47,
+    "activeEstimatedBytes": 14131,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 13,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 3,
+        "activeEstimatedBytes": 1672
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 12,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 4,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 12059
+      },
+      "surface": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 13,
+        "activeEstimatedBytes": 400
+      }
+    },
+    "createdTotal": 48,
+    "destroyedTotal": 1
+  },
+  "statistics": {
+    "drawCalls": 1,
+    "instances": 1,
+    "triangles": 12,
+    "vertices": 36
+  },
+  "status": "PASS"
+}

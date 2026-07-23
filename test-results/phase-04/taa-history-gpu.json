@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "checkpoint": "P4-07",
+  "compilationMessages": [],
+  "first": {
+    "historyValid": false,
+    "resolveStatistics": {
+      "drawCalls": 1,
+      "instances": 1,
+      "triangles": 1,
+      "vertices": 3
+    },
+    "statistics": {
+      "drawCalls": 1,
+      "instances": 1,
+      "triangles": 1,
+      "vertices": 3
+    }
+  },
+  "firstCommit": {
+    "estimatedGpuBytes": 288,
+    "frameOpen": false,
+    "history": {
+      "disposed": false,
+      "generation": 0,
+      "kind": "dynamic",
+      "lastInvalidation": null,
+      "ownerId": "phase-04-offscreen-gate",
+      "sampleCount": 1,
+      "signature": {
+        "camera": 1,
+        "device": 1,
+        "environment": 1,
+        "geometry": 1,
+        "lighting": 1,
+        "materials": 1,
+        "postProcess": 1,
+        "scene": 1,
+        "viewport": 1
+      },
+      "valid": true
+    },
+    "ownerId": "phase-04-offscreen-gate",
+    "resourceGeneration": 1,
+    "size": {
+      "height": 2,
+      "width": 3
+    },
+    "state": "ready"
+  },
+  "second": {
+    "currentStable": true,
+    "historyValid": true,
+    "swapped": true
+  },
+  "resize": {
+    "committed": {
+      "estimatedGpuBytes": 960,
+      "frameOpen": false,
+      "history": {
+        "disposed": false,
+        "generation": 1,
+        "kind": "dynamic",
+        "lastInvalidation": "viewport",
+        "ownerId": "phase-04-offscreen-gate",
+        "sampleCount": 1,
+        "signature": {
+          "camera": 1,
+          "device": 1,
+          "environment": 1,
+          "geometry": 1,
+          "lighting": 1,
+          "materials": 1,
+          "postProcess": 1,
+          "scene": 1,
+          "viewport": 2
+        },
+        "valid": true
+      },
+      "ownerId": "phase-04-offscreen-gate",
+      "resourceGeneration": 2,
+      "size": {
+        "height": 4,
+        "width": 5
+      },
+      "state": "ready"
+    },
+    "preparedHistoryValid": false,
+    "resourcesReplaced": true,
+    "state": {
+      "estimatedGpuBytes": 960,
+      "frameOpen": false,
+      "history": {
+        "disposed": false,
+        "generation": 1,
+        "kind": "dynamic",
+        "lastInvalidation": "viewport",
+        "ownerId": "phase-04-offscreen-gate",
+        "sampleCount": 0,
+        "signature": null,
+        "valid": false
+      },
+      "ownerId": "phase-04-offscreen-gate",
+      "resourceGeneration": 2,
+      "size": {
+        "height": 4,
+        "width": 5
+      },
+      "state": "ready"
+    },
+    "resolveStatistics": {
+      "drawCalls": 1,
+      "instances": 1,
+      "triangles": 1,
+      "vertices": 3
+    },
+    "statistics": {
+      "drawCalls": 1,
+      "instances": 1,
+      "triangles": 1,
+      "vertices": 3
+    }
+  },
+  "resolveDiagnostics": {
+    "activeBindGroupCount": 1,
+    "executionCount": 2,
+    "ownerId": "phase-04-offscreen-gate",
+    "resourceGeneration": 1,
+    "state": "ready"
+  },
+  "resourcesAfterHistoryDispose": {
+    "activeCount": 2,
+    "activeEstimatedBytes": 818,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 818
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      }
+    },
+    "createdTotal": 27,
+    "destroyedTotal": 25
+  },
+  "resourcesBeforeResolveDispose": {
+    "activeCount": 14,
+    "activeEstimatedBytes": 8437,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 176
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 2,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 2,
+        "activeEstimatedBytes": 7301
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 7,
+        "activeEstimatedBytes": 960
+      }
+    },
+    "createdTotal": 27,
+    "destroyedTotal": 13
+  },
+  "resourcesBeforeHistoryDispose": {
+    "activeCount": 10,
+    "activeEstimatedBytes": 1778,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 818
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 7,
+        "activeEstimatedBytes": 960
+      }
+    },
+    "createdTotal": 27,
+    "destroyedTotal": 17
+  },
+  "status": "PASS"
+}

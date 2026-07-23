@@ -470,9 +470,14 @@ try {
 
 try {
   const accepted = await resolveAcceptedPhases(root);
-  if (accepted.latest !== 3 || JSON.stringify(accepted.phases) !== JSON.stringify([0, 1, 2, 3])) {
+  const requiredPrefix = [0, 1, 2, 3];
+  if (
+    accepted.latest < 3 ||
+    JSON.stringify(accepted.phases.slice(0, requiredPrefix.length)) !==
+      JSON.stringify(requiredPrefix)
+  ) {
     failures.push(
-      'deployment candidate: owner evidence does not yield contiguous Phase 0–3 routes',
+      'deployment candidate: owner evidence does not preserve contiguous Phase 0–3 routes',
     );
   }
 } catch (error) {

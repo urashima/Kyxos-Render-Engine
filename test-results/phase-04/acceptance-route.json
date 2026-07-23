@@ -1,0 +1,98 @@
+{
+  "afterRecreate": {
+    "mode": "sleeping",
+    "resources": "73",
+    "samples": "16"
+  },
+  "beforeDispose": {
+    "backend": "webgpu",
+    "bufferBytes": "83.3 KiB",
+    "drawCalls": "6",
+    "frameIndex": "181",
+    "historyGeneration": "19",
+    "initialResources": 73,
+    "mode": "sleeping",
+    "pipelineCount": "15",
+    "resources": "73",
+    "samples": "16",
+    "surface": "971×520",
+    "textureBytes": "30.8 MiB",
+    "triangles": "7779",
+    "warmedResources": 75
+  },
+  "checkpoint": "P4-12",
+  "lifecycle": {
+    "resourcesAfterDeviceLoss": 0,
+    "resourcesAfterDispose": 0,
+    "resourcesAfterRecovery": 73,
+    "resourcesAfterRecreate": 73
+  },
+  "measurements": [
+    {
+      "cpuFrameTimeMs": 0.7,
+      "label": "camera",
+      "staticToSleepMs": 3227
+    },
+    {
+      "cpuFrameTimeMs": 1.2,
+      "label": "material",
+      "staticToSleepMs": 3532
+    },
+    {
+      "cpuFrameTimeMs": 0.6,
+      "label": "texture-warm",
+      "staticToSleepMs": 3685.6
+    },
+    {
+      "cpuFrameTimeMs": 0.5,
+      "label": "texture-reuse",
+      "staticToSleepMs": 3551.1
+    },
+    {
+      "cpuFrameTimeMs": 0.6,
+      "label": "animation-stop",
+      "staticToSleepMs": 3684.7
+    },
+    {
+      "cpuFrameTimeMs": 0.5,
+      "label": "resize",
+      "staticToSleepMs": 3235.3
+    },
+    {
+      "cpuFrameTimeMs": 0.6,
+      "label": "resize-restore",
+      "staticToSleepMs": 3661.2
+    },
+    {
+      "cpuFrameTimeMs": 0.5,
+      "label": "device-recovery",
+      "staticToSleepMs": 3827.2
+    }
+  ],
+  "performance": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 1.2,
+      "medianMs": 0.6,
+      "minMs": 0.5,
+      "p95Ms": 1.2,
+      "sampleCount": 8,
+      "status": "PASS"
+    },
+    "gpuFrameTimeMs": {
+      "reason": "Timestamp-query instrumentation is not exposed through the public Phase 4 diagnostics contract.",
+      "status": "NOT_AVAILABLE"
+    },
+    "staticToSleepMs": {
+      "budgetMs": 10000,
+      "maxMs": 3827.2,
+      "medianMs": 3661.2,
+      "minMs": 3227,
+      "p95Ms": 3827.2,
+      "sampleCount": 8,
+      "status": "PASS"
+    }
+  },
+  "runtimeErrors": [],
+  "status": "PASS"
+}

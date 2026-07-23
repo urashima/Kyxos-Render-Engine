@@ -1,0 +1,127 @@
+{
+  "budgets": {
+    "css": {
+      "gzipBytes": 12288,
+      "rawBytes": 32768
+    },
+    "html": {
+      "gzipBytes": 4096,
+      "rawBytes": 8192
+    },
+    "font": {
+      "gzipBytes": 65536,
+      "rawBytes": 65536
+    },
+    "javascript": {
+      "gzipBytes": 114688,
+      "rawBytes": 360448
+    },
+    "phase0InitialJavascript": {
+      "gzipBytes": 24576,
+      "rawBytes": 65536
+    },
+    "phase0InitialTotal": {
+      "gzipBytes": 65536,
+      "rawBytes": 131072
+    },
+    "phase1RouteJavascript": {
+      "gzipBytes": 32768,
+      "rawBytes": 98304
+    },
+    "phase1RouteTotal": {
+      "gzipBytes": 98304,
+      "rawBytes": 196608
+    },
+    "phase2RouteJavascript": {
+      "gzipBytes": 40960,
+      "rawBytes": 131072
+    },
+    "phase2RouteTotal": {
+      "gzipBytes": 98304,
+      "rawBytes": 196608
+    },
+    "phase3RouteJavascript": {
+      "gzipBytes": 61440,
+      "rawBytes": 196608
+    },
+    "phase3RouteTotal": {
+      "gzipBytes": 114688,
+      "rawBytes": 262144
+    },
+    "phase4RouteJavascript": {
+      "gzipBytes": 81920,
+      "rawBytes": 262144
+    },
+    "phase4RouteTotal": {
+      "gzipBytes": 131072,
+      "rawBytes": 327680
+    },
+    "total": {
+      "gzipBytes": 163840,
+      "rawBytes": 425984
+    }
+  },
+  "metrics": {
+    "css": {
+      "gzipBytes": 5244,
+      "rawBytes": 17841
+    },
+    "font": {
+      "gzipBytes": 48254,
+      "rawBytes": 48256
+    },
+    "html": {
+      "gzipBytes": 372,
+      "rawBytes": 635
+    },
+    "javascript": {
+      "gzipBytes": 96140,
+      "rawBytes": 342874
+    },
+    "phase0InitialJavascript": {
+      "gzipBytes": 12674,
+      "rawBytes": 37472
+    },
+    "phase0InitialTotal": {
+      "gzipBytes": 64980,
+      "rawBytes": 99165
+    },
+    "phase1RouteJavascript": {
+      "gzipBytes": 23077,
+      "rawBytes": 75600
+    },
+    "phase1RouteTotal": {
+      "gzipBytes": 75383,
+      "rawBytes": 137293
+    },
+    "phase2RouteJavascript": {
+      "gzipBytes": 35570,
+      "rawBytes": 115264
+    },
+    "phase2RouteTotal": {
+      "gzipBytes": 87876,
+      "rawBytes": 176957
+    },
+    "phase3RouteJavascript": {
+      "gzipBytes": 50711,
+      "rawBytes": 180040
+    },
+    "phase3RouteTotal": {
+      "gzipBytes": 103017,
+      "rawBytes": 241733
+    },
+    "phase4RouteJavascript": {
+      "gzipBytes": 63135,
+      "rawBytes": 238195
+    },
+    "phase4RouteTotal": {
+      "gzipBytes": 117005,
+      "rawBytes": 304927
+    },
+    "total": {
+      "gzipBytes": 150010,
+      "rawBytes": 409606
+    }
+  },
+  "status": "PASS"
+}

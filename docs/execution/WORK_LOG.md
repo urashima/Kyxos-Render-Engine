@@ -2405,3 +2405,34 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   zero visual difference.
 - Promote that green Run's visual, performance, lifecycle, dependency, Technical QA, and Owner
   records into the fail-closed Phase 4 acceptance package.
+
+## 2026-07-23 01:38 PDT — P4-12 source gate green and acceptance evidence assembled
+
+### Completed
+
+- Promoted the authoritative Phase 4 Runtime JSON and Current image into the required acceptance
+  package without changing any browser assertion, numerical tolerance, or visual threshold.
+- Added deterministic performance, dependency, visual metadata, Technical QA, and autonomous Owner
+  records; the state is explicitly Owner Acceptance Passed — Deployment Pending.
+- Added the fail-closed Phase 4 checker to `pnpm verify`, preserved the Phase 0–3 route prefix, and
+  encoded Camera, Material, Texture, History, animation, loss/recovery, and disposal/recreation in
+  the public Pages operation suite.
+
+### Validation
+
+- Run `29991223373`, job `89154307231`, passed all 33 pinned browser/WebGPU cases on exact Head
+  `d11b1e4c18722d7aaf4e950b53085e9ac2d12e03`, including zero visual pixels above the frozen
+  threshold.
+- Artifact `8557205445`, digest
+  `sha256:9fbf6138349649d271f6fd2aa6e705e1fb1be34bd2e45f43fa3d8a22079922e1`,
+  supplied the promoted records: CPU p95 1.2 ms, Static-to-sleep p95 3827.2 ms, 73 → 0 → 73
+  loss/recovery resources, and 73 → 0 → 73 disposal/recreation resources.
+- The new Phase 4 Schema, preserved Phase 3 Schema, documentation-governance gate, and Playwright
+  TypeScript gate pass locally. The workspace still has no local Chromium executable, so the
+  exact evidence Head requires authoritative GitHub Actions browser verification.
+
+### Next
+
+- Push the fail-closed acceptance package and public online-operation gate.
+- Require the exact evidence Head to pass the complete `pnpm verify` pipeline before updating PR #7
+  for final provenance verification.

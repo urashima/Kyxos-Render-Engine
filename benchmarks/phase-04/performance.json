@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "status": "PASS_WITH_DECLARED_UNAVAILABLE_GPU_TIMING",
+  "sourceCiRunId": 29991223373,
+  "environment": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "browser": "Chrome Headless Shell 149.0.7827.55 (Playwright Chromium v1228)",
+    "backend": "webgpu-swiftshader",
+    "viewport": "1440x1600",
+    "devicePixelRatio": 1
+  },
+  "previousAcceptedTagComparison": {
+    "tag": "phase-03-accepted",
+    "cpuFrameTimeP95": {
+      "previousMs": 3.9,
+      "currentMs": 1.2,
+      "deltaMs": -2.7,
+      "deltaPercent": -69.231,
+      "status": "PASS_WITHIN_PHASE_04_BUDGET",
+      "context": "Phase 4 measures the settled public temporal route after accumulation, not the Phase 3 gallery workload."
+    },
+    "staticToSleepP95": {
+      "previousMs": 168.1,
+      "currentMs": 3827.2,
+      "deltaMs": 3659.1,
+      "deltaPercent": 2176.74,
+      "status": "PASS_WITHIN_PHASE_04_BUDGET",
+      "context": "Phase 4 performs sixteen native SwiftShader temporal samples before sleep under an explicit 10000 ms acceptance budget."
+    },
+    "routeJavaScript": {
+      "previousRawBytes": 180040,
+      "currentRawBytes": 238195,
+      "rawDeltaPercent": 32.301,
+      "previousGzipBytes": 50711,
+      "currentGzipBytes": 63135,
+      "gzipDeltaPercent": 24.5,
+      "status": "PASS_WITHIN_PHASE_04_BUDGET"
+    }
+  },
+  "metrics": {
+    "cpuFrameTimeMs": {
+      "budgetMs": 16.7,
+      "maxMs": 1.2,
+      "medianMs": 0.6,
+      "minMs": 0.5,
+      "p95Ms": 1.2,
+      "sampleCount": 8,
+      "status": "PASS"
+    },
+    "gpuFrameTimeMs": {
+      "status": "NOT_AVAILABLE",
+      "reason": "Timestamp-query instrumentation is not exposed through the public Phase 4 diagnostics contract."
+    },
+    "staticToSleepMs": {
+      "budgetMs": 10000,
+      "maxMs": 3827.2,
+      "medianMs": 3661.2,
+      "minMs": 3227,
+      "p95Ms": 3827.2,
+      "sampleCount": 8,
+      "status": "PASS"
+    },
+    "drawCalls": {
+      "value": 6,
+      "status": "PASS"
+    },
+    "triangles": {
+      "value": 7779,
+      "status": "PASS"
+    },
+    "pipelineCount": {
+      "value": 15,
+      "status": "PASS"
+    },
+    "textureEstimate": {
+      "value": "30.8 MiB",
+      "status": "PASS"
+    },
+    "bufferEstimate": {
+      "value": "83.3 KiB",
+      "status": "PASS"
+    },
+    "activeResourcesReady": {
+      "value": 73,
+      "status": "PASS"
+    },
+    "activeResourceCountAfterDeviceLoss": {
+      "value": 0,
+      "status": "PASS"
+    },
+    "activeResourceCountAfterDispose": {
+      "value": 0,
+      "status": "PASS"
+    },
+    "phase4RouteRawBytes": {
+      "budget": 262144,
+      "value": 238195,
+      "status": "PASS"
+    },
+    "phase4RouteGzipBytes": {
+      "budget": 81920,
+      "value": 63135,
+      "status": "PASS"
+    },
+    "assetLoadTimeMs": {
+      "status": "NOT_APPLICABLE",
+      "reason": "The asset loading system begins in Phase 6; Phase 4 uses deterministic generated material and environment data."
+    },
+    "disposeResourceDelta": {
+      "activeResources": 0,
+      "status": "PASS"
+    }
+  }
+}

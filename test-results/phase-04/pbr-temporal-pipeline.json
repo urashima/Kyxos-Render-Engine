@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "phase": "04",
+  "checkpoint": "P4-11",
+  "canvasSize": {
+    "height": 64,
+    "width": 64
+  },
+  "feature": {
+    "pbr": {
+      "environmentCache": {
+        "activeLeaseCount": 1,
+        "cachedEnvironmentCount": 1,
+        "estimatedGpuBytes": 100,
+        "generation": 1,
+        "gpuReadyEnvironmentCount": 1,
+        "identities": [
+          "[\"kyxos:pbr-black-environment\",\"1\",\"15c5accf\",1,1,1,1,1]"
+        ],
+        "state": "ready"
+      },
+      "environmentIdentity": null,
+      "environmentIntensity": 1,
+      "environmentRotation": 0,
+      "fallbackDrawCount": 1,
+      "gpuMeshCount": 1,
+      "gpuTextureSourceCount": 0,
+      "materialCount": 0,
+      "objectBindingCount": 1,
+      "outputTarget": "dynamic-taa",
+      "temporalOwnerId": "phase-04-native-temporal-pbr",
+      "outputExposure": 0,
+      "outputExposureMultiplier": 1,
+      "outputToneMapping": "khronos-pbr-neutral",
+      "pipelineCount": 12,
+      "surface": {
+        "format": "rgba8unorm",
+        "size": {
+          "clamped": false,
+          "cssHeight": 64,
+          "cssWidth": 64,
+          "devicePixelRatio": 1,
+          "physicalHeight": 64,
+          "physicalWidth": 64,
+          "renderScale": 1,
+          "suspended": false
+        }
+      },
+      "textureSourceCount": 0,
+      "variantKeys": [
+        "pbr-metallic-roughness|alpha=blend|double-sided=0|normal-map=0",
+        "pbr-metallic-roughness|alpha=blend|double-sided=0|normal-map=1",
+        "pbr-metallic-roughness|alpha=blend|double-sided=1|normal-map=0",
+        "pbr-metallic-roughness|alpha=blend|double-sided=1|normal-map=1",
+        "pbr-metallic-roughness|alpha=mask|double-sided=0|normal-map=0",
+        "pbr-metallic-roughness|alpha=mask|double-sided=0|normal-map=1",
+        "pbr-metallic-roughness|alpha=mask|double-sided=1|normal-map=0",
+        "pbr-metallic-roughness|alpha=mask|double-sided=1|normal-map=1",
+        "pbr-metallic-roughness|alpha=opaque|double-sided=0|normal-map=0",
+        "pbr-metallic-roughness|alpha=opaque|double-sided=0|normal-map=1",
+        "pbr-metallic-roughness|alpha=opaque|double-sided=1|normal-map=0",
+        "pbr-metallic-roughness|alpha=opaque|double-sided=1|normal-map=1"
+      ],
+      "visibility": {
+        "disabledCount": 0,
+        "frustumCulledCount": 0,
+        "hiddenCount": 0,
+        "layerCulledCount": 0,
+        "opaqueCount": 1,
+        "totalCount": 1,
+        "transparentCount": 0,
+        "visibleCount": 1
+      }
+    },
+    "pipeline": {
+      "dynamicSamples": 4,
+      "presentExecutions": 4,
+      "state": "ready",
+      "staticConvergence": {
+        "consecutiveStableSamples": 0,
+        "converged": true,
+        "errorThreshold": null,
+        "lastError": null,
+        "minimumSamples": 2,
+        "reason": "sample-limit",
+        "sampleCount": 2,
+        "stableSamples": 2,
+        "targetSamples": 2
+      },
+      "staticSamples": 2
+    }
+  },
+  "flushCount": 4,
+  "frames": [
+    {
+      "dirtyFlags": [
+        "camera"
+      ],
+      "mode": "interactive",
+      "sampleIndex": 0,
+      "statistics": {
+        "drawCalls": 3,
+        "instances": 3,
+        "triangles": 14,
+        "vertices": 42
+      }
+    },
+    {
+      "dirtyFlags": [],
+      "mode": "stabilizing",
+      "sampleIndex": 0,
+      "statistics": {
+        "drawCalls": 3,
+        "instances": 3,
+        "triangles": 14,
+        "vertices": 42
+      }
+    },
+    {
+      "dirtyFlags": [],
+      "mode": "accumulating",
+      "sampleIndex": 1,
+      "statistics": {
+        "drawCalls": 4,
+        "instances": 4,
+        "triangles": 15,
+        "vertices": 45
+      }
+    },
+    {
+      "dirtyFlags": [],
+      "mode": "accumulating",
+      "sampleIndex": 2,
+      "statistics": {
+        "drawCalls": 4,
+        "instances": 4,
+        "triangles": 15,
+        "vertices": 45
+      }
+    }
+  ],
+  "resourcesAfterFeatureDispose": {
+    "activeCount": 0,
+    "activeEstimatedBytes": 0,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "surface": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      }
+    },
+    "createdTotal": 81,
+    "destroyedTotal": 81
+  },
+  "resourcesBeforeDispose": {
+    "activeCount": 67,
+    "activeEstimatedBytes": 286225,
+    "byKind": {
+      "bind-group": {
+        "activeCount": 21,
+        "activeEstimatedBytes": 0
+      },
+      "buffer": {
+        "activeCount": 6,
+        "activeEstimatedBytes": 1880
+      },
+      "command-encoder": {
+        "activeCount": 0,
+        "activeEstimatedBytes": 0
+      },
+      "pipeline": {
+        "activeCount": 15,
+        "activeEstimatedBytes": 0
+      },
+      "sampler": {
+        "activeCount": 5,
+        "activeEstimatedBytes": 0
+      },
+      "shader-module": {
+        "activeCount": 4,
+        "activeEstimatedBytes": 22089
+      },
+      "surface": {
+        "activeCount": 1,
+        "activeEstimatedBytes": 0
+      },
+      "texture": {
+        "activeCount": 15,
+        "activeEstimatedBytes": 262256
+      }
+    },
+    "createdTotal": 81,
+    "destroyedTotal": 14
+  },
+  "scheduler": {
+    "activeActivities": [],
+    "convergence": {
+      "consecutiveStableSamples": 0,
+      "converged": true,
+      "errorThreshold": null,
+      "lastError": 0,
+      "minimumSamples": 2,
+      "reason": "sample-limit",
+      "sampleCount": 2,
+      "stableSamples": 2,
+      "targetSamples": 2
+    },
+    "historyGeneration": 1,
+    "historyResetPending": false,
+    "mode": "sleeping",
+    "pending": false,
+    "stabilizationMs": 0,
+    "stabilizationStartedAt": 0,
+    "strategy": "temporal"
+  },
+  "status": "PASS"
+}
