@@ -1,0 +1,40 @@
+name: Probe Phase 4 deployment state
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Snapshot main CI and Pages runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-probe
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows"
+          headers=(-H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28")
+          curl --fail --silent --show-error "${headers[@]}" "${api}/ci.yml/runs?branch=main&per_page=30" \
+            | jq '{workflow_runs:[.workflow_runs[] | {id,name,event,status,conclusion,head_branch,head_sha,run_number,created_at,updated_at,html_url}]}' \
+            > deployment-probe/main-ci.json
+          curl --fail --silent --show-error "${headers[@]}" "${api}/deploy-pages.yml/runs?branch=main&per_page=30" \
+            | jq '{workflow_runs:[.workflow_runs[] | {id,name,event,status,conclusion,head_branch,head_sha,run_number,created_at,updated_at,html_url}]}' \
+            > deployment-probe/pages.json
+          cat deployment-probe/main-ci.json
+          cat deployment-probe/pages.json
+
+      - name: Upload deployment state snapshot
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-deployment-state-probe
+          path: deployment-probe
+          retention-days: 7
