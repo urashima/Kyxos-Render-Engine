@@ -1,0 +1,61 @@
+name: Fix P4-11 strict optional types
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-fix-p4-11-types.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Apply exact optional-property narrowing
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const pbrPath = 'packages/renderer/src/pbr-render-feature.ts';
+          let pbr = await readFile(pbrPath, 'utf8');
+          pbr = pbr.replace(
+            "    const surfaceDepthTexture = resources.depthTexture;\n    if (this.#dynamicTaaOutput === undefined && surfaceDepthTexture === undefined) {\n      throw this.#error('PBR depth Texture is unavailable for a visible Surface.', 'INVALID_STATE');\n    }\n",
+            "    const surfaceDepthTexture = resources.depthTexture;\n    const surfaceHandle = resources.surface;\n    if (\n      this.#dynamicTaaOutput === undefined &&\n      (surfaceDepthTexture === undefined || surfaceHandle === undefined)\n    ) {\n      throw this.#error(\n        'PBR Surface and depth Texture are unavailable for direct rendering.',\n        'INVALID_STATE',\n      );\n    }\n",
+          );
+          pbr = pbr.replace(
+            '            surface: resources.surface,\n',
+            '            surface: surfaceHandle as BackendSurfaceHandle,\n',
+          );
+          await writeFile(pbrPath, pbr);
+
+          const temporalPath = 'packages/renderer/src/temporal-pbr-render-feature.ts';
+          let temporal = await readFile(temporalPath, 'utf8');
+          temporal = temporal.replace(
+            "    const result = this.#transaction.execute({\n      ...(this.#convergenceError === undefined\n        ? {}\n        : { convergenceError: this.#convergenceError(context) }),\n",
+            "    const convergenceError = this.#convergenceError?.(context);\n    const result = this.#transaction.execute({\n      ...(convergenceError === undefined ? {} : { convergenceError }),\n",
+          );
+          await writeFile(temporalPath, temporal);
+          NODE
+          pnpm exec prettier --write packages/renderer/src/pbr-render-feature.ts packages/renderer/src/temporal-pbr-render-feature.ts
+      - name: Commit strict type fixes
+        run: |
+          git rm .github/workflows/agent-fix-p4-11-types.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/renderer/src/pbr-render-feature.ts packages/renderer/src/temporal-pbr-render-feature.ts
+          git commit -m 'fix(temporal): narrow PBR orchestration optionals'
+          git push origin HEAD:agent/phase-04-temporal
