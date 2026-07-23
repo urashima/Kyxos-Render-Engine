@@ -2347,3 +2347,31 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   all 33 browser/WebGPU cases.
 - If green, promote the canonical Phase 4 visual, performance, and lifecycle outputs into the
   fail-closed P4-12 acceptance package.
+
+## 2026-07-23 01:12 PDT — P4-12 first authoritative visual reviewed
+
+### Completed
+
+- Inspected the complete failed Run and its uploaded diagnostics instead of retrying. The lifecycle,
+  loss/recovery, resource, and all lower-level temporal tests passed.
+- Downloaded and reviewed the authoritative 1440×1600 Phase 4 capture from the Run Artifact.
+- Found and corrected a visual-only control-surface defect: the control group declared columns but
+  lacked Grid layout and button styling, so Chromium rendered default white controls.
+
+### Validation
+
+- Run `29990187238`, job `89150994757`: 32 / 33 pinned browser/WebGPU cases passed on exact Head
+  `30185231f0fc32b58b6b01dd48d0e4dab5b09ede`.
+- The sole failure was fail-closed and expected for first freeze:
+  `visual-baselines/phase-04/reference.png` does not yet exist. No pixel threshold, assertion, or
+  accepted baseline changed.
+- Artifact `8556803389`, digest
+  `sha256:a1ee430dec75d7569763aac22a25f1d2369c397c9b2e339a6eb2075337d9d24e`,
+  contains the reviewed actual image and complete Phase 4 runtime records.
+
+### Next
+
+- Push the local Phase 4 control styling, require a new 32/33 first-freeze Run, and inspect its
+  authoritative Current image.
+- Freeze only that reviewed image as `visual-baselines/phase-04/reference.png`, retain
+  `maxDiffPixels: 0`, and require the resulting exact Head to pass all 33 cases.

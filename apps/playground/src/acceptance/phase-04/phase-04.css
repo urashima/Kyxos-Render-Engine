@@ -193,7 +193,37 @@
 }
 
 .temporal-buttons {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.temporal-buttons button {
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid #30383c;
+  border-radius: 9px;
+  color: #b8c2c6;
+  background: #171c1f;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.temporal-buttons button:hover {
+  transform: translateY(-1px);
+  border-color: rgb(97 218 251 / 45%);
+  color: var(--text);
+  background: rgb(97 218 251 / 8%);
+}
+
+.temporal-buttons button[data-action='lose'] {
+  border-color: rgb(255 122 69 / 34%);
+  color: #ffc0a6;
 }
 
 .temporal-buttons button[data-active='true'] {

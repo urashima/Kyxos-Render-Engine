@@ -23,7 +23,7 @@ status only. Detailed checkpoint history, Commit SHAs, CI Runs, and Artifact dig
 | P4-09 | Add final Present pass with Exposure, Khronos PBR Neutral, and exactly one linear-to-sRGB conversion        | P4-07,P4-08       | Real Canvas submission, CPU/GPU output parity, single Surface ownership, zero-resource cleanup      | Completed      |
 | P4-10 | Add owner-scoped Static Accumulation running mean, sample/error convergence, and complete reset semantics   | P4-07,P4-09       | CPU/WGSL parity, native multi-frame readback, convergence, invalidation, Resize, recovery, disposal | Completed      |
 | P4-11 | Orchestrate PBR MRT → Dynamic TAA → optional Static Accumulation → Present → atomic commit/cancel           | P4-08,P4-09,P4-10 | Real Scheduler/WebGPU mode sequence, ordered draw counts, failure cancellation, exact lifecycle     | Completed      |
-| P4-12 | Expose public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground                   | P4-11             | SDK-only route, deterministic loss/recovery, fixed visual capture, evidence, Phase 4 checker and CI | In Development |
+| P4-12 | Expose public Temporal PBR Canvas lifecycle and independent Phase 4 acceptance Playground                   | P4-11             | SDK-only route, deterministic loss/recovery, polished fixed capture, evidence, Phase 4 checker/CI   | In Development |
 
 ## P4-12 completion gate
 

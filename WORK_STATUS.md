@@ -2,14 +2,14 @@
 
 - **Current Phase:** Phase 4 — Frame Scheduler, TAA, and Static Accumulation (In Development)
 - **Current Branch:** `agent/phase-04-temporal` / Draft PR #7
-- **Overall Progress:** 4 / 15 phases accepted; P4-01 through P4-11 verified; P4-12 lifecycle stabilization is ready for authoritative CI
+- **Overall Progress:** 4 / 15 phases accepted; P4-01 through P4-11 verified; P4-12 lifecycle passed 32/33 browser cases and is refining the canonical visual
 - **Current Task:** P4-12 — Public Temporal PBR Canvas lifecycle and Phase 4 acceptance Playground
 - **Last Completed Task:** P4-11 — ordered PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction with native Scheduler/WebGPU evidence
-- **Next Action:** Push the lifecycle checkpoint, require standard CI to pass all 33 pinned browser/WebGPU cases, then freeze the P4-12 visual/performance/lifecycle acceptance package
-- **CI Status:** Local `pnpm verify` passes through Pages and discovers 33 browser cases; authoritative GitHub Actions browser verification pending
+- **Next Action:** Push the control-surface visual refinement, inspect the new authoritative CI capture, then freeze the exact Phase 4 Reference and acceptance evidence
+- **CI Status:** Run 29990187238 passed 32/33 browser/WebGPU cases; only the intentionally absent initial Phase 4 Reference failed
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; Phase 4 Owner Acceptance, public deployment, and accepted tag pending
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-23 01:00 PDT
+- **Last Updated:** 2026-07-23 01:12 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one
