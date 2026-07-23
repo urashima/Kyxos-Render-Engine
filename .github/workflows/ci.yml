@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Generate deterministic diagnostic loss patch
+      - name: Generate final Phase 4 lifecycle patch
         shell: python
         run: |
           from pathlib import Path
@@ -72,7 +72,6 @@ jobs:
           backend, debug_count = debug_pattern.subn(debug_replacement, backend, count=1)
           if debug_count != 1:
               raise SystemExit(f'Expected one debugSimulateDeviceLoss replacement, got {debug_count}.')
-
           guard_pattern = re.compile(
               r"    if \(this\.#state === 'disposed' \|\| generation !== this\.#deviceGeneration\) \{\n"
               r"\s+return;\n"
@@ -90,11 +89,11 @@ jobs:
               raise SystemExit(f'Expected one Device Lost guard replacement, got {guard_count}.')
           backend_path.write_text(backend)
 
-          test_path = Path('packages/backend-webgpu/test/webgpu-backend.test.ts')
-          test = test_path.read_text()
+          backend_test_path = Path('packages/backend-webgpu/test/webgpu-backend.test.ts')
+          backend_test = backend_test_path.read_text()
           start_marker = "  it('simulates Device Lost for diagnostics without exposing the native device'"
-          start = test.find(start_marker)
-          end = test.find('\n  it(', start + len(start_marker))
+          start = backend_test.find(start_marker)
+          end = backend_test.find('\n  it(', start + len(start_marker))
           if start < 0 or end < 0:
               raise SystemExit('Expected diagnostic Device Lost test boundaries were not found.')
           replacement = """  it('simulates Device Lost synchronously and ignores the later native loss resolution', async () => {
@@ -124,19 +123,83 @@ jobs:
             expect(onLost).toHaveBeenCalledTimes(1);
           });
           """
-          test_path.write_text(test[:start] + replacement + test[end:])
-          print(f'patched debug={debug_count}, guard={guard_count}, test=1')
+          backend_test_path.write_text(backend_test[:start] + replacement + backend_test[end:])
+
+          route_path = Path('apps/playground/src/acceptance/phase-04/index.ts')
+          route = route_path.read_text()
+          old_surface = """  const surface = renderer.getSurfaceInfo();
+            requireElement(root, '[data-testid="surface-size"]').textContent = surface.size.suspended
+              ? 'suspended'
+              : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`;
+            requireElement(root, '[data-testid="surface-dpr"]').textContent =
+              surface.size.devicePixelRatio.toFixed(2);
+          """
+          new_surface = """  if (base.state === 'ready') {
+            const surface = renderer.getSurfaceInfo();
+            requireElement(root, '[data-testid="surface-size"]').textContent = surface.size.suspended
+              ? 'suspended'
+              : `${surface.size.physicalWidth}×${surface.size.physicalHeight}`;
+            requireElement(root, '[data-testid="surface-dpr"]').textContent =
+              surface.size.devicePixelRatio.toFixed(2);
+          } else {
+            requireElement(root, '[data-testid="surface-size"]').textContent = 'unavailable';
+            requireElement(root, '[data-testid="surface-dpr"]').textContent = '—';
+          }
+          """
+          if old_surface not in route:
+              raise SystemExit('Expected Phase 4 surface diagnostics block was not found.')
+          route_path.write_text(route.replace(old_surface, new_surface, 1))
+
+          acceptance_path = Path('tests/e2e/phase-04-acceptance.spec.ts')
+          acceptance = acceptance_path.read_text()
+          acceptance = acceptance.replace(
+              'const FIXED_VIEWPORT = { height: 1400, width: 1440 };',
+              'const FIXED_VIEWPORT = { height: 1600, width: 1440 };',
+              1,
+          )
+          old_visual = """    const currentVisual = await page.getByTestId('phase-04-acceptance').screenshot({
+              animations: 'disabled',
+            });
+          """
+          new_visual = """    await page.evaluate(() => window.scrollTo(0, 0));
+            await waitForSleeping(page);
+            const currentVisual = await page.screenshot({
+              animations: 'disabled',
+              fullPage: false,
+            });
+          """
+          if old_visual not in acceptance:
+              raise SystemExit('Expected Phase 4 visual capture block was not found.')
+          acceptance = acceptance.replace(old_visual, new_visual, 1)
+          old_loss = """    await expect(page.getByTestId('renderer-state')).toHaveText('lost');
+            await expect(page.getByTestId('resource-count')).toHaveText('0');
+          """
+          new_loss = """    await expect(page.getByTestId('renderer-state')).toHaveText('lost');
+            await expect(page.getByTestId('resource-count')).toHaveText('0');
+            await expect(page.getByTestId('surface-size')).toHaveText('unavailable');
+          """
+          if old_loss not in acceptance:
+              raise SystemExit('Expected Phase 4 Device Lost assertion block was not found.')
+          acceptance_path.write_text(acceptance.replace(old_loss, new_loss, 1))
+          print('patched backend=1, backend-test=1, route=1, acceptance=1')
 
       - name: Format patched source
-        run: pnpm exec prettier --write packages/backend-webgpu/src/backend.ts packages/backend-webgpu/test/webgpu-backend.test.ts
+        run: >-
+          pnpm exec prettier --write
+          packages/backend-webgpu/src/backend.ts
+          packages/backend-webgpu/test/webgpu-backend.test.ts
+          apps/playground/src/acceptance/phase-04/index.ts
+          tests/e2e/phase-04-acceptance.spec.ts
 
-      - name: Upload deterministic loss patch
+      - name: Upload final lifecycle patch
         uses: actions/upload-artifact@v7
         with:
-          name: deterministic-device-loss-patch-${{ github.run_attempt }}
+          name: phase-04-final-lifecycle-patch-${{ github.run_attempt }}
           path: |
             packages/backend-webgpu/src/backend.ts
             packages/backend-webgpu/test/webgpu-backend.test.ts
+            apps/playground/src/acceptance/phase-04/index.ts
+            tests/e2e/phase-04-acceptance.spec.ts
           if-no-files-found: error
           retention-days: 1
 
