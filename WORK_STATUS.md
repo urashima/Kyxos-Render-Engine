@@ -5,11 +5,11 @@
 - **Overall Progress:** 4 / 15 phases accepted; P4-01 through P4-11 verified; P4-12 implementation and acceptance evidence are in verification
 - **Current Task:** P4-12 — Public Temporal PBR Canvas lifecycle and Phase 4 acceptance Playground
 - **Last Completed Task:** P4-11 — ordered PBR MRT → Dynamic TAA → optional Static Accumulation → Present transaction with native Scheduler/WebGPU evidence
-- **Next Action:** Run the standard read-only `pnpm verify` gate on the canonically formatted Head, fix only real failures, then finish the P4-12 visual/performance/lifecycle acceptance package
-- **CI Status:** Canonical formatting is committed and the one-shot write workflow removed; trusted post-format PR-head verification triggered
+- **Next Action:** Run the standard read-only `pnpm verify` gate on the fully formatted Head, fix only real failures, then finish the P4-12 visual/performance/lifecycle acceptance package
+- **CI Status:** Documentation governance and the new Phase 4 acceptance test are canonically formatted; trusted PR-head verification triggered
 - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 In Development; Phase 4 Owner Acceptance, public deployment, and accepted tag pending
 - **Known Blockers:** None
-- **Last Updated:** 2026-07-22 22:14 PDT
+- **Last Updated:** 2026-07-22 22:22 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one
