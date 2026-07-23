@@ -1,0 +1,114 @@
+name: Observe Phase 4 tuning deployment
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  observe-and-verify:
+    name: Observe main CI, Pages deployment, and public WebGPU controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CI: 'true'
+      DEPLOYED_COMMIT_SHA: cb6ccbd96921f705911c04c9b02c4ff8e08661d0
+      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out observer branch
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Wait for exact main verification and Pages deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/phase-04/runtime
+          report='test-results/phase-04/runtime/deployment-observer.json'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28")
+
+          wait_for_run() {
+            local workflow="$1"
+            local expected_name="$2"
+            local output_prefix="$3"
+            local run_json=''
+            for attempt in $(seq 1 120); do
+              runs_json=$(curl --fail --silent --show-error "${auth[@]}" "${api}/actions/workflows/${workflow}/runs?branch=main&per_page=30")
+              run_json=$(jq -c --arg sha "${DEPLOYED_COMMIT_SHA}" '[.workflow_runs[] | select(.head_sha == $sha)] | first // empty' <<<"${runs_json}")
+              if [[ -n "${run_json}" ]]; then
+                status=$(jq -r '.status' <<<"${run_json}")
+                conclusion=$(jq -r '.conclusion // ""' <<<"${run_json}")
+                run_id=$(jq -r '.id' <<<"${run_json}")
+                echo "${expected_name}: run=${run_id} status=${status} conclusion=${conclusion}"
+                if [[ "${status}" == 'completed' ]]; then
+                  if [[ "${conclusion}" != 'success' ]]; then
+                    echo "${expected_name} failed with ${conclusion}." >&2
+                    exit 1
+                  fi
+                  printf -v "${output_prefix}_ID" '%s' "${run_id}"
+                  printf -v "${output_prefix}_URL" '%s' "$(jq -r '.html_url' <<<"${run_json}")"
+                  return 0
+                fi
+              else
+                echo "${expected_name}: exact run not visible yet (attempt ${attempt})"
+              fi
+              sleep 15
+            done
+            echo "Timed out waiting for ${expected_name}." >&2
+            exit 1
+          }
+
+          wait_for_run 'ci.yml' 'Exact main Phase verification' MAIN_CI
+          wait_for_run 'deploy-pages.yml' 'Exact Pages deployment and public verification' PAGES
+
+          jq -n \
+            --arg commit "${DEPLOYED_COMMIT_SHA}" \
+            --arg mainCiId "${MAIN_CI_ID}" \
+            --arg mainCiUrl "${MAIN_CI_URL}" \
+            --arg pagesId "${PAGES_ID}" \
+            --arg pagesUrl "${PAGES_URL}" \
+            --arg publicUrl "${PUBLIC_PLAYGROUND_URL}" \
+            '{status:"PASS", commit:$commit, mainCi:{runId:($mainCiId|tonumber), url:$mainCiUrl}, pages:{runId:($pagesId|tonumber), url:$pagesUrl}, publicUrl:$publicUrl}' > "${report}"
+          cat "${report}"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Independently verify public Phase 0–4 and Latest
+        env:
+          EXPECTED_COMMIT_SHA: cb6ccbd96921f705911c04c9b02c4ff8e08661d0
+          PAGES_LATEST_PHASE: '4'
+          PAGES_PHASES: 0,1,2,3,4
+        run: pnpm exec playwright test --config playwright.pages.config.ts
+
+      - name: Upload deployment observer evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-tuning-deployment-observer-${{ github.run_attempt }}
+          path: |
+            test-results/phase-04/runtime/deployment-observer.json
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
