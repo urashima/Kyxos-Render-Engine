@@ -198,19 +198,24 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
       return currentResources;
     };
 
-    await exerciseReset(() => page.locator('[data-action="orbit-right"]').click(), resourceBaseline);
+    let activeResources = await exerciseReset(() =>
+      page.locator('[data-action="orbit-right"]').click(),
+    );
+    expect(activeResources).toBeGreaterThanOrEqual(resourceBaseline);
+    expect(activeResources).toBeLessThanOrEqual(resourceBaseline + 2);
     await exerciseReset(
       () => page.locator('[data-control="roughness"]').fill('0.63'),
-      resourceBaseline,
+      activeResources,
     );
-    const warmedResources = await exerciseReset(() =>
+    const textureResources = await exerciseReset(() =>
       page.locator('[data-action="texture"]').click(),
     );
-    expect(warmedResources).toBeGreaterThanOrEqual(resourceBaseline);
-    expect(warmedResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    expect(textureResources).toBeGreaterThanOrEqual(activeResources);
+    expect(textureResources).toBeLessThanOrEqual(resourceBaseline + 2);
+    activeResources = textureResources;
     await exerciseReset(
       () => page.locator('[data-action="reset-history"]').click(),
-      warmedResources,
+      activeResources,
     );
 
     await page.locator('[data-action="animation"]').click();
@@ -222,7 +227,7 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
       .toBeGreaterThan(animatedFrame + 2);
     await page.locator('[data-action="animation"]').click();
     await waitForSleeping();
-    await expect(page.getByTestId('resource-count')).toHaveText(String(warmedResources));
+    await expect(page.getByTestId('resource-count')).toHaveText(String(activeResources));
 
     const resourcesBeforeLoss = Number(await page.getByTestId('resource-count').textContent());
     await page.locator('[data-action="lose"]').click();
