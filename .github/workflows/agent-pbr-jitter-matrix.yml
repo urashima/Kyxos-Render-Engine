@@ -1,0 +1,63 @@
+name: Add PBR temporal matrix provider
+
+on:
+  push:
+    branches:
+      - agent/phase-04-temporal
+    paths:
+      - .github/workflows/agent-pbr-jitter-matrix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-temporal
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Apply temporal matrix provider
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const path = 'packages/renderer/src/pbr-render-feature.ts';
+          let source = await readFile(path, 'utf8');
+          if (!source.includes("import type { Mat4 } from '@kyxos/render-math';")) {
+            source = source.replace(
+              "import type { PbrAlphaMode,\n",
+              "import type { Mat4 } from '@kyxos/render-math';\nimport type { PbrAlphaMode,\n",
+            );
+          }
+          source = source.replace(
+            "export interface PbrDynamicTaaOutput {\n  /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */\n  readonly acquireFrame: () => DynamicTaaGpuFrame;\n",
+            "export interface PbrDynamicTaaOutput {\n  /** Returns one caller-prepared frame. The feature never commits, cancels, resizes, or disposes it. */\n  readonly acquireFrame: () => DynamicTaaGpuFrame;\n  /** Optional jittered View-Projection supplied by the temporal owner for this frame. */\n  readonly acquireViewProjectionMatrix?: () => Mat4;\n",
+          );
+          source = source.replace(
+            "      const borrowedSurface = options.dynamicTaaOutput.surface;\n",
+            "      if (\n        options.dynamicTaaOutput.acquireViewProjectionMatrix !== undefined &&\n        typeof options.dynamicTaaOutput.acquireViewProjectionMatrix !== 'function'\n      ) {\n        throw new KyxosEngineError(\n          'PBR Dynamic TAA View-Projection provider must be a function.',\n          { code: 'INVALID_ARGUMENT', module: 'renderer', recoverable: false },\n        );\n      }\n      const borrowedSurface = options.dynamicTaaOutput.surface;\n",
+          );
+          source = source.replace(
+            '        viewProjectionMatrix: this.#camera.viewProjectionMatrix(),\n',
+            '        viewProjectionMatrix:\n          this.#dynamicTaaOutput?.acquireViewProjectionMatrix?.() ??\n          this.#camera.viewProjectionMatrix(),\n',
+          );
+          await writeFile(path, source);
+          NODE
+          pnpm exec prettier --write packages/renderer/src/pbr-render-feature.ts
+      - name: Commit matrix provider
+        run: |
+          git rm .github/workflows/agent-pbr-jitter-matrix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/renderer/src/pbr-render-feature.ts
+          git commit -m 'feat(temporal): supply jittered PBR matrices'
+          git push origin HEAD:agent/phase-04-temporal
