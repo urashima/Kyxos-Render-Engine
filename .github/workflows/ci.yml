@@ -43,17 +43,6 @@ jobs:
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Format P4-12 verification workspace
-        run: |
-          pnpm exec prettier --write \
-            WORK_STATUS.md \
-            docs/execution/DECISIONS.md \
-            docs/execution/WORK_LOG.md \
-            packages/sdk/src/create-temporal-pbr-renderer.ts \
-            packages/sdk/src/temporal-pbr-canvas-renderer.ts \
-            apps/playground/src/acceptance/phase-04/index.ts \
-            apps/playground/src/acceptance/phase-04/phase-04.css
-
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
