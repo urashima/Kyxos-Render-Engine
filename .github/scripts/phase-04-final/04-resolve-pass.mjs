@@ -63,9 +63,34 @@ await replaceExact(
 
 function copyMatrix(target: Float32Array, offset: number, matrix: Mat4, label: string): void {`,
 );
-await replaceRegex(
+await replaceExact(
   'packages/renderer/src/dynamic-taa-resolve-pass.ts',
-  /export function packDynamicTaaResolveUniforms\(input: DynamicTaaResolvePassInput\): Float32Array \{[\s\S]*?\n\}/u,
+  `export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput): Float32Array {
+  const responsiveMask = validateResponsiveMask(input.responsiveMask ?? 0);
+  const options = createTemporalTaaSettings(input.options).resolve;
+  const { frame } = input;
+  if (
+    !Number.isSafeInteger(frame.size.width) ||
+    frame.size.width < 1 ||
+    !Number.isSafeInteger(frame.size.height) ||
+    frame.size.height < 1
+  ) {
+    throw error('Dynamic TAA Resolve frame size is invalid.', 'INVALID_ARGUMENT');
+  }
+  const values = new Float32Array(DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT.byteLength / FLOAT_BYTES);
+  copyMatrix(values, 0, input.currentInverseViewProjection, 'Current inverse View-Projection');
+  copyMatrix(values, MATRIX_FLOATS, input.previousViewProjection, 'Previous View-Projection');
+  values[32] = frame.size.width;
+  values[33] = frame.size.height;
+  values[34] = frame.historyValid ? 1 : 0;
+  values[35] = responsiveMask;
+  values[36] = options.baseHistoryWeight;
+  values[37] = options.depthAbsoluteThreshold;
+  values[38] = options.depthRelativeThreshold;
+  values[39] = options.normalRejectionCosine;
+  values[40] = options.responsiveHistoryReduction;
+  return values;
+}`,
   `export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput): Float32Array {
   const responsiveMask = validateResponsiveMask(input.responsiveMask ?? 0);
   const options = createTemporalTaaSettings(input.options).resolve;
