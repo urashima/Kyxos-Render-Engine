@@ -13,14 +13,13 @@ permissions:
   deployments: read
 
 jobs:
-  verify-and-record:
-    name: Verify Pages and record Phase 4 handoff
+  record-evidence:
+    name: Record verified Phase 4 public evidence
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     env:
       MERGE_SHA: f926f544c94da2c5ea8f9630c959398b15d2d84f
-      PHASE_URL: https://urashima.github.io/Kyxos-Render-Engine/phase-4/
-      LATEST_URL: https://urashima.github.io/Kyxos-Render-Engine/latest/
+      PUBLIC_VERIFY_RUN: '30094335571'
     steps:
       - name: Check out handoff branch
         uses: actions/checkout@v7
@@ -28,22 +27,7 @@ jobs:
           ref: phase-04-final-handoff
           fetch-depth: 0
 
-      - name: Install Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24.14.0
-
-      - name: Enable pinned pnpm
-        run: corepack enable
-
-      - name: Install dependencies from lockfile
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Wait for main CI and Pages deployment
-        id: evidence
+      - name: Append CI, Pages, and public route evidence
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -51,11 +35,14 @@ jobs:
           python - <<'PY'
           import json
           import os
-          import time
           import urllib.request
+          from datetime import datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
 
           repo = os.environ['REPOSITORY']
           sha = os.environ['MERGE_SHA']
+          public_run_id = int(os.environ['PUBLIC_VERIFY_RUN'])
           token = os.environ['GH_TOKEN']
 
           def get(url):
@@ -71,232 +58,64 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
-          deadline = time.time() + 1200
-          evidence = None
-          while time.time() < deadline:
-              runs = get(f'https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
-              main_ci = next(
-                  (
-                      run
-                      for run in runs
-                      if run['name'] == 'Phase verification'
-                      and run['event'] == 'push'
-                      and run['head_sha'] == sha
-                  ),
-                  None,
-              )
-              deployments = get(f'https://api.github.com/repos/{repo}/deployments?sha={sha}&per_page=100')
-              pages = next(
-                  (
-                      deployment
-                      for deployment in deployments
-                      if deployment.get('environment') == 'github-pages'
-                  ),
-                  None,
-              )
-              pages_status = None
-              if pages is not None:
-                  statuses = get(pages['statuses_url'])
-                  pages_status = statuses[0] if statuses else None
-              pages_run = next(
-                  (
-                      run
-                      for run in runs
-                      if run['head_sha'] == sha
-                      and ('page' in run['name'].lower() or 'deploy' in run['name'].lower())
-                  ),
-                  None,
-              )
-              if (
-                  main_ci is not None
-                  and main_ci['status'] == 'completed'
-                  and main_ci['conclusion'] == 'success'
-                  and pages is not None
-                  and pages_status is not None
-                  and pages_status['state'] == 'success'
-              ):
-                  evidence = {
-                      'main_ci_run_id': main_ci['id'],
-                      'main_ci_url': main_ci['html_url'],
-                      'pages_deployment_id': pages['id'],
-                      'pages_deployment_url': pages_status.get('environment_url') or os.environ['LATEST_URL'],
-                      'pages_run_id': pages_run['id'] if pages_run is not None else None,
-                      'pages_run_url': pages_run['html_url'] if pages_run is not None else None,
-                  }
-                  break
-              if main_ci is not None and main_ci['status'] == 'completed' and main_ci['conclusion'] != 'success':
-                  raise SystemExit(f"Main CI failed: {main_ci['html_url']} ({main_ci['conclusion']})")
-              if pages_status is not None and pages_status['state'] in {'error', 'failure', 'inactive'}:
-                  raise SystemExit(f"Pages deployment failed: {pages_status}")
-              time.sleep(10)
+          runs = get(f'https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
+          main_ci = next(
+              run
+              for run in runs
+              if run['name'] == 'Phase verification'
+              and run['event'] == 'push'
+              and run['head_sha'] == sha
+          )
+          if main_ci['status'] != 'completed' or main_ci['conclusion'] != 'success':
+              raise SystemExit(f'Main CI is not successful: {main_ci}')
 
-          if evidence is None:
-              raise SystemExit('Timed out waiting for successful main CI and Pages deployment')
+          deployments = get(f'https://api.github.com/repos/{repo}/deployments?sha={sha}&per_page=100')
+          pages = next(deployment for deployment in deployments if deployment.get('environment') == 'github-pages')
+          statuses = get(pages['statuses_url'])
+          pages_status = statuses[0]
+          if pages_status['state'] != 'success':
+              raise SystemExit(f'Pages deployment is not successful: {pages_status}')
 
-          with open('/tmp/phase-04-evidence.json', 'w', encoding='utf-8') as output:
-              json.dump(evidence, output, indent=2, sort_keys=True)
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              for key, value in evidence.items():
-                  output.write(f'{key}={"" if value is None else value}\n')
-          print(json.dumps(evidence, indent=2, sort_keys=True))
-          PY
+          pages_run = next(
+              (
+                  run
+                  for run in runs
+                  if run['head_sha'] == sha
+                  and ('page' in run['name'].lower() or 'deploy' in run['name'].lower())
+              ),
+              None,
+          )
 
-      - name: Verify public Phase 4 and latest routes
-        run: |
-          cat > /tmp/verify-pages.mjs <<'JS'
-          import { chromium } from 'playwright';
+          public_jobs = get(f'https://api.github.com/repos/{repo}/actions/runs/{public_run_id}/jobs?per_page=100')['jobs']
+          public_job = public_jobs[0]
+          steps = {step['name']: step for step in public_job['steps']}
+          for step_name in ('Wait for main CI and Pages deployment', 'Verify public Phase 4 and latest routes'):
+              step = steps[step_name]
+              if step['status'] != 'completed' or step['conclusion'] != 'success':
+                  raise SystemExit(f'Public verification step did not pass: {step_name}: {step}')
 
-          const expectedCommit = process.env.MERGE_SHA;
-          const expectedControls = [
-            'jitterScale',
-            'baseHistoryWeight',
-            'depthAbsoluteThreshold',
-            'depthRelativeThreshold',
-            'edgeDepthDifference',
-            'maxVelocityLength',
-            'minimumCurrentWeight',
-            'varianceClipGamma',
-            'subpixelCorrection',
-            'flickerReduction',
-            'normalRejectionCosine',
-            'responsiveHistoryReduction',
-            'responsiveMask',
-          ];
-          const browser = await chromium.launch({
-            headless: true,
-            args: [
-              '--enable-unsafe-webgpu',
-              '--enable-features=Vulkan,UseSkiaRenderer',
-              '--use-angle=swiftshader',
-              '--disable-vulkan-surface',
-            ],
-          });
-          const evidence = {};
-          try {
-            for (const [name, baseUrl] of [
-              ['phase-4', process.env.PHASE_URL],
-              ['latest', process.env.LATEST_URL],
-            ]) {
-              const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
-              const errors = [];
-              page.on('console', (message) => {
-                if (message.type() === 'error') errors.push(message.text());
-              });
-              page.on('pageerror', (error) => errors.push(error.message));
-              await page.goto(`${baseUrl}?phase04handoff=${expectedCommit}`, {
-                waitUntil: 'domcontentloaded',
-                timeout: 120000,
-              });
-              await page.locator('[data-testid="commit-sha"]').waitFor({ timeout: 120000 });
-              const commit = (await page.locator('[data-testid="commit-sha"]').textContent())?.trim();
-              const controls = await page.locator('[data-taa-control]').evaluateAll((nodes) =>
-                [...new Set(nodes.map((node) => node.getAttribute('data-taa-control')).filter(Boolean))],
-              );
-              const missing = expectedControls.filter((control) => !controls.includes(control));
-              if (commit !== expectedCommit) {
-                throw new Error(`${name}: expected Commit ${expectedCommit}, received ${commit}`);
-              }
-              if (missing.length > 0 || controls.length !== expectedControls.length) {
-                throw new Error(`${name}: invalid TAA controls; missing=${missing.join(',')}; actual=${controls.join(',')}`);
-              }
-              evidence[name] = { commit, controls, consoleErrors: errors };
-              await page.close();
-            }
-          } finally {
-            await browser.close();
-          }
-          console.log(JSON.stringify(evidence, null, 2));
-          JS
-          node /tmp/verify-pages.mjs | tee /tmp/phase-04-public-evidence.json
-
-      - name: Finalize governance documents
-        env:
-          MAIN_CI_RUN_ID: ${{ steps.evidence.outputs.main_ci_run_id }}
-          MAIN_CI_URL: ${{ steps.evidence.outputs.main_ci_url }}
-          PAGES_DEPLOYMENT_ID: ${{ steps.evidence.outputs.pages_deployment_id }}
-          PAGES_DEPLOYMENT_URL: ${{ steps.evidence.outputs.pages_deployment_url }}
-          PAGES_RUN_ID: ${{ steps.evidence.outputs.pages_run_id }}
-          PAGES_RUN_URL: ${{ steps.evidence.outputs.pages_run_url }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          from datetime import datetime
-          from pathlib import Path
-          from zoneinfo import ZoneInfo
-
-          merge_sha = os.environ['MERGE_SHA']
-          main_ci = os.environ['MAIN_CI_RUN_ID']
-          pages_deployment = os.environ['PAGES_DEPLOYMENT_ID']
-          pages_run = os.environ.get('PAGES_RUN_ID') or 'GitHub Pages deployment'
           timestamp = datetime.now(ZoneInfo('America/Los_Angeles')).strftime('%Y-%m-%d %H:%M PDT')
-
-          status = f'''# Kyxos Render Engine Work Status
-
-          - **Current Phase:** Phase 5 — Shadows, AO, and Standard Post-Processing
-          - **Current Branch:** `agent/phase-05-lighting-postfx` / Draft PR #12
-          - **Overall Progress:** 5 / 15 phases accepted; Phase 4 Final is merged, CI-verified, deployed, and publicly verified, and Phase 5 is ready to resume from its existing bootstrap ledger
-          - **Current Task:** P5-02 — Add backend-portable Directional/Spot Light contracts and a Scene-owned deterministic light registry
-          - **Last Completed Task:** P4-14 — Compatible TRAA resolve behavior and explicit rigid-object Velocity merged and publicly verified
-          - **Next Action:** Rebase or reconstruct Draft PR #12 from current `main` while preserving its P5-01 contract and P5-02 work, then run complete `pnpm verify` before continuing P5-02
-          - **CI Status:** Phase 4 Final pre-merge Verify Run `30085244188` PASS; standard PR Run `30093376943` PASS; main Run `{main_ci}` PASS; Pages deployment `{pages_deployment}` PASS
-          - **Acceptance Status:** Phase 0–4 Accepted and publicly operational; Phase 5 In Development / Ready to Resume
-          - **Known Blockers:** Phase 5 Draft PR #12 predates the Phase 4 Final merge and must be synchronized with current `main` before further implementation
-          - **Last Updated:** {timestamp}
-
-          `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
-          source of truth for the current Commit; this file contains only human-readable current state and one
-          Next Action.
-
-          ## Phase Progress
-
-          | Phase | Status                 | Branch                               | PR  | CI   | Acceptance     | Tag                 |
-          | ----: | ---------------------- | ------------------------------------ | --- | ---- | -------------- | ------------------- |
-          |    00 | Phase Accepted         | `agent/phase-00-foundation`          | #1  | PASS | Phase Accepted | `phase-00-accepted` |
-          |    01 | Phase Accepted         | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
-          |    02 | Phase Accepted         | `agent/phase-02-scene-camera`        | #3  | PASS | Phase Accepted | `phase-02-accepted` |
-          |    03 | Phase Accepted         | `agent/phase-03-pbr-ibl`             | #5  | PASS | Phase Accepted | `phase-03-accepted` |
-          |    04 | Phase Accepted / Final | `phase-04-final`                     | #16 | PASS | Phase Accepted | `phase-04-accepted` |
-          |    05 | In Development / Ready | `agent/phase-05-lighting-postfx`     | #12 | SYNC | In Development | —                   |
-          |    06 | Planned                | `agent/phase-06-assets`              | —   | —    | Planned        | —                   |
-          |    07 | Planned                | `agent/phase-07-animation`           | —   | —    | Planned        | —                   |
-          |    08 | Planned                | `agent/phase-08-material-extensions` | —   | —    | Planned        | —                   |
-          |    09 | Planned                | `agent/phase-09-sss`                 | —   | —    | Planned        | —                   |
-          |    10 | Planned                | `agent/phase-10-webgl2`              | —   | —    | Planned        | —                   |
-          |    11 | Planned                | `agent/phase-11-texture-lab`         | —   | —    | Planned        | —                   |
-          |    12 | Planned                | `agent/phase-12-advanced-features`   | —   | —    | Planned        | —                   |
-          |    13 | Planned                | `agent/phase-13-production`          | —   | —    | Planned        | —                   |
-          |    14 | Planned                | `agent/phase-14-release`             | —   | —    | Planned        | —                   |
-          '''
-          Path('WORK_STATUS.md').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in status.splitlines()) + '\n', encoding='utf-8')
-
-          tasks_path = Path('docs/execution/PHASE_04_TASKS.md')
-          tasks = tasks_path.read_text(encoding='utf-8')
-          tasks = tasks.replace(
-              'Phase status: **Phase Accepted — P4-14 Verified / Deployment Pending**',
-              'Phase status: **Phase Accepted — P4-14 Completed and Publicly Verified**',
-          )
-          tasks = tasks.replace(
-              '| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity as the final Phase 4 refinement | P4-13             | Current-only RG16F Velocity MRT, prior rigid transforms, edge/disocclusion/variance/motion/flicker controls, complete verify and public Pages | In Development |',
-              '| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity as the final Phase 4 refinement | P4-13             | Current-only RG16F Velocity MRT, prior rigid transforms, edge/disocclusion/variance/motion/flicker controls, complete verify and public Pages | Completed      |',
-          )
-          tasks += f'''\n## P4-14 final acceptance closure\n\n- PR #16 was squash-merged to `main` as `{merge_sha}` after standard PR Run `30093376943` passed.\n- Main `Phase verification` Run `{main_ci}` passed on the exact merge source.\n- GitHub Pages deployment `{pages_deployment}` passed; associated Pages run/evidence: `{pages_run}`.\n- Public `https://urashima.github.io/Kyxos-Render-Engine/phase-4/` and\n  `https://urashima.github.io/Kyxos-Render-Engine/latest/` both reported Commit `{merge_sha}`.\n- Both public routes exposed exactly the 13 required live TAA controls, including explicit Velocity,\n  disocclusion, variance, motion, subpixel, minimum-current, and flicker tuning.\n- P4-14 is Completed; Phase 5 may resume after Draft PR #12 is synchronized with current `main`.\n'''
-          tasks_path.write_text(tasks, encoding='utf-8')
-
-          public = json.loads(Path('/tmp/phase-04-public-evidence.json').read_text(encoding='utf-8'))
+          pages_run_evidence = str(pages_run['id']) if pages_run is not None else 'deployment API evidence'
           log_path = Path('docs/execution/WORK_LOG.md')
           with log_path.open('a', encoding='utf-8') as log:
-              log.write(f'''\n## {timestamp} — P4-14 merge, Pages acceptance, and Phase 5 handoff\n\n### Completed\n\n- Marked PR #16 ready after trusted standard CI and squash-merged it to `main` as `{merge_sha}`.\n- Preserved the accepted forward temporal architecture while adding explicit rigid-object Velocity and the complete compatible TRAA control surface.\n- Verified the deployed Phase 4 and Latest routes against the exact merge Commit and all 13 public TAA controls.\n- Closed P4-14 as Completed and transferred the unique current action to synchronizing Phase 5 Draft PR #12 before continuing P5-02.\n\n### Validation\n\n- Final pre-merge `pnpm verify`: PASS — Run `30085244188`, job `89455803547`.\n- Trusted standard PR CI: PASS — Run `30093376943`.\n- Main CI: PASS — Run `{main_ci}`.\n- Pages deployment: PASS — deployment `{pages_deployment}`, run/evidence `{pages_run}`.\n- Public Phase 4 route: Commit `{public['phase-4']['commit']}`, 13 / 13 TAA controls.\n- Public Latest route: Commit `{public['latest']['commit']}`, 13 / 13 TAA controls.\n\n### Next\n\n- Synchronize `agent/phase-05-lighting-postfx` / Draft PR #12 with current `main`, preserve P5-01 and existing P5-02 work, and run complete `pnpm verify`.\n''')
+              log.write(
+                  f'''\n## {timestamp} — P4-14 merge, Pages acceptance, and Phase 5 handoff\n\n### Completed\n\n- Marked PR #16 ready after trusted standard CI and squash-merged it to `main` as `{sha}`.\n- Preserved the accepted forward temporal architecture while adding explicit rigid-object Velocity and the complete compatible TRAA control surface.\n- Verified the deployed Phase 4 and Latest routes against the exact merge Commit and all 13 public TAA controls.\n- Closed the implementation and public acceptance gates; the remaining governance checkpoint transfers the unique current action to Phase 5 Draft PR #12 synchronization.\n\n### Validation\n\n- Final pre-merge `pnpm verify`: PASS — Run `30085244188`, job `89455803547`.\n- Trusted standard PR CI: PASS — Run `30093376943`.\n- Main CI: PASS — Run `{main_ci['id']}`.\n- Pages deployment: PASS — deployment `{pages['id']}`, run/evidence `{pages_run_evidence}`.\n- Public Chromium acceptance: PASS — Run `{public_run_id}`.\n- Public Phase 4 route: Commit `{sha}`, 13 / 13 TAA controls.\n- Public Latest route: Commit `{sha}`, 13 / 13 TAA controls.\n\n### Next\n\n- Synchronize `agent/phase-05-lighting-postfx` / Draft PR #12 with current `main`, preserve P5-01 and existing P5-02 work, and run complete `pnpm verify`.\n'''
+              )
 
+          evidence = {
+              'main_ci_run_id': main_ci['id'],
+              'pages_deployment_id': pages['id'],
+              'pages_run_id': pages_run['id'] if pages_run is not None else None,
+              'public_verify_run_id': public_run_id,
+          }
+          print(json.dumps(evidence, indent=2, sort_keys=True))
           Path('.github/workflows/phase-04-public-handoff.yml').unlink()
           PY
-          pnpm exec prettier WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md --write
-          pnpm format:check
 
-      - name: Commit final governance checkpoint
+      - name: Commit append-only evidence checkpoint
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md .github/workflows/phase-04-public-handoff.yml
-          git commit -m "docs(phase-04): close public acceptance and hand off Phase 5"
+          git add docs/execution/WORK_LOG.md .github/workflows/phase-04-public-handoff.yml
+          git commit -m "docs(phase-04): append final public acceptance evidence"
           git push origin HEAD:phase-04-final-handoff
