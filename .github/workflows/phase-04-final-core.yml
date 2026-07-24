@@ -32,6 +32,7 @@ jobs:
         run: |
           python .github/scripts/apply-phase-04-final.py
           python .github/scripts/update-phase-04-final-tests.py
+          python .github/scripts/update-phase-04-final-tests-2.py
       - run: pnpm install --frozen-lockfile
       - run: pnpm format
       - run: pnpm exec playwright install --with-deps chromium
@@ -44,6 +45,7 @@ jobs:
         run: |
           rm -f .github/scripts/apply-phase-04-final.py
           rm -f .github/scripts/update-phase-04-final-tests.py
+          rm -f .github/scripts/update-phase-04-final-tests-2.py
           rm -f .github/workflows/phase-04-final-core.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
