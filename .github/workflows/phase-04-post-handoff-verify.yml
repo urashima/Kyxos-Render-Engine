@@ -39,7 +39,7 @@ jobs:
 
       - name: Wait for final public routes
         run: |
-          cat > /tmp/verify-final-pages.mjs <<'JS'
+          cat > phase-04-final-public-verify.mjs <<'JS'
           import { writeFile } from 'node:fs/promises';
           import { chromium } from 'playwright';
 
@@ -59,6 +59,13 @@ jobs:
             'responsiveHistoryReduction',
             'responsiveMask',
           ];
+          const routes = [
+            ['phase-4', process.env.PHASE_URL],
+            ['latest', process.env.LATEST_URL],
+          ];
+          const attempts = [];
+          const deadline = Date.now() + 8 * 60 * 1000;
+          let acceptedEvidence = null;
           const browser = await chromium.launch({
             headless: true,
             args: [
@@ -68,42 +75,62 @@ jobs:
               '--disable-vulkan-surface',
             ],
           });
-          const attempts = [];
-          const deadline = Date.now() + 10 * 60 * 1000;
-          let acceptedEvidence;
+
           try {
-            while (Date.now() < deadline && acceptedEvidence === undefined) {
+            while (Date.now() < deadline && acceptedEvidence === null) {
               const evidence = {};
               let valid = true;
-              for (const [name, baseUrl] of [
-                ['phase-4', process.env.PHASE_URL],
-                ['latest', process.env.LATEST_URL],
-              ]) {
+              for (const route of routes) {
+                const name = route[0];
+                const baseUrl = route[1];
                 const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
                 try {
-                  await page.goto(`${baseUrl}?posthandoff=${expectedCommit}&attempt=${attempts.length}&t=${Date.now()}`, {
+                  const nonce = `${Date.now()}-${attempts.length}`;
+                  await page.goto(`${baseUrl}?posthandoff=${expectedCommit}&nonce=${nonce}`, {
                     waitUntil: 'domcontentloaded',
                     timeout: 120000,
                   });
                   await page.locator('[data-testid="commit-sha"]').waitFor({ timeout: 120000 });
-                  const commit = (await page.locator('[data-testid="commit-sha"]').textContent())?.trim();
-                  const controls = await page.locator('[data-taa-control]').evaluateAll((nodes) =>
-                    [...new Set(nodes.map((node) => node.getAttribute('data-taa-control')).filter(Boolean))],
-                  );
+                  const commitText = await page.locator('[data-testid="commit-sha"]').textContent();
+                  const commit = commitText === null ? '' : commitText.trim();
+                  const controls = await page.locator('[data-taa-control]').evaluateAll((nodes) => {
+                    const values = nodes
+                      .map((node) => node.getAttribute('data-taa-control'))
+                      .filter((value) => value !== null);
+                    return Array.from(new Set(values));
+                  });
                   const missing = expectedControls.filter((control) => !controls.includes(control));
-                  evidence[name] = { commit, controlCount: controls.length, controls, missing };
-                  if (commit !== expectedCommit || missing.length > 0 || controls.length !== expectedControls.length) {
+                  evidence[name] = {
+                    commit,
+                    controlCount: controls.length,
+                    controls,
+                    missing,
+                    url: page.url(),
+                  };
+                  if (
+                    commit !== expectedCommit ||
+                    controls.length !== expectedControls.length ||
+                    missing.length !== 0
+                  ) {
                     valid = false;
                   }
                 } catch (error) {
-                  evidence[name] = { error: error instanceof Error ? error.message : String(error) };
+                  evidence[name] = {
+                    error: error instanceof Error ? error.message : String(error),
+                    url: page.url(),
+                  };
                   valid = false;
                 } finally {
                   await page.close();
                 }
               }
-              attempts.push({ checkedAt: new Date().toISOString(), evidence });
-              console.log(JSON.stringify(attempts.at(-1), null, 2));
+              const attempt = { checkedAt: new Date().toISOString(), evidence };
+              attempts.push(attempt);
+              await writeFile(
+                '/tmp/final-public-attempts.json',
+                `${JSON.stringify(attempts, null, 2)}\n`,
+              );
+              console.log(JSON.stringify(attempt, null, 2));
               if (valid) {
                 acceptedEvidence = evidence;
                 break;
@@ -113,13 +140,17 @@ jobs:
           } finally {
             await browser.close();
           }
-          await writeFile('/tmp/final-public-attempts.json', `${JSON.stringify(attempts, null, 2)}\n`);
-          if (acceptedEvidence === undefined) {
-            throw new Error(`Pages CDN did not expose ${expectedCommit} with 13 controls before timeout`);
+
+          if (acceptedEvidence === null) {
+            throw new Error(`Final Pages did not expose ${expectedCommit} with 13 controls`);
           }
-          await writeFile('/tmp/final-public-evidence.json', `${JSON.stringify(acceptedEvidence, null, 2)}\n`);
+          await writeFile(
+            '/tmp/final-public-evidence.json',
+            `${JSON.stringify(acceptedEvidence, null, 2)}\n`,
+          );
           JS
-          node /tmp/verify-final-pages.mjs
+          node phase-04-final-public-verify.mjs
+          rm phase-04-final-public-verify.mjs
 
       - name: Upload final public evidence
         if: always()
@@ -129,4 +160,4 @@ jobs:
           path: |
             /tmp/final-public-attempts.json
             /tmp/final-public-evidence.json
-          if-no-files-found: error
+          if-no-files-found: warn
