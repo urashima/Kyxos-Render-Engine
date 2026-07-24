@@ -13,7 +13,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Check out diagnostic branch
         uses: actions/checkout@v7
@@ -44,18 +44,23 @@ jobs:
             await writeFile(output, `${JSON.stringify(result, null, 2)}\n`);
             console.log(JSON.stringify(result, null, 2));
           };
-          const url = 'https://urashima.github.io/Kyxos-Render-Engine/phase-4/';
           const browser = await chromium.launch({
             headless: true,
             args: [
-              '--enable-unsafe-webgpu',
-              '--enable-features=Vulkan,UseSkiaRenderer',
-              '--use-angle=swiftshader',
               '--disable-vulkan-surface',
+              '--enable-features=Vulkan',
+              '--enable-unsafe-swiftshader',
+              '--enable-unsafe-webgpu',
+              '--use-angle=swiftshader',
+              '--use-gpu-in-tests',
+              '--use-vulkan=swiftshader',
+              '--use-webgpu-adapter=swiftshader',
             ],
           });
-          const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
-
+          const page = await browser.newPage({
+            colorScheme: 'dark',
+            viewport: { width: 1280, height: 720 },
+          });
           const text = async (id) => (await page.getByTestId(id).textContent())?.trim() ?? '';
           const waitForSleeping = async () => {
             await page.waitForFunction(() => {
@@ -67,7 +72,7 @@ jobs:
                 value('raf-active') === 'false' &&
                 value('history-valid') === 'valid'
               );
-            }, undefined, { timeout: 120_000 });
+            }, undefined, { timeout: 60_000 });
           };
           const snapshot = async (label) => ({
             label,
@@ -87,10 +92,10 @@ jobs:
           };
 
           try {
-            await page.goto(`${url}?resource-diagnostic=${Date.now()}`, {
-              waitUntil: 'domcontentloaded',
-              timeout: 120_000,
-            });
+            await page.goto(
+              `https://urashima.github.io/Kyxos-Render-Engine/phase-4/?resource-diagnostic=${Date.now()}`,
+              { waitUntil: 'domcontentloaded', timeout: 120_000 },
+            );
             await waitForSleeping();
             await record('initial');
 
@@ -100,15 +105,7 @@ jobs:
 
             await page.getByRole('button', { name: 'Default TAA' }).click();
             await waitForSleeping();
-            await record('default-1');
-
-            await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.45');
-            await waitForSleeping();
-            await record('jitter-0.45');
-
-            await page.getByRole('button', { name: 'Default TAA' }).click();
-            await waitForSleeping();
-            await record('default-2');
+            await record('default');
           } catch (error) {
             result.error = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
             await persist();
