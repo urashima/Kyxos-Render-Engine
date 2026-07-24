@@ -149,6 +149,31 @@ describe('StaticAccumulationGpuHistory', () => {
     backend.dispose();
   });
 
+  it('restores canonical ping-pong roles after explicit invalidation', async () => {
+    const backend = new MockBackend();
+    await backend.initialize();
+    const history = new StaticAccumulationGpuHistory({
+      height: 1,
+      ownerId: 'static-role-reset',
+      targetSamples: 4,
+      width: 1,
+    });
+    history.initialize(backend);
+
+    const first = history.prepareFrame(signature());
+    history.commitFrame();
+    history.invalidate('post-process');
+    const reset = history.prepareFrame(signature({ postProcess: 2 }));
+    expect(reset).toMatchObject({ historyValid: false, previousSampleCount: 0 });
+    expect(reset.readColorTexture).toBe(first.readColorTexture);
+    expect(reset.writeColorTexture).toBe(first.writeColorTexture);
+    history.cancelFrame();
+
+    history.dispose();
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    backend.dispose();
+  });
+
   it('converges only after the configured consecutive stable errors', async () => {
     const backend = new MockBackend();
     await backend.initialize();
