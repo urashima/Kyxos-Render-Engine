@@ -1,9 +1,6 @@
 name: Phase 4 final core integration
 
 on:
-  push:
-    branches:
-      - phase-04-final
   pull_request:
     branches:
       - main
@@ -21,7 +18,7 @@ permissions:
 
 jobs:
   integrate:
-    if: github.event_name == 'push' || github.head_ref == 'phase-04-final'
+    if: github.head_ref == 'phase-04-final'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -58,10 +55,17 @@ jobs:
         run: pnpm format
 
       - name: Build packages
-        run: pnpm build:packages
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm build:packages 2>&1 | tee test-results/phase-04/runtime/phase-04-final-package-build.log
 
       - name: Validate shaders
-        run: pnpm validate:shaders
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm validate:shaders 2>&1 | tee test-results/phase-04/runtime/phase-04-final-shader-validation.log
 
       - name: Remove one-shot integration files
         run: |
@@ -82,7 +86,10 @@ jobs:
         with:
           name: phase-04-final-core-${{ github.run_attempt }}
           path: |
-            packages/**/tsconfig.tsbuildinfo
             test-results/phase-04/runtime/
+            packages/renderer/src/
+            packages/camera/src/temporal-camera.ts
+            packages/sdk/src/temporal-pbr.ts
+            shaders/webgpu/phase-04-*.wgsl
           if-no-files-found: ignore
           retention-days: 7
