@@ -1,0 +1,54 @@
+name: Phase 4 final core
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.head_ref == 'phase-04-final'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: phase-04-final
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - name: Apply readable core patch
+        run: python .github/scripts/apply-phase-04-final.py
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Verify complete repository
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-04-final-core.log
+      - name: Commit verified core
+        run: |
+          rm -f .github/scripts/apply-phase-04-final.py .github/workflows/phase-04-final-core.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "feat(phase-04): add explicit velocity TRAA core"
+          git push origin HEAD:phase-04-final
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: phase-04-final-core-${{ github.run_attempt }}
+          path: test-results/phase-04/runtime/
+          if-no-files-found: ignore
