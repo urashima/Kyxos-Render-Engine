@@ -14,11 +14,6 @@ jobs:
   diagnose:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env:
-      EXPECTED_COMMIT_SHA: 9ff598bd680dc01553abffb19e59045d7036eb31
-      PAGES_LATEST_PHASE: '4'
-      PAGES_PHASES: 0,1,2,3,4
-      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
     steps:
       - name: Check out diagnostic branch
         uses: actions/checkout@v7
@@ -37,22 +32,88 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Capture official online test report
+      - name: Capture Phase 4 resource transitions
         run: |
-          set +e
-          pnpm exec playwright test --config playwright.pages.config.ts --reporter=json \
-            >/tmp/pages-online-report.json 2>/tmp/pages-online-stderr.txt
-          status=$?
-          printf '%s\n' "$status" >/tmp/pages-online-exit-code.txt
-          cat /tmp/pages-online-stderr.txt
-          exit 0
+          cat > phase-04-resource-diagnostic.mjs <<'JS'
+          import { writeFile } from 'node:fs/promises';
+          import { chromium } from '@playwright/test';
+
+          const url = 'https://urashima.github.io/Kyxos-Render-Engine/phase-4/';
+          const browser = await chromium.launch({
+            headless: true,
+            args: [
+              '--enable-unsafe-webgpu',
+              '--enable-features=Vulkan,UseSkiaRenderer',
+              '--use-angle=swiftshader',
+              '--disable-vulkan-surface',
+            ],
+          });
+          const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
+
+          const text = async (id) => (await page.getByTestId(id).textContent())?.trim() ?? '';
+          const waitForSleeping = async () => {
+            await page.getByTestId('renderer-state').waitFor({ timeout: 60_000 });
+            await page.waitForFunction(() => {
+              const value = (id) => document.querySelector(`[data-testid="${id}"]`)?.textContent?.trim();
+              return (
+                value('renderer-state') === 'ready' &&
+                value('render-mode') === 'sleeping' &&
+                value('sample-count') === '16' &&
+                value('raf-active') === 'false' &&
+                value('history-valid') === 'valid'
+              );
+            }, undefined, { timeout: 60_000 });
+          };
+          const snapshot = async (label) => ({
+            label,
+            resourceCount: Number(await text('resource-count')),
+            resourceBaseline: await text('resource-baseline'),
+            resourceVerdict: await text('resource-verdict'),
+            pipelineCount: Number(await text('pipeline-count')),
+            textureBytes: await text('texture-bytes'),
+            bufferBytes: await text('buffer-bytes'),
+            historyGeneration: Number(await text('history-generation')),
+            wakeCount: Number(await text('wake-count')),
+            jitter: await text('taa-current-jitter'),
+          });
+
+          const evidence = [];
+          try {
+            await page.goto(`${url}?resource-diagnostic=${Date.now()}`, {
+              waitUntil: 'domcontentloaded',
+              timeout: 120_000,
+            });
+            await waitForSleeping();
+            evidence.push(await snapshot('initial'));
+
+            await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35');
+            await waitForSleeping();
+            evidence.push(await snapshot('jitter-0.35'));
+
+            await page.getByRole('button', { name: 'Default TAA' }).click();
+            await waitForSleeping();
+            evidence.push(await snapshot('default-1'));
+
+            await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.45');
+            await waitForSleeping();
+            evidence.push(await snapshot('jitter-0.45'));
+
+            await page.getByRole('button', { name: 'Default TAA' }).click();
+            await waitForSleeping();
+            evidence.push(await snapshot('default-2'));
+          } finally {
+            await browser.close();
+          }
+
+          console.log(JSON.stringify(evidence, null, 2));
+          await writeFile('/tmp/phase-04-resource-diagnostic.json', `${JSON.stringify(evidence, null, 2)}\n`);
+          JS
+          node phase-04-resource-diagnostic.mjs
+          rm phase-04-resource-diagnostic.mjs
 
       - name: Upload diagnostic report
         uses: actions/upload-artifact@v7
         with:
-          name: pages-online-diagnostic
-          path: |
-            /tmp/pages-online-report.json
-            /tmp/pages-online-stderr.txt
-            /tmp/pages-online-exit-code.txt
+          name: phase-04-resource-diagnostic
+          path: /tmp/phase-04-resource-diagnostic.json
           if-no-files-found: error
