@@ -1,0 +1,315 @@
+name: Phase 4 History role stability
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-history-role-stability.yml
+
+permissions:
+  contents: write
+
+jobs:
+  implement-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: true
+    steps:
+      - name: Check out fix branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-history-role-stability
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply deterministic History role reset and regression gates
+        run: |
+          python - <<'PY'
+          from datetime import datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected exactly one replacement target, found {text.count(old)}')
+              file.write_text(text.replace(old, new), encoding='utf-8')
+
+          replace_once(
+              'packages/renderer/src/dynamic-taa-gpu-history.ts',
+              """    this.#frameSignature = undefined;
+              this.#history.invalidate(reason);
+              return this.getDiagnostics();
+""",
+              """    this.#frameSignature = undefined;
+              this.#readIndex = 0;
+              this.#history.invalidate(reason);
+              return this.getDiagnostics();
+""",
+          )
+          replace_once(
+              'packages/renderer/src/static-accumulation-gpu-history.ts',
+              """    this.#frameSignature = undefined;
+              this.#history.invalidate(reason);
+              this.#convergence.reset();
+              return this.getDiagnostics();
+""",
+              """    this.#frameSignature = undefined;
+              this.#readIndex = 0;
+              this.#history.invalidate(reason);
+              this.#convergence.reset();
+              return this.getDiagnostics();
+""",
+          )
+
+          replace_once(
+              'packages/renderer/test/dynamic-taa-gpu-history.test.ts',
+              """    history.cancelFrame();
+
+              const changed = history.prepareFrame(signature({ materials: 2 }));
+""",
+              """    history.cancelFrame();
+
+              history.invalidate('post-process');
+              const reset = history.prepareFrame(signature({ postProcess: 2 }));
+              expect(reset.historyValid).toBe(false);
+              expect(reset.readColorTexture).toBe(first.readColorTexture);
+              expect(reset.readDepthTexture).toBe(first.readDepthTexture);
+              expect(reset.readNormalTexture).toBe(first.readNormalTexture);
+              expect(reset.writeColorTexture).toBe(first.writeColorTexture);
+              expect(reset.writeDepthTexture).toBe(first.writeDepthTexture);
+              expect(reset.writeNormalTexture).toBe(first.writeNormalTexture);
+              history.cancelFrame();
+
+              const changed = history.prepareFrame(signature({ materials: 2 }));
+""",
+          )
+
+          replace_once(
+              'packages/renderer/test/static-accumulation-gpu-history.test.ts',
+              """  it('converges only after the configured consecutive stable errors', async () => {
+""",
+              """  it('restores canonical ping-pong roles after explicit invalidation', async () => {
+                const backend = new MockBackend();
+                await backend.initialize();
+                const history = new StaticAccumulationGpuHistory({
+                  height: 1,
+                  ownerId: 'static-role-reset',
+                  targetSamples: 4,
+                  width: 1,
+                });
+                history.initialize(backend);
+
+                const first = history.prepareFrame(signature());
+                history.commitFrame();
+                history.invalidate('post-process');
+                const reset = history.prepareFrame(signature({ postProcess: 2 }));
+                expect(reset).toMatchObject({ historyValid: false, previousSampleCount: 0 });
+                expect(reset.readColorTexture).toBe(first.readColorTexture);
+                expect(reset.writeColorTexture).toBe(first.writeColorTexture);
+                history.cancelFrame();
+
+                history.dispose();
+                expect(backend.getResourceStatistics().activeCount).toBe(0);
+                backend.dispose();
+              });
+
+              it('converges only after the configured consecutive stable errors', async () => {
+""",
+          )
+
+          replace_once(
+              'packages/renderer/test/temporal-pipeline-transaction.test.ts',
+              """  it('cancels every open History role when current rendering fails and remains reusable', async () => {
+""",
+              """  it('reuses the same Bind Groups across repeated History resets', async () => {
+                const backend = new MockBackend();
+                await backend.initialize();
+                const transaction = createTransaction();
+                await transaction.initialize(backend);
+
+                const executeCycle = (generation: number): void => {
+                  const cycleSignature = { ...signature, postProcess: generation };
+                  transaction.execute({
+                    currentInverseViewProjection: identityMat4(),
+                    dirtyFlags: ['post-process'],
+                    previousViewProjection: identityMat4(),
+                    renderCurrent: () => currentStatistics,
+                    signature: cycleSignature,
+                    temporal: temporal('interactive', 0, generation, true),
+                  });
+                  transaction.execute({
+                    currentInverseViewProjection: identityMat4(),
+                    dirtyFlags: [],
+                    previousViewProjection: identityMat4(),
+                    renderCurrent: () => currentStatistics,
+                    signature: cycleSignature,
+                    temporal: temporal('accumulating', 1, generation),
+                  });
+                  transaction.execute({
+                    currentInverseViewProjection: identityMat4(),
+                    dirtyFlags: [],
+                    previousViewProjection: identityMat4(),
+                    renderCurrent: () => currentStatistics,
+                    signature: cycleSignature,
+                    temporal: temporal('accumulating', 2, generation),
+                  });
+                };
+
+                executeCycle(1);
+                const baseline = backend.getResourceStatistics();
+                expect(transaction.getDiagnostics().staticPass.activeBindGroupCount).toBe(2);
+
+                executeCycle(2);
+                expect(backend.getResourceStatistics()).toMatchObject({
+                  activeCount: baseline.activeCount,
+                  createdTotal: baseline.createdTotal,
+                });
+                expect(transaction.getDiagnostics().staticPass.activeBindGroupCount).toBe(2);
+
+                executeCycle(3);
+                expect(backend.getResourceStatistics()).toMatchObject({
+                  activeCount: baseline.activeCount,
+                  createdTotal: baseline.createdTotal,
+                });
+
+                transaction.dispose();
+                expect(backend.getResourceStatistics().activeCount).toBe(0);
+                backend.dispose();
+              });
+
+              it('cancels every open History role when current rendering fails and remains reusable', async () => {
+""",
+          )
+
+          timestamp = datetime.now(ZoneInfo('America/Los_Angeles')).strftime('%Y-%m-%d %H:%M PDT')
+          status = f'''# Kyxos Render Engine Work Status
+
+          - **Current Phase:** Phase 4 — Final Public Resource-Stability Closure
+          - **Current Branch:** `phase-04-history-role-stability` / Draft PR #20
+          - **Overall Progress:** 4 / 15 phases accepted plus Phase 4 acceptance reopened; the final implementation and public routes are operational, but the official Pages interaction gate exposed nondeterministic Bind Group growth after repeated TAA History resets
+          - **Current Task:** P4-14 — Restore canonical Dynamic/Static History roles so every TAA parameter reset reuses the original Bind Groups
+          - **Last Completed Task:** P4-13 — Public Dynamic TAA tuning API and seven-control Phase 4 Pages panel
+          - **Next Action:** Pass complete `pnpm verify` and standard PR CI for the canonical role reset, merge with expected-Head protection, require green main CI and official Pages online verification, then restore the Phase 5 P5-02 handoff
+          - **CI Status:** Final Phase 4 implementation and final-main CI PASS; official Pages online interaction gate FAIL on repeated TAA reset because GPU resources changed from 74 to 76 while Pipeline, Texture, and Buffer totals remained unchanged
+          - **Acceptance Status:** Phase 0–3 Accepted; Phase 4 P4-14 Acceptance Reopened / Fix In Development; Phase 5 paused without losing its P5-01/P5-02 ledger
+          - **Known Blockers:** None; root cause is confirmed as retained ping-pong role indices creating two additional Static Accumulation Bind Group combinations
+          - **Last Updated:** {timestamp}
+
+          `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
+          source of truth for the current Commit; this file contains only human-readable current state and one
+          Next Action.
+
+          ## Phase Progress
+
+          | Phase | Status                      | Branch                               | PR  | CI      | Acceptance          | Tag                 |
+          | ----: | --------------------------- | ------------------------------------ | --- | ------- | ------------------- | ------------------- |
+          |    00 | Phase Accepted              | `agent/phase-00-foundation`          | #1  | PASS    | Phase Accepted      | `phase-00-accepted` |
+          |    01 | Phase Accepted              | `agent/phase-01-webgpu-core`         | #2  | PASS    | Phase Accepted      | `phase-01-accepted` |
+          |    02 | Phase Accepted              | `agent/phase-02-scene-camera`        | #3  | PASS    | Phase Accepted      | `phase-02-accepted` |
+          |    03 | Phase Accepted              | `agent/phase-03-pbr-ibl`             | #5  | PASS    | Phase Accepted      | `phase-03-accepted` |
+          |    04 | Acceptance Reopened         | `phase-04-history-role-stability`    | #20 | PENDING | Fix In Development  | `phase-04-accepted` |
+          |    05 | In Development / Paused     | `agent/phase-05-lighting-postfx`     | #12 | SYNC    | In Development      | —                   |
+          |    06 | Planned                     | `agent/phase-06-assets`              | —   | —       | Planned             | —                   |
+          |    07 | Planned                     | `agent/phase-07-animation`           | —   | —       | Planned             | —                   |
+          |    08 | Planned                     | `agent/phase-08-material-extensions` | —   | —       | Planned             | —                   |
+          |    09 | Planned                     | `agent/phase-09-sss`                 | —   | —       | Planned             | —                   |
+          |    10 | Planned                     | `agent/phase-10-webgl2`              | —   | —       | Planned             | —                   |
+          |    11 | Planned                     | `agent/phase-11-texture-lab`         | —   | —       | Planned             | —                   |
+          |    12 | Planned                     | `agent/phase-12-advanced-features`   | —   | —       | Planned             | —                   |
+          |    13 | Planned                     | `agent/phase-13-production`          | —   | —       | Planned             | —                   |
+          |    14 | Planned                     | `agent/phase-14-release`             | —   | —       | Planned             | —                   |
+          '''
+          Path('WORK_STATUS.md').write_text(
+              '\n'.join(line[10:] if line.startswith('          ') else line for line in status.splitlines()) + '\n',
+              encoding='utf-8',
+          )
+
+          tasks_path = Path('docs/execution/PHASE_04_TASKS.md')
+          tasks = tasks_path.read_text(encoding='utf-8')
+          tasks = tasks.replace(
+              'Phase status: **Phase Accepted — P4-14 Completed and Publicly Verified**',
+              'Phase status: **P4-14 Acceptance Reopened — History Role Stability Fix In Development**',
+          )
+          tasks = tasks.replace(
+              'Pull requests: `#7`, `#10`, `#13`, `#16`',
+              'Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`',
+          )
+          tasks = tasks.replace(
+              '| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity as the final Phase 4 refinement | P4-13             | Current-only RG16F Velocity MRT, prior rigid transforms, edge/disocclusion/variance/motion/flicker controls, complete verify and public Pages | Completed |',
+              '| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity as the final Phase 4 refinement | P4-13             | Current-only RG16F Velocity MRT, deterministic History role reset, unchanged Bind Groups, complete verify and public Pages                    | In Development |',
+          )
+          tasks += '''
+
+          ## P4-14 acceptance regression reopening
+
+          - Final Main CI and the focused `/phase-4/` plus `/latest/` 13-control checks passed, but the
+            repository's official `online-pages.spec.ts` interaction gate detected GPU resources changing
+            from 74 to 76 after repeated public TAA resets.
+          - Diagnostic Run `30098217002`, Artifact `8598500935`, proved Pipeline count remained 15,
+            Texture memory remained 29.0 MiB, and Buffer memory remained 83.8 KiB; only two Bind Groups
+            were added after the second History reset.
+          - Dynamic and Static History invalidation retained their prior ping-pong read indices, allowing
+            Static Accumulation to discover two cross-phase Bind Group combinations after later resets.
+          - The fix resets both invalid History role indices to the canonical zero role. No Texture,
+            Buffer, Sampler, Pipeline, Bind Group, Canvas, Renderer, or visual setting is recreated.
+          - P4-14 remains In Development until complete PR/main CI and the official deployed Pages online
+            interaction workflow pass on the exact fix source.
+          '''
+          tasks_path.write_text(
+              '\n'.join(line[10:] if line.startswith('          ') else line for line in tasks.splitlines()) + '\n',
+              encoding='utf-8',
+          )
+
+          log_path = Path('docs/execution/WORK_LOG.md')
+          with log_path.open('a', encoding='utf-8') as log:
+              log.write(f'''\n## {timestamp} — P4-14 public Bind Group stability regression isolated\n\n### Finding\n\n- The official final Pages interaction gate failed because a repeated Phase 4 TAA History reset changed active GPU resources from 74 to 76.\n- Focused resource diagnostics proved Pipeline count, Texture memory, and Buffer memory were unchanged; only two additional Bind Groups were retained.\n- Root cause: Dynamic and Static History invalidation preserved their old ping-pong read indices, allowing later Static Accumulation cycles to discover cross-phase Bind Group combinations.\n\n### Evidence\n\n- Official online failure diagnostic: Run `30096963069`, Artifact `8598054539`.\n- Focused transition diagnostic: Run `30098217002`, Artifact `8598500935`, digest `sha256:c24369d0c936999db49abebf9cd0e32d035d2e292bbab1f6b56caf2fe92a204c`.\n- Initial: 74 resources, 15 Pipelines, 29.0 MiB Textures, 83.8 KiB Buffers.\n- First Jitter reset: unchanged at 74. Second Default reset: 76 resources with every other metric unchanged.\n\n### Next\n\n- Reset both invalid History read indices to the canonical role, prove repeated resets reuse the original Bind Groups, and rerun complete CI plus public Pages acceptance.\n''')
+
+          Path('.github/workflows/phase-04-history-role-stability.yml').unlink()
+          PY
+          pnpm exec prettier \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            docs/execution/WORK_LOG.md \
+            --write
+
+      - name: Run complete verification pipeline
+        run: pnpm verify
+
+      - name: Commit verified fix checkpoint
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            docs/execution/WORK_LOG.md \
+            .github/workflows/phase-04-history-role-stability.yml
+          git commit -m "fix(phase-04): stabilize History reset resource roles"
+          git push origin HEAD:phase-04-history-role-stability
