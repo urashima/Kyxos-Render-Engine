@@ -1,0 +1,60 @@
+name: Phase 4 repair formatting gate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-repair-format.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-history-role-stability
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Format exact repair scope
+        run: |
+          pnpm exec prettier \
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            --write
+
+      - name: Commit formatted repair scope
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts
+          git diff --cached --quiet || git commit -m "style(phase-04): format History role repair"
+          git push origin HEAD:phase-04-history-role-stability
