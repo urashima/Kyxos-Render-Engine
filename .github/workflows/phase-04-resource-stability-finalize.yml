@@ -1,25 +1,27 @@
 name: Phase 4 resource stability finalization
 
 on:
-  issues:
-    types:
-      - opened
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-resource-stability-finalize.yml
+      - .github/scripts/finalize-phase-04-resource-stability.py
 
 permissions:
   actions: read
   contents: write
   deployments: read
-  issues: write
 
 jobs:
   finalize:
-    if: github.event.issue.title == 'Phase 4 resource stability finalization trigger'
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
       REPAIR_MERGE_SHA: eadddc6340fad6a05ad1fa65266a7e3bec95b1f7
-      TARGET_SHA: ${{ github.sha }}
+      FINALIZER_RUN: ${{ github.run_id }}
       PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
+      EXPECTED_COMMIT_SHA: eadddc6340fad6a05ad1fa65266a7e3bec95b1f7
       PAGES_PHASES: 0,1,2,3,4
       PAGES_LATEST_PHASE: '4'
       CI: true
@@ -44,8 +46,7 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Wait for exact main CI and Pages deployment
-        id: evidence
+      - name: Resolve exact main and Pages evidence
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -53,209 +54,63 @@ jobs:
           api() {
             gh api -H 'Accept: application/vnd.github+json' "/repos/${GITHUB_REPOSITORY}$1"
           }
-
           wait_for_run() {
             local name="$1"
             local event="$2"
-            local run_id=""
             for _ in $(seq 1 180); do
-              runs="$(api "/actions/runs?head_sha=${TARGET_SHA}&per_page=100")"
-              run_id="$(printf '%s' "$runs" | jq -r --arg name "$name" --arg event "$event" --arg sha "$TARGET_SHA" '[.workflow_runs[] | select(.name == $name and .event == $event and .head_sha == $sha)] | sort_by(.created_at) | reverse | .[0].id // empty')"
-              if [ -n "$run_id" ]; then
-                run="$(api "/actions/runs/${run_id}")"
+              run="$(api "/actions/runs?head_sha=${REPAIR_MERGE_SHA}&per_page=100" | jq -c --arg name "$name" --arg event "$event" --arg sha "$REPAIR_MERGE_SHA" '[.workflow_runs[] | select(.name == $name and .event == $event and .head_sha == $sha)] | sort_by(.created_at) | reverse | .[0] // empty')"
+              if [ -n "$run" ]; then
                 status="$(printf '%s' "$run" | jq -r '.status')"
                 conclusion="$(printf '%s' "$run" | jq -r '.conclusion // "pending"')"
-                echo "$name run $run_id: $status / $conclusion" >&2
+                id="$(printf '%s' "$run" | jq -r '.id')"
+                echo "$name run $id: $status / $conclusion" >&2
                 if [ "$status" = completed ]; then
-                  if [ "$conclusion" != success ]; then
-                    echo "$name run $run_id failed with $conclusion" >&2
-                    exit 1
-                  fi
-                  printf '%s' "$run_id"
+                  test "$conclusion" = success
+                  printf '%s' "$id"
                   return 0
                 fi
               fi
               sleep 10
             done
-            echo "Timed out waiting for $name on $TARGET_SHA" >&2
-            exit 1
+            return 1
           }
-
-          main_ci_run="$(wait_for_run 'Phase verification' 'push')"
+          main_ci="$(wait_for_run 'Phase verification' 'push')"
           pages_run="$(wait_for_run 'Deploy accepted Playgrounds' 'workflow_run')"
           jobs="$(api "/actions/runs/${pages_run}/jobs?per_page=100")"
           public_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Verify public interactions" and .conclusion == "success")][0].id // empty')"
           deploy_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Deploy public Playground" and .conclusion == "success")][0].id // empty')"
-          if [ -z "$public_job" ] || [ -z "$deploy_job" ]; then
-            echo "Pages run $pages_run lacks successful deploy/public jobs" >&2
-            printf '%s\n' "$jobs" >&2
-            exit 1
-          fi
-
-          pages_deployment="$(api "/deployments?sha=${TARGET_SHA}&environment=github-pages&per_page=20" | jq -r '.[0].id // "not-returned"')"
+          test -n "$public_job"
+          test -n "$deploy_job"
+          deployment="$(api "/deployments?sha=${REPAIR_MERGE_SHA}&environment=github-pages&per_page=20" | jq -r '.[0].id // "not-returned"')"
           {
-            echo "main_ci_run=$main_ci_run"
-            echo "pages_run=$pages_run"
-            echo "public_job=$public_job"
-            echo "deploy_job=$deploy_job"
-            echo "pages_deployment=$pages_deployment"
-          } >> "$GITHUB_OUTPUT"
-
-          jq -n \
-            --arg repair "$REPAIR_MERGE_SHA" \
-            --arg target "$TARGET_SHA" \
-            --arg mainCi "$main_ci_run" \
-            --arg pagesRun "$pages_run" \
-            --arg publicJob "$public_job" \
-            --arg deployJob "$deploy_job" \
-            --arg deployment "$pages_deployment" \
-            '{repairMergeSha:$repair,deploymentSourceSha:$target,mainCiRun:$mainCi,pagesRun:$pagesRun,publicInteractionJob:$publicJob,deployJob:$deployJob,pagesDeployment:$deployment}' \
-            > /tmp/phase-04-final-evidence.json
+            echo "MAIN_CI_RUN=$main_ci"
+            echo "PAGES_RUN=$pages_run"
+            echo "PUBLIC_JOB=$public_job"
+            echo "DEPLOY_JOB=$deploy_job"
+            echo "PAGES_DEPLOYMENT=$deployment"
+          } >> "$GITHUB_ENV"
+          jq -n --arg repair "$REPAIR_MERGE_SHA" --arg mainCi "$main_ci" --arg pagesRun "$pages_run" --arg publicJob "$public_job" --arg deployJob "$deploy_job" --arg deployment "$deployment" '{repairMergeSha:$repair,mainCiRun:$mainCi,pagesRun:$pagesRun,publicInteractionJob:$publicJob,deployJob:$deployJob,pagesDeployment:$deployment}' > /tmp/phase-04-final-evidence.json
 
       - name: Re-run official public Chromium and WebGPU acceptance
-        env:
-          EXPECTED_COMMIT_SHA: ${{ env.TARGET_SHA }}
         run: pnpm exec playwright test --config playwright.pages.config.ts --reporter=list
 
-      - name: Finalize authoritative status documents
-        env:
-          MAIN_CI_RUN: ${{ steps.evidence.outputs.main_ci_run }}
-          PAGES_RUN: ${{ steps.evidence.outputs.pages_run }}
-          PUBLIC_JOB: ${{ steps.evidence.outputs.public_job }}
-          DEPLOY_JOB: ${{ steps.evidence.outputs.deploy_job }}
-          PAGES_DEPLOYMENT: ${{ steps.evidence.outputs.pages_deployment }}
-          FINALIZER_RUN: ${{ github.run_id }}
+      - name: Finalize authoritative documents
         run: |
-          python - <<'PY'
-          from datetime import datetime
-          from pathlib import Path
-          from zoneinfo import ZoneInfo
-          import os
-
-          repair = os.environ['REPAIR_MERGE_SHA']
-          target = os.environ['TARGET_SHA']
-          main_ci = os.environ['MAIN_CI_RUN']
-          pages_run = os.environ['PAGES_RUN']
-          public_job = os.environ['PUBLIC_JOB']
-          deploy_job = os.environ['DEPLOY_JOB']
-          deployment = os.environ['PAGES_DEPLOYMENT']
-          finalizer = os.environ['FINALIZER_RUN']
-          updated = datetime.now(ZoneInfo('America/Los_Angeles')).strftime('%Y-%m-%d %H:%M PDT')
-
-          status = f'''# Kyxos Render Engine Work Status
-
-          - **Current Phase:** Phase 5 — Shadows, AO, and Standard Post-Processing
-          - **Current Branch:** `agent/phase-05-lighting-postfx` / Draft PR #12
-          - **Overall Progress:** 5 / 15 phases accepted; Phase 4 final resource stability is merged, CI-verified, deployed, and publicly verified, and the Phase 5 architecture contract remains frozen
-          - **Current Task:** P5-02 — Add backend-portable Directional/Spot Light contracts and a Scene-owned deterministic light registry
-          - **Last Completed Task:** P5-01 — Freeze Lighting/Shadow/PostFX boundaries, quality matrix, Temporal resets, and the Phase 5 acceptance contract
-          - **Next Action:** Synchronize Draft PR #12 with current `main` while preserving its P5-01 contract and existing P5-02 work, then run complete `pnpm verify` before continuing P5-02
-          - **CI Status:** Phase 4 repair PR Run `30120876531` PASS; repair merge `{repair}`; deployment source `{target}` main Run `{main_ci}` PASS; Pages deployment `{deployment}` / Run `{pages_run}` PASS; official public interaction job `{public_job}` and independent finalizer Run `{finalizer}` PASS
-          - **Acceptance Status:** Phase 0–4 Accepted and publicly operational; Phase 5 In Development
-          - **Known Blockers:** None; PR #12 synchronization is the required first Phase 5 action
-          - **Last Updated:** {updated}
-
-          `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
-          source of truth for the current Commit; this file contains only human-readable current state and one
-          Next Action.
-
-          ## Phase Progress
-
-          | Phase | Status         | Branch                               | PR  | CI   | Acceptance     | Tag                 |
-          | ----: | -------------- | ------------------------------------ | --- | ---- | -------------- | ------------------- |
-          |    00 | Phase Accepted | `agent/phase-00-foundation`          | #1  | PASS | Phase Accepted | `phase-00-accepted` |
-          |    01 | Phase Accepted | `agent/phase-01-webgpu-core`         | #2  | PASS | Phase Accepted | `phase-01-accepted` |
-          |    02 | Phase Accepted | `agent/phase-02-scene-camera`        | #3  | PASS | Phase Accepted | `phase-02-accepted` |
-          |    03 | Phase Accepted | `agent/phase-03-pbr-ibl`             | #5  | PASS | Phase Accepted | `phase-03-accepted` |
-          |    04 | Phase Accepted | `phase-04-history-role-stability`    | #20 | PASS | Phase Accepted | `phase-04-accepted` |
-          |    05 | In Development | `agent/phase-05-lighting-postfx`     | #12 | SYNC | In Development | —                   |
-          |    06 | Planned        | `agent/phase-06-assets`              | —   | —    | Planned        | —                   |
-          |    07 | Planned        | `agent/phase-07-animation`           | —   | —    | Planned        | —                   |
-          |    08 | Planned        | `agent/phase-08-material-extensions` | —   | —    | Planned        | —                   |
-          |    09 | Planned        | `agent/phase-09-sss`                 | —   | —    | Planned        | —                   |
-          |    10 | Planned        | `agent/phase-10-webgl2`              | —   | —    | Planned        | —                   |
-          |    11 | Planned        | `agent/phase-11-texture-lab`         | —   | —    | Planned        | —                   |
-          |    12 | Planned        | `agent/phase-12-advanced-features`   | —   | —    | Planned        | —                   |
-          |    13 | Planned        | `agent/phase-13-production`          | —   | —    | Planned        | —                   |
-          |    14 | Planned        | `agent/phase-14-release`             | —   | —    | Planned        | —                   |
-          '''
-          Path('WORK_STATUS.md').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in status.splitlines()) + '\n', encoding='utf-8')
-
-          task_path = Path('docs/execution/PHASE_04_TASKS.md')
-          tasks = task_path.read_text(encoding='utf-8')
-          tasks = tasks.replace(
-              'Phase status: **Acceptance Reopened — P4-14 Public Resource-Stability Re-verification**',
-              'Phase status: **Phase Accepted — P4-14 Completed and Publicly Verified**',
-          )
-          tasks = tasks.replace(
-              'Previous accepted source: `f926f544c94da2c5ea8f9630c959398b15d2d84f`',
-              f'Final accepted source: `{repair}`',
-          )
-          tasks = tasks.replace('| In Development |', '| Completed      |', 1)
-          tasks = tasks.replace(
-              '- Phase 5 development resumes only after PR #20 passes the exact public resource-stability gate.',
-              '- Phase 5 development resumes from P5-02 only after Draft PR #12 is synchronized with the final accepted source.',
-          )
-          marker = '### P4-14 visual-baseline isolation'
-          evidence = f'''## P4-14 resource-stability final acceptance evidence
-
-          - PR #20 exact repair Head `0abb2b1aefcb57988d5f7a8d007038536b1925a5` passed complete `pnpm verify` in Run `30120876531`, job `89572934754`, including 63 unit-test files / 280 tests and all pinned Chromium/WebGPU cases.
-          - PR #20 was squash-merged to `main` as `{repair}`.
-          - Deployment source `{target}` main `Phase verification` Run `{main_ci}` completed successfully.
-          - GitHub Pages deployment `{deployment}`, deploy job `{deploy_job}`, and workflow Run `{pages_run}` completed successfully.
-          - Official public interaction job `{public_job}` plus independent finalizer Run `{finalizer}` verified `/phase-4/` and `/latest/` at `{target}`.
-          - Repeated Jitter → Default History resets retain the exact GPU resource baseline; Resolve and Static Accumulation each retain exactly two persistent Bind Groups with no 74 → 76 growth.
-
-          '''
-          evidence = '\n'.join(line[10:] if line.startswith('          ') else line for line in evidence.splitlines())
-          if '## P4-14 resource-stability final acceptance evidence' not in tasks:
-              tasks = tasks.replace(marker, evidence + marker)
-          task_path.write_text(tasks, encoding='utf-8')
-
-          log_path = Path('docs/execution/WORK_LOG.md')
-          log = log_path.read_text(encoding='utf-8')
-          heading = '## Phase 4 History role stability final acceptance'
-          entry = f'''\n\n{heading}
-
-          - Official diagnostic Run `30096963069` reproduced a Phase 4 public resource count change from 74 to 76 after Jitter → Default resets; resource-transition Run `30098217002`, Artifact `8598500935`, isolated two cross-phase Static Accumulation Bind Groups.
-          - Root cause: Dynamic TAA and Static Accumulation invalidation reset logical History but retained their ping-pong read roles.
-          - PR #20 resets both read roles to index 0 and adds Dynamic History, Static History, and complete Temporal Pipeline persistent-resource regressions.
-          - Exact repair Head `0abb2b1aefcb57988d5f7a8d007038536b1925a5` passed complete `pnpm verify` Run `30120876531`, job `89572934754`: format, lint, strict types, 63 unit-test files / 280 tests, documentation governance, architecture, Shader validation, builds, bundle budgets, and all pinned Chromium/WebGPU cases.
-          - PR #20 squash merge: `{repair}`; deployment source `{target}` main CI Run `{main_ci}` PASS.
-          - Pages deployment `{deployment}` / deploy job `{deploy_job}` / Run `{pages_run}` PASS; official public interaction job `{public_job}` PASS.
-          - Independent finalizer Run `{finalizer}` re-ran the official public suite against `https://urashima.github.io/Kyxos-Render-Engine/phase-4/` and `https://urashima.github.io/Kyxos-Render-Engine/latest/` at `{target}` and passed.
-          - Phase 4 returned to Accepted. Phase 5 P5-01 remains completed; the unique next action is synchronizing Draft PR #12 with current `main` before continuing P5-02.
-          '''
-          entry = '\n'.join(line[10:] if line.startswith('          ') else line for line in entry.splitlines())
-          if heading not in log:
-              log_path.write_text(log.rstrip() + entry + '\n', encoding='utf-8')
-          PY
-
-          pnpm exec prettier \
-            WORK_STATUS.md \
-            docs/execution/PHASE_04_TASKS.md \
-            docs/execution/WORK_LOG.md \
-            .github/workflows/phase-04-resource-stability-finalize.yml \
-            --write
+          python .github/scripts/finalize-phase-04-resource-stability.py
+          pnpm exec prettier WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md .github/workflows/phase-04-resource-stability-finalize.yml --write
 
       - name: Run complete final governance verification
         run: pnpm verify
 
-      - name: Remove finalizer and commit handoff checkpoint
+      - name: Commit self-deleting final checkpoint
         run: |
           rm .github/workflows/phase-04-resource-stability-finalize.yml
+          rm .github/scripts/finalize-phase-04-resource-stability.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md .github/workflows/phase-04-resource-stability-finalize.yml
+          git add -A
           git commit -m "docs(phase-04): finalize resource-stability acceptance"
           git push origin HEAD:phase-04-resource-stability-finalize
-
-      - name: Close finalization trigger issue
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-        run: gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --comment "Phase 4 resource-stability finalization completed in Run $GITHUB_RUN_ID."
 
       - name: Upload final acceptance evidence
         if: always()
