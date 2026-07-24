@@ -1,0 +1,46 @@
+name: Phase 4 governance formatter
+
+on:
+  push:
+    branches:
+      - phase-04-final
+    paths:
+      - .github/workflows/phase-04-format-governance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format-governance:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-final
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Format governance documents and remove formatter
+        run: |
+          pnpm exec prettier WORK_STATUS.md docs/execution/PHASE_04_TASKS.md --write
+          rm .github/workflows/phase-04-format-governance.yml
+
+      - name: Commit formatted governance checkpoint
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md .github/workflows/phase-04-format-governance.yml
+          git commit -m "docs(phase-04): format final governance checkpoint"
+          git push origin HEAD:phase-04-final
