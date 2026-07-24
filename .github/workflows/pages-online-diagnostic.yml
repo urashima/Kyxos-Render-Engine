@@ -1,0 +1,58 @@
+name: Pages online diagnostic
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/pages-online-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EXPECTED_COMMIT_SHA: 9ff598bd680dc01553abffb19e59045d7036eb31
+      PAGES_LATEST_PHASE: '4'
+      PAGES_PHASES: 0,1,2,3,4
+      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
+    steps:
+      - name: Check out diagnostic branch
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Capture official online test report
+        run: |
+          set +e
+          pnpm exec playwright test --config playwright.pages.config.ts --reporter=json \
+            >/tmp/pages-online-report.json 2>/tmp/pages-online-stderr.txt
+          status=$?
+          printf '%s\n' "$status" >/tmp/pages-online-exit-code.txt
+          cat /tmp/pages-online-stderr.txt
+          exit 0
+
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v7
+        with:
+          name: pages-online-diagnostic
+          path: |
+            /tmp/pages-online-report.json
+            /tmp/pages-online-stderr.txt
+            /tmp/pages-online-exit-code.txt
+          if-no-files-found: error
