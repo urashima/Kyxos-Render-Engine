@@ -154,7 +154,7 @@ describe('DynamicTaaGpuHistory', () => {
     expect(history.commitFrame()).toMatchObject({
       history: {
         generation: 1,
-        lastInvalidation: 'signature-mismatch',
+        lastInvalidation: 'post-process',
         sampleCount: 1,
         valid: true,
       },
