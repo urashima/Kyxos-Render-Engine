@@ -9,24 +9,16 @@ on:
       - .github/scripts/finalize-phase-04-resource-stability.py
 
 permissions:
-  actions: read
   contents: write
-  deployments: read
 
 jobs:
-  finalize:
+  apply-canonical-history-roles:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 20
     env:
-      REPAIR_MERGE_SHA: eadddc6340fad6a05ad1fa65266a7e3bec95b1f7
-      FINALIZER_RUN: ${{ github.run_id }}
-      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
-      EXPECTED_COMMIT_SHA: eadddc6340fad6a05ad1fa65266a7e3bec95b1f7
-      PAGES_PHASES: 0,1,2,3,4
-      PAGES_LATEST_PHASE: '4'
       CI: true
     steps:
-      - name: Check out finalization branch
+      - name: Check out repair branch
         uses: actions/checkout@v7
         with:
           ref: phase-04-resource-stability-finalize
@@ -43,82 +35,31 @@ jobs:
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Apply canonical non-reusable History roles
+        run: python .github/scripts/finalize-phase-04-resource-stability.py
 
-      - name: Resolve exact main and Pages evidence
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Format exact repair scope
         run: |
-          set -euo pipefail
-          api() {
-            gh api -H 'Accept: application/vnd.github+json' "/repos/${GITHUB_REPOSITORY}$1"
-          }
-          wait_for_run() {
-            local name="$1"
-            local event="$2"
-            for _ in $(seq 1 180); do
-              run="$(api "/actions/runs?head_sha=${REPAIR_MERGE_SHA}&per_page=100" | jq -c --arg name "$name" --arg event "$event" --arg sha "$REPAIR_MERGE_SHA" '[.workflow_runs[] | select(.name == $name and .event == $event and .head_sha == $sha)] | sort_by(.created_at) | reverse | .[0] // empty')"
-              if [ -n "$run" ]; then
-                status="$(printf '%s' "$run" | jq -r '.status')"
-                conclusion="$(printf '%s' "$run" | jq -r '.conclusion // "pending"')"
-                id="$(printf '%s' "$run" | jq -r '.id')"
-                echo "$name run $id: $status / $conclusion" >&2
-                if [ "$status" = completed ]; then
-                  test "$conclusion" = success
-                  printf '%s' "$id"
-                  return 0
-                fi
-              fi
-              sleep 10
-            done
-            return 1
-          }
-          main_ci="$(wait_for_run 'Phase verification' 'push')"
-          pages_run="$(wait_for_run 'Deploy accepted Playgrounds' 'workflow_run')"
-          jobs="$(api "/actions/runs/${pages_run}/jobs?per_page=100")"
-          public_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Verify public interactions" and .conclusion == "success")][0].id // empty')"
-          deploy_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Deploy public Playground" and .conclusion == "success")][0].id // empty')"
-          test -n "$public_job"
-          test -n "$deploy_job"
-          deployment="$(api "/deployments?sha=${REPAIR_MERGE_SHA}&environment=github-pages&per_page=20" | jq -r '.[0].id // "not-returned"')"
-          {
-            echo "MAIN_CI_RUN=$main_ci"
-            echo "PAGES_RUN=$pages_run"
-            echo "PUBLIC_JOB=$public_job"
-            echo "DEPLOY_JOB=$deploy_job"
-            echo "PAGES_DEPLOYMENT=$deployment"
-          } >> "$GITHUB_ENV"
-          jq -n --arg repair "$REPAIR_MERGE_SHA" --arg mainCi "$main_ci" --arg pagesRun "$pages_run" --arg publicJob "$public_job" --arg deployJob "$deploy_job" --arg deployment "$deployment" '{repairMergeSha:$repair,mainCiRun:$mainCi,pagesRun:$pagesRun,publicInteractionJob:$publicJob,deployJob:$deployJob,pagesDeployment:$deployment}' > /tmp/phase-04-final-evidence.json
+          pnpm exec prettier \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            --write
 
-      - name: Re-run official public Chromium and WebGPU acceptance
-        run: pnpm exec playwright test --config playwright.pages.config.ts --reporter=list
-
-      - name: Finalize authoritative documents
+      - name: Run focused History and pipeline regressions
         run: |
-          python .github/scripts/finalize-phase-04-resource-stability.py
-          pnpm exec prettier WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md .github/workflows/phase-04-resource-stability-finalize.yml --write
+          pnpm exec vitest run \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts
 
-      - name: Run complete final governance verification
-        run: pnpm verify
-
-      - name: Commit self-deleting final checkpoint
+      - name: Commit tested repair and remove temporary maintenance files
         run: |
           rm .github/workflows/phase-04-resource-stability-finalize.yml
           rm .github/scripts/finalize-phase-04-resource-stability.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "docs(phase-04): finalize resource-stability acceptance"
+          git commit -m "fix(phase-04): canonicalize every non-reusable History role"
           git push origin HEAD:phase-04-resource-stability-finalize
-
-      - name: Upload final acceptance evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: phase-04-resource-stability-final-evidence
-          path: |
-            /tmp/phase-04-final-evidence.json
-            test-results/pages
-            test-results/phase-04
-          if-no-files-found: ignore
