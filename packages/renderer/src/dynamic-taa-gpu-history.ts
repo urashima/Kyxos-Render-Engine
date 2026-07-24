@@ -196,6 +196,7 @@ export class DynamicTaaGpuHistory implements Disposable {
   invalidate(reason: TemporalHistoryInvalidationReason): DynamicTaaGpuHistoryDiagnostics {
     this.#assertActive();
     this.#frameSignature = undefined;
+    this.#readIndex = 0;
     this.#history.invalidate(reason);
     return this.getDiagnostics();
   }

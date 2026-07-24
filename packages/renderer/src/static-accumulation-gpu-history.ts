@@ -218,6 +218,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
   invalidate(reason: TemporalHistoryInvalidationReason): StaticAccumulationGpuHistoryDiagnostics {
     this.#assertActive();
     this.#frameSignature = undefined;
+    this.#readIndex = 0;
     this.#history.invalidate(reason);
     this.#convergence.reset();
     return this.getDiagnostics();

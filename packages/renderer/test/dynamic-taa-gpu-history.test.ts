@@ -138,12 +138,23 @@ describe('DynamicTaaGpuHistory', () => {
     expect(second.writeNormalTexture).toBe(first.readNormalTexture);
     history.cancelFrame();
 
+    history.invalidate('post-process');
+    const reset = history.prepareFrame(signature({ postProcess: 2 }));
+    expect(reset.historyValid).toBe(false);
+    expect(reset.readColorTexture).toBe(first.readColorTexture);
+    expect(reset.readDepthTexture).toBe(first.readDepthTexture);
+    expect(reset.readNormalTexture).toBe(first.readNormalTexture);
+    expect(reset.writeColorTexture).toBe(first.writeColorTexture);
+    expect(reset.writeDepthTexture).toBe(first.writeDepthTexture);
+    expect(reset.writeNormalTexture).toBe(first.writeNormalTexture);
+    history.cancelFrame();
+
     const changed = history.prepareFrame(signature({ materials: 2 }));
     expect(changed.historyValid).toBe(false);
     expect(history.commitFrame()).toMatchObject({
       history: {
         generation: 1,
-        lastInvalidation: 'signature-mismatch',
+        lastInvalidation: 'post-process',
         sampleCount: 1,
         valid: true,
       },
