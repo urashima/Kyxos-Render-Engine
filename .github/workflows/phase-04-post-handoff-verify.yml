@@ -1,0 +1,211 @@
+name: Phase 4 post-handoff verification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-post-handoff-verify.yml
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+
+jobs:
+  verify-final-main:
+    name: Verify final main CI and public Pages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      FINAL_MAIN_SHA: 9ff598bd680dc01553abffb19e59045d7036eb31
+      PHASE_URL: https://urashima.github.io/Kyxos-Render-Engine/phase-4/
+      LATEST_URL: https://urashima.github.io/Kyxos-Render-Engine/latest/
+    steps:
+      - name: Check out verification branch
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for final main CI and Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+          from pathlib import Path
+
+          repo = os.environ['REPOSITORY']
+          sha = os.environ['FINAL_MAIN_SHA']
+          token = os.environ['GH_TOKEN']
+
+          def get(url):
+              request = urllib.request.Request(
+                  url,
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f'Bearer {token}',
+                      'User-Agent': 'Kyxos-Phase-04-Post-Handoff',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          deadline = time.time() + 1200
+          evidence = None
+          while time.time() < deadline:
+              runs = get(f'https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100')['workflow_runs']
+              main_ci = next(
+                  (
+                      run
+                      for run in runs
+                      if run['name'] == 'Phase verification'
+                      and run['event'] == 'push'
+                      and run['head_sha'] == sha
+                  ),
+                  None,
+              )
+              deployments = get(f'https://api.github.com/repos/{repo}/deployments?sha={sha}&per_page=100')
+              pages = next(
+                  (
+                      deployment
+                      for deployment in deployments
+                      if deployment.get('environment') == 'github-pages'
+                  ),
+                  None,
+              )
+              pages_status = None
+              if pages is not None:
+                  statuses = get(pages['statuses_url'])
+                  pages_status = statuses[0] if statuses else None
+              pages_run = next(
+                  (
+                      run
+                      for run in runs
+                      if run['head_sha'] == sha
+                      and ('page' in run['name'].lower() or 'deploy' in run['name'].lower())
+                  ),
+                  None,
+              )
+              if (
+                  main_ci is not None
+                  and main_ci['status'] == 'completed'
+                  and main_ci['conclusion'] == 'success'
+                  and pages is not None
+                  and pages_status is not None
+                  and pages_status['state'] == 'success'
+              ):
+                  evidence = {
+                      'final_main_sha': sha,
+                      'main_ci_run_id': main_ci['id'],
+                      'main_ci_url': main_ci['html_url'],
+                      'pages_deployment_id': pages['id'],
+                      'pages_run_id': pages_run['id'] if pages_run is not None else None,
+                      'pages_status_url': pages_status.get('environment_url'),
+                  }
+                  break
+              if main_ci is not None and main_ci['status'] == 'completed' and main_ci['conclusion'] != 'success':
+                  raise SystemExit(f'Final main CI failed: {main_ci}')
+              if pages_status is not None and pages_status['state'] in {'error', 'failure', 'inactive'}:
+                  raise SystemExit(f'Final Pages deployment failed: {pages_status}')
+              time.sleep(10)
+
+          if evidence is None:
+              raise SystemExit('Timed out waiting for final main CI and Pages deployment')
+          Path('/tmp/final-main-evidence.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(evidence, indent=2, sort_keys=True))
+          PY
+
+      - name: Verify final public routes
+        run: |
+          cat > /tmp/verify-final-pages.mjs <<'JS'
+          import { writeFile } from 'node:fs/promises';
+          import { chromium } from 'playwright';
+
+          const expectedCommit = process.env.FINAL_MAIN_SHA;
+          const expectedControls = [
+            'jitterScale',
+            'baseHistoryWeight',
+            'depthAbsoluteThreshold',
+            'depthRelativeThreshold',
+            'edgeDepthDifference',
+            'maxVelocityLength',
+            'minimumCurrentWeight',
+            'varianceClipGamma',
+            'subpixelCorrection',
+            'flickerReduction',
+            'normalRejectionCosine',
+            'responsiveHistoryReduction',
+            'responsiveMask',
+          ];
+          const browser = await chromium.launch({
+            headless: true,
+            args: [
+              '--enable-unsafe-webgpu',
+              '--enable-features=Vulkan,UseSkiaRenderer',
+              '--use-angle=swiftshader',
+              '--disable-vulkan-surface',
+            ],
+          });
+          const evidence = {};
+          try {
+            for (const [name, baseUrl] of [
+              ['phase-4', process.env.PHASE_URL],
+              ['latest', process.env.LATEST_URL],
+            ]) {
+              const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
+              await page.goto(`${baseUrl}?posthandoff=${expectedCommit}`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 120000,
+              });
+              await page.locator('[data-testid="commit-sha"]').waitFor({ timeout: 120000 });
+              const commit = (await page.locator('[data-testid="commit-sha"]').textContent())?.trim();
+              const controls = await page.locator('[data-taa-control]').evaluateAll((nodes) =>
+                [...new Set(nodes.map((node) => node.getAttribute('data-taa-control')).filter(Boolean))],
+              );
+              const missing = expectedControls.filter((control) => !controls.includes(control));
+              if (commit !== expectedCommit) {
+                throw new Error(`${name}: expected Commit ${expectedCommit}, received ${commit}`);
+              }
+              if (missing.length > 0 || controls.length !== expectedControls.length) {
+                throw new Error(`${name}: missing=${missing.join(',')}; actual=${controls.join(',')}`);
+              }
+              evidence[name] = { commit, controlCount: controls.length, controls };
+              await page.close();
+            }
+          } finally {
+            await browser.close();
+          }
+          await writeFile('/tmp/final-public-evidence.json', `${JSON.stringify(evidence, null, 2)}\n`);
+          console.log(JSON.stringify(evidence, null, 2));
+          JS
+          node /tmp/verify-final-pages.mjs
+
+      - name: Upload final acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-post-handoff-evidence
+          path: |
+            /tmp/final-main-evidence.json
+            /tmp/final-public-evidence.json
+          if-no-files-found: error
