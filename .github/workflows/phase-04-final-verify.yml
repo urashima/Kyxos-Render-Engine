@@ -53,7 +53,8 @@ jobs:
             02-tests.mjs \
             03-resolve-tests.mjs \
             04-playground.mjs \
-            05-docs.mjs
+            05-docs.mjs \
+            06-test-followups.mjs
           do
             echo "=== $script ===" | tee -a "$LOG"
             node ".github/scripts/phase-04-finalize/$script" 2>&1 | tee -a "$LOG"
@@ -78,6 +79,7 @@ jobs:
         run: |
           rm -rf .github/scripts/phase-04-finalize
           rm -f .github/workflows/phase-04-final-verify.yml
+          rm -f .github/workflows/phase-04-finalize-compat.yml
 
       - name: Commit verified final checkpoint
         run: |
