@@ -224,4 +224,4 @@ jobs:
           git commit -m "fix(phase-04): stabilize History reset resource roles"
           git push origin HEAD:phase-04-history-role-stability
 
-# maintenance-trigger: 3
+# maintenance-trigger: merge
