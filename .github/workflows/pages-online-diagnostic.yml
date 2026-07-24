@@ -38,6 +38,12 @@ jobs:
           import { writeFile } from 'node:fs/promises';
           import { chromium } from '@playwright/test';
 
+          const output = '/tmp/phase-04-resource-diagnostic.json';
+          const result = { error: null, snapshots: [] };
+          const persist = async () => {
+            await writeFile(output, `${JSON.stringify(result, null, 2)}\n`);
+            console.log(JSON.stringify(result, null, 2));
+          };
           const url = 'https://urashima.github.io/Kyxos-Render-Engine/phase-4/';
           const browser = await chromium.launch({
             headless: true,
@@ -52,7 +58,6 @@ jobs:
 
           const text = async (id) => (await page.getByTestId(id).textContent())?.trim() ?? '';
           const waitForSleeping = async () => {
-            await page.getByTestId('renderer-state').waitFor({ timeout: 60_000 });
             await page.waitForFunction(() => {
               const value = (id) => document.querySelector(`[data-testid="${id}"]`)?.textContent?.trim();
               return (
@@ -62,7 +67,7 @@ jobs:
                 value('raf-active') === 'false' &&
                 value('history-valid') === 'valid'
               );
-            }, undefined, { timeout: 60_000 });
+            }, undefined, { timeout: 120_000 });
           };
           const snapshot = async (label) => ({
             label,
@@ -76,42 +81,46 @@ jobs:
             wakeCount: Number(await text('wake-count')),
             jitter: await text('taa-current-jitter'),
           });
+          const record = async (label) => {
+            result.snapshots.push(await snapshot(label));
+            await persist();
+          };
 
-          const evidence = [];
           try {
             await page.goto(`${url}?resource-diagnostic=${Date.now()}`, {
               waitUntil: 'domcontentloaded',
               timeout: 120_000,
             });
             await waitForSleeping();
-            evidence.push(await snapshot('initial'));
+            await record('initial');
 
             await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.35');
             await waitForSleeping();
-            evidence.push(await snapshot('jitter-0.35'));
+            await record('jitter-0.35');
 
             await page.getByRole('button', { name: 'Default TAA' }).click();
             await waitForSleeping();
-            evidence.push(await snapshot('default-1'));
+            await record('default-1');
 
             await page.locator('[data-taa-control="jitterScale"][type="number"]').fill('0.45');
             await waitForSleeping();
-            evidence.push(await snapshot('jitter-0.45'));
+            await record('jitter-0.45');
 
             await page.getByRole('button', { name: 'Default TAA' }).click();
             await waitForSleeping();
-            evidence.push(await snapshot('default-2'));
+            await record('default-2');
+          } catch (error) {
+            result.error = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+            await persist();
           } finally {
             await browser.close();
           }
-
-          console.log(JSON.stringify(evidence, null, 2));
-          await writeFile('/tmp/phase-04-resource-diagnostic.json', `${JSON.stringify(evidence, null, 2)}\n`);
           JS
           node phase-04-resource-diagnostic.mjs
           rm phase-04-resource-diagnostic.mjs
 
       - name: Upload diagnostic report
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: phase-04-resource-diagnostic
