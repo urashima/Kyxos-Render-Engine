@@ -9,8 +9,8 @@ import type { Mat4, Vec3 } from '@kyxos/render-math';
 import type { PbrNormalYDirection } from './pbr-texture-library.js';
 
 export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
-  byteLength: 448,
-  floatLength: 112,
+  byteLength: 576,
+  floatLength: 144,
   offsets: Object.freeze({
     baseColor: 48,
     baseColorUvOffsetScale: 76,
@@ -30,6 +30,8 @@ export const PBR_OBJECT_UNIFORM_LAYOUT = Object.freeze({
     occlusionEnvironmentRotations: 104,
     occlusionUvOffsetScale: 100,
     environmentControls: 108,
+    currentMotionModelViewProjection: 112,
+    previousMotionModelViewProjection: 128,
     textureUvRotations: 92,
   }),
 } as const);
@@ -91,7 +93,10 @@ export interface PackPbrObjectUniformsOptions {
   readonly material: PbrMaterialSnapshot;
   /** Asset-boundary Normal convention metadata; defaults to the engine's Y-up convention. */
   readonly normalYDirection?: PbrNormalYDirection;
+  readonly currentMotionViewProjectionMatrix?: Mat4;
   readonly output?: PbrOutputTransformDescriptor;
+  readonly previousMotionViewProjectionMatrix?: Mat4;
+  readonly previousWorldMatrix?: Mat4;
   readonly viewProjectionMatrix: Mat4;
   readonly worldMatrix: Mat4;
 }
@@ -267,6 +272,22 @@ export function packPbrObjectUniforms(options: PackPbrObjectUniformsOptions): Fl
       output.toneMapping === 'khronos-pbr-neutral' ? 1 : 0,
     ],
     offsets.environmentControls,
+  );
+  result.set(
+    multiplyMat4(
+      options.currentMotionViewProjectionMatrix ?? options.viewProjectionMatrix,
+      options.worldMatrix,
+    ),
+    offsets.currentMotionModelViewProjection,
+  );
+  result.set(
+    multiplyMat4(
+      options.previousMotionViewProjectionMatrix ??
+        options.currentMotionViewProjectionMatrix ??
+        options.viewProjectionMatrix,
+      options.previousWorldMatrix ?? options.worldMatrix,
+    ),
+    offsets.previousMotionModelViewProjection,
   );
   return result;
 }

@@ -21,6 +21,8 @@ struct PbrObjectUniforms {
   occlusionUvOffsetScale: vec4f,
   occlusionEnvironmentRotations: vec4f,
   environmentControls: vec4f,
+  currentMotionModelViewProjection: mat4x4f,
+  previousMotionModelViewProjection: mat4x4f,
 }
 
 @group(0) @binding(0) var<uniform> object: PbrObjectUniforms;
@@ -132,6 +134,8 @@ struct VertexOutput {
   @location(1) worldNormal: vec3f,
   @location(2) uv0: vec2f,
   @location(3) worldTangent: vec4f,
+  @location(4) @interpolate(linear) currentMotionNdc: vec2f,
+  @location(5) @interpolate(linear) previousMotionNdc: vec2f,
 }
 
 @vertex
@@ -147,6 +151,10 @@ fn vertexMain(
   output.worldNormal = (object.normalMatrix * vec4f(normal, 0.0)).xyz;
   output.uv0 = uv0;
   output.worldTangent = vec4f((object.model * vec4f(tangent.xyz, 0.0)).xyz, tangent.w);
+  let currentMotionClip = object.currentMotionModelViewProjection * vec4f(position, 1.0);
+  let previousMotionClip = object.previousMotionModelViewProjection * vec4f(position, 1.0);
+  output.currentMotionNdc = currentMotionClip.xy / max(abs(currentMotionClip.w), PBR_MIN_ALPHA);
+  output.previousMotionNdc = previousMotionClip.xy / max(abs(previousMotionClip.w), PBR_MIN_ALPHA);
   return output;
 }
 
@@ -231,6 +239,11 @@ struct PbrShadingResult {
 struct PbrTemporalFragmentOutput {
   @location(0) color: vec4f,
   @location(1) normal: vec4f,
+  @location(2) velocity: vec2f,
+}
+
+fn pbrTemporalVelocity(input: VertexOutput) -> vec2f {
+  return input.currentMotionNdc - input.previousMotionNdc;
 }
 
 fn shadePbr(input: VertexOutput, frontFacing: bool) -> PbrShadingResult {
@@ -344,7 +357,11 @@ fn fragmentOpaque(
   @builtin(front_facing) frontFacing: bool,
 ) -> PbrTemporalFragmentOutput {
   let shaded = shadePbr(input, frontFacing);
-  return PbrTemporalFragmentOutput(vec4f(shaded.color.rgb, 1.0), shaded.normal);
+  return PbrTemporalFragmentOutput(
+    vec4f(shaded.color.rgb, 1.0),
+    shaded.normal,
+    pbrTemporalVelocity(input),
+  );
 }
 
 @fragment
@@ -365,6 +382,6 @@ fn fragmentBlend(
   @builtin(front_facing) frontFacing: bool,
 ) -> PbrTemporalFragmentOutput {
   let shaded = shadePbr(input, frontFacing);
-  return PbrTemporalFragmentOutput(shaded.color, shaded.normal);
+  return PbrTemporalFragmentOutput(shaded.color, shaded.normal, pbrTemporalVelocity(input));
 }
 `;

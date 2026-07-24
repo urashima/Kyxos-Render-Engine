@@ -30,6 +30,8 @@ export {
 export {
   TEMPORAL_TAA_DEFAULT_SETTINGS,
   createTemporalTaaSettings,
+  type TemporalTaaAdvancedResolveSettings,
+  type TemporalTaaResolveSettings,
   type TemporalTaaSettings,
   type TemporalTaaSettingsDescriptor,
 } from './temporal-taa-settings.js';

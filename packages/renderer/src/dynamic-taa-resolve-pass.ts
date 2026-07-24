@@ -10,22 +10,27 @@ import type {
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
 import type { Mat4 } from '@kyxos/render-math';
-import type { TemporalTaaResolveOptions } from '@kyxos/render-temporal';
+import type { TemporalVec2 } from '@kyxos/render-temporal';
 
 import type { DynamicTaaGpuFrame } from './dynamic-taa-gpu-history.js';
 import { createTemporalTaaSettings } from './temporal-taa-settings.js';
+import type { TemporalTaaResolveSettings } from './temporal-taa-settings.js';
 import { PHASE_04_TAA_RESOLVE_WGSL } from './generated/phase-04-taa-resolve.wgsl.js';
 
 const FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
 const MATRIX_FLOATS = 16;
 
 export const DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT = Object.freeze({
-  byteLength: 44 * FLOAT_BYTES,
+  byteLength: 84 * FLOAT_BYTES,
   currentInverseViewProjectionOffset: 0,
-  options0Offset: 36 * FLOAT_BYTES,
-  options1Offset: 40 * FLOAT_BYTES,
-  previousViewProjectionOffset: MATRIX_FLOATS * FLOAT_BYTES,
-  viewportHistoryResponsiveOffset: 32 * FLOAT_BYTES,
+  previousViewProjectionOffset: 16 * FLOAT_BYTES,
+  currentViewProjectionOffset: 32 * FLOAT_BYTES,
+  previousInverseViewProjectionOffset: 48 * FLOAT_BYTES,
+  viewportHistoryResponsiveOffset: 64 * FLOAT_BYTES,
+  jitterOffsetsOffset: 68 * FLOAT_BYTES,
+  options0Offset: 72 * FLOAT_BYTES,
+  options1Offset: 76 * FLOAT_BYTES,
+  options2Offset: 80 * FLOAT_BYTES,
 });
 
 export interface DynamicTaaResolvePassOptions {
@@ -34,8 +39,12 @@ export interface DynamicTaaResolvePassOptions {
 
 export interface DynamicTaaResolvePassInput {
   readonly currentInverseViewProjection: Mat4;
+  readonly currentJitterNdcOffset?: TemporalVec2;
+  readonly currentViewProjection: Mat4;
   readonly frame: DynamicTaaGpuFrame;
-  readonly options?: Partial<TemporalTaaResolveOptions>;
+  readonly options?: Partial<TemporalTaaResolveSettings>;
+  readonly previousInverseViewProjection: Mat4;
+  readonly previousJitterNdcOffset?: TemporalVec2;
   readonly previousViewProjection: Mat4;
   readonly responsiveMask?: number;
 }
@@ -84,6 +93,22 @@ function validateResponsiveMask(value: number): number {
   return value;
 }
 
+function copyVector2(
+  target: Float32Array,
+  offset: number,
+  vector: TemporalVec2 | undefined,
+  label: string,
+): void {
+  const resolved = vector ?? ([0, 0] as const);
+  for (let index = 0; index < 2; index += 1) {
+    const value = resolved[index] as number;
+    if (!Number.isFinite(value)) {
+      throw error(`${label}[${index}] must be finite.`, 'INVALID_ARGUMENT');
+    }
+    target[offset + index] = value;
+  }
+}
+
 function copyMatrix(target: Float32Array, offset: number, matrix: Mat4, label: string): void {
   if (matrix.length !== MATRIX_FLOATS) {
     throw error(`${label} must contain 16 values.`, 'INVALID_ARGUMENT');
@@ -111,16 +136,26 @@ export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput)
   }
   const values = new Float32Array(DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT.byteLength / FLOAT_BYTES);
   copyMatrix(values, 0, input.currentInverseViewProjection, 'Current inverse View-Projection');
-  copyMatrix(values, MATRIX_FLOATS, input.previousViewProjection, 'Previous View-Projection');
-  values[32] = frame.size.width;
-  values[33] = frame.size.height;
-  values[34] = frame.historyValid ? 1 : 0;
-  values[35] = responsiveMask;
-  values[36] = options.baseHistoryWeight;
-  values[37] = options.depthAbsoluteThreshold;
-  values[38] = options.depthRelativeThreshold;
-  values[39] = options.normalRejectionCosine;
-  values[40] = options.responsiveHistoryReduction;
+  copyMatrix(values, 16, input.previousViewProjection, 'Previous View-Projection');
+  copyMatrix(values, 32, input.currentViewProjection, 'Current View-Projection');
+  copyMatrix(values, 48, input.previousInverseViewProjection, 'Previous inverse View-Projection');
+  values[64] = frame.size.width;
+  values[65] = frame.size.height;
+  values[66] = frame.historyValid ? 1 : 0;
+  values[67] = responsiveMask;
+  copyVector2(values, 68, input.currentJitterNdcOffset, 'Current jitter NDC');
+  copyVector2(values, 70, input.previousJitterNdcOffset, 'Previous jitter NDC');
+  values[72] = options.baseHistoryWeight;
+  values[73] = options.depthAbsoluteThreshold;
+  values[74] = options.depthRelativeThreshold;
+  values[75] = options.normalRejectionCosine;
+  values[76] = options.responsiveHistoryReduction;
+  values[77] = options.edgeDepthDifference;
+  values[78] = options.maxVelocityLength;
+  values[79] = options.minimumCurrentWeight;
+  values[80] = options.varianceClipGamma;
+  values[81] = options.subpixelCorrection;
+  values[82] = options.flickerReduction;
   return values;
 }
 
@@ -304,6 +339,7 @@ export class DynamicTaaResolvePass implements Disposable {
       frame.currentColorTexture.id,
       frame.writeDepthTexture.id,
       frame.writeNormalTexture.id,
+      frame.currentVelocityTexture.id,
       frame.readColorTexture.id,
       frame.readDepthTexture.id,
       frame.readNormalTexture.id,
@@ -317,10 +353,11 @@ export class DynamicTaaResolvePass implements Disposable {
         { binding: 1, resource: { texture: frame.currentColorTexture } },
         { binding: 2, resource: { texture: frame.writeDepthTexture } },
         { binding: 3, resource: { texture: frame.writeNormalTexture } },
-        { binding: 4, resource: { texture: frame.readColorTexture } },
-        { binding: 5, resource: { texture: frame.readDepthTexture } },
-        { binding: 6, resource: { texture: frame.readNormalTexture } },
-        { binding: 7, resource: { sampler: frame.sampler } },
+        { binding: 4, resource: { texture: frame.currentVelocityTexture } },
+        { binding: 5, resource: { texture: frame.readColorTexture } },
+        { binding: 6, resource: { texture: frame.readDepthTexture } },
+        { binding: 7, resource: { texture: frame.readNormalTexture } },
+        { binding: 8, resource: { sampler: frame.sampler } },
       ],
       group: 0,
       label: `taa-resolve-${this.#ownerId}-bindings`,

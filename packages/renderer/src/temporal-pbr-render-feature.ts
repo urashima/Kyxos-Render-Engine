@@ -5,6 +5,7 @@ import type {
 } from '@kyxos/render-backend-api';
 import { TemporalCameraMatrixTracker } from '@kyxos/render-camera';
 import { KyxosEngineError } from '@kyxos/render-core';
+import { inverseMat4 } from '@kyxos/render-math';
 import type { Mat4 } from '@kyxos/render-math';
 import {
   type TemporalConvergenceOptions,
@@ -104,7 +105,9 @@ export class TemporalPbrRenderFeature implements RenderFeature {
   readonly #transaction: TemporalPipelineTransaction;
   readonly id = TEMPORAL_PBR_RENDER_FEATURE_ID;
   #taaSettings: TemporalTaaSettings;
+  #activeCurrentMotionViewProjection: Mat4 | undefined;
   #activeFrame: DynamicTaaGpuFrame | undefined;
+  #activePreviousMotionViewProjection: Mat4 | undefined;
   #activeViewProjection: Mat4 | undefined;
   #disposed = false;
 
@@ -144,7 +147,11 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     this.#pbr = new PbrRenderFeature({
       ...pbrOptions,
       dynamicTaaOutput: {
+        acquireCurrentMotionViewProjectionMatrix: () =>
+          this.#requireActiveCurrentMotionViewProjection(),
         acquireFrame: () => this.#requireActiveFrame(),
+        acquirePreviousMotionViewProjectionMatrix: () =>
+          this.#requireActivePreviousMotionViewProjection(),
         acquireViewProjectionMatrix: () => this.#requireActiveViewProjection(),
         surface: {
           getSurfaceInfo: () => this.#transaction.getSurfaceInfo(),
@@ -221,18 +228,31 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     const result = this.#transaction.execute({
       ...(convergenceError === undefined ? {} : { convergenceError }),
       currentInverseViewProjection: matrices.currentInverseViewProjection,
+      currentJitterNdcOffset: matrices.jitter.ndcOffset,
+      currentViewProjection: matrices.currentViewProjection,
       dirtyFlags: context.dirtyFlags,
+      previousInverseViewProjection: inverseMat4(matrices.previousViewProjection),
+      previousJitterNdcOffset: matrices.previousJitterNdcOffset,
       previousViewProjection: matrices.previousViewProjection,
       renderCurrent: (frame) => {
-        if (this.#activeFrame !== undefined || this.#activeViewProjection !== undefined) {
+        if (
+          this.#activeCurrentMotionViewProjection !== undefined ||
+          this.#activeFrame !== undefined ||
+          this.#activePreviousMotionViewProjection !== undefined ||
+          this.#activeViewProjection !== undefined
+        ) {
           throw error('Temporal PBR current-frame callback is already active.', 'INVALID_STATE');
         }
+        this.#activeCurrentMotionViewProjection = matrices.unjitteredViewProjection;
         this.#activeFrame = frame;
+        this.#activePreviousMotionViewProjection = matrices.previousUnjitteredViewProjection;
         this.#activeViewProjection = matrices.currentViewProjection;
         try {
           return this.#pbr.render(context);
         } finally {
+          this.#activeCurrentMotionViewProjection = undefined;
           this.#activeFrame = undefined;
+          this.#activePreviousMotionViewProjection = undefined;
           this.#activeViewProjection = undefined;
         }
       },
@@ -272,7 +292,9 @@ export class TemporalPbrRenderFeature implements RenderFeature {
 
   onBackendLost(): void {
     if (this.#disposed) return;
+    this.#activeCurrentMotionViewProjection = undefined;
     this.#activeFrame = undefined;
+    this.#activePreviousMotionViewProjection = undefined;
     this.#activeViewProjection = undefined;
     this.#cameraTracker.reset();
     this.#transaction.cancelFrame();
@@ -281,7 +303,9 @@ export class TemporalPbrRenderFeature implements RenderFeature {
 
   dispose(): void {
     if (this.#disposed) return;
+    this.#activeCurrentMotionViewProjection = undefined;
     this.#activeFrame = undefined;
+    this.#activePreviousMotionViewProjection = undefined;
     this.#activeViewProjection = undefined;
     const errors: unknown[] = [];
     for (const target of [this.#pbr, this.#transaction, this.#cameraTracker]) {
@@ -298,6 +322,17 @@ export class TemporalPbrRenderFeature implements RenderFeature {
     }
   }
 
+  #requireActiveCurrentMotionViewProjection(): Mat4 {
+    const matrix = this.#activeCurrentMotionViewProjection;
+    if (matrix === undefined) {
+      throw error(
+        'Temporal PBR current Motion View-Projection is unavailable outside the current transaction.',
+        'INVALID_STATE',
+      );
+    }
+    return matrix;
+  }
+
   #requireActiveFrame(): DynamicTaaGpuFrame {
     const frame = this.#activeFrame;
     if (frame === undefined) {
@@ -307,6 +342,17 @@ export class TemporalPbrRenderFeature implements RenderFeature {
       );
     }
     return frame;
+  }
+
+  #requireActivePreviousMotionViewProjection(): Mat4 {
+    const matrix = this.#activePreviousMotionViewProjection;
+    if (matrix === undefined) {
+      throw error(
+        'Temporal PBR previous Motion View-Projection is unavailable outside the current transaction.',
+        'INVALID_STATE',
+      );
+    }
+    return matrix;
   }
 
   #requireActiveViewProjection(): Mat4 {

@@ -37,6 +37,7 @@ export interface TemporalCameraFrameMatrices {
   readonly jitteredProjection: Mat4;
   readonly previousCameraRevision: number;
   readonly previousJitterNdcOffset: TemporalVec2;
+  readonly previousUnjitteredViewProjection: Mat4;
   readonly previousViewProjection: Mat4;
   readonly unjitteredProjection: Mat4;
   readonly unjitteredViewProjection: Mat4;
@@ -50,6 +51,7 @@ interface StoredCameraFrame {
   readonly historyGeneration: number;
   readonly jitterNdcOffset: TemporalVec2;
   readonly projectionUpdateCount: number;
+  readonly unjitteredViewProjection: Mat4;
   readonly viewport: TemporalViewportSize;
 }
 
@@ -162,6 +164,8 @@ export class TemporalCameraMatrixTracker implements Disposable {
     const previousViewProjection = reusablePrevious?.currentViewProjection ?? currentViewProjection;
     const previousCameraRevision = reusablePrevious?.cameraRevision ?? cameraDiagnostics.revision;
     const previousJitterNdcOffset = reusablePrevious?.jitterNdcOffset ?? jitter.ndcOffset;
+    const previousUnjitteredViewProjection =
+      reusablePrevious?.unjitteredViewProjection ?? unjitteredViewProjection;
 
     this.#previous = Object.freeze({
       cameraRevision: cameraDiagnostics.revision,
@@ -169,6 +173,7 @@ export class TemporalCameraMatrixTracker implements Disposable {
       historyGeneration: options.historyGeneration,
       jitterNdcOffset: jitter.ndcOffset,
       projectionUpdateCount: cameraDiagnostics.projectionMatrixUpdateCount,
+      unjitteredViewProjection,
       viewport,
     });
 
@@ -183,6 +188,7 @@ export class TemporalCameraMatrixTracker implements Disposable {
       jitteredProjection,
       previousCameraRevision,
       previousJitterNdcOffset,
+      previousUnjitteredViewProjection,
       previousViewProjection,
       unjitteredProjection,
       unjitteredViewProjection,
