@@ -2659,3 +2659,26 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   on GitHub Actions Ubuntu 24.04 SwiftShader.
 - Final gate: 12,000 ms. CPU frame budget remains 16.7 ms, targetSamples remains 16, and no rendering
   feature or visual-quality path was removed.
+
+## 2026-07-24 05:49 PDT — P4-14 merge, Pages acceptance, and Phase 5 handoff
+
+### Completed
+
+- Marked PR #16 ready after trusted standard CI and squash-merged it to `main` as `f926f544c94da2c5ea8f9630c959398b15d2d84f`.
+- Preserved the accepted forward temporal architecture while adding explicit rigid-object Velocity and the complete compatible TRAA control surface.
+- Verified the deployed Phase 4 and Latest routes against the exact merge Commit and all 13 public TAA controls.
+- Closed the implementation and public acceptance gates; the remaining governance checkpoint transfers the unique current action to Phase 5 Draft PR #12 synchronization.
+
+### Validation
+
+- Final pre-merge `pnpm verify`: PASS — Run `30085244188`, job `89455803547`.
+- Trusted standard PR CI: PASS — Run `30093376943`.
+- Main CI: PASS — Run `30093770426`.
+- Pages deployment: PASS — deployment `5588976992`, run/evidence `30094384391`.
+- Public Chromium acceptance: PASS — Run `30094335571`.
+- Public Phase 4 route: Commit `f926f544c94da2c5ea8f9630c959398b15d2d84f`, 13 / 13 TAA controls.
+- Public Latest route: Commit `f926f544c94da2c5ea8f9630c959398b15d2d84f`, 13 / 13 TAA controls.
+
+### Next
+
+- Synchronize `agent/phase-05-lighting-postfx` / Draft PR #12 with current `main`, preserve P5-01 and existing P5-02 work, and run complete `pnpm verify`.
