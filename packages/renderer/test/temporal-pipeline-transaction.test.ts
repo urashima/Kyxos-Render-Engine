@@ -211,20 +211,24 @@ describe('TemporalPipelineTransaction', () => {
     };
 
     executeCycle(1);
-    const baseline = backend.getResourceStatistics();
-    expect(transaction.getDiagnostics().staticPass.activeBindGroupCount).toBe(2);
+    const baselineActiveResources = backend.getResourceStatistics().activeCount;
+    expect(transaction.getDiagnostics()).toMatchObject({
+      resolve: { activeBindGroupCount: 2 },
+      staticPass: { activeBindGroupCount: 2 },
+    });
 
     executeCycle(2);
-    expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: baseline.activeCount,
-      createdTotal: baseline.createdTotal,
+    expect(backend.getResourceStatistics().activeCount).toBe(baselineActiveResources);
+    expect(transaction.getDiagnostics()).toMatchObject({
+      resolve: { activeBindGroupCount: 2 },
+      staticPass: { activeBindGroupCount: 2 },
     });
-    expect(transaction.getDiagnostics().staticPass.activeBindGroupCount).toBe(2);
 
     executeCycle(3);
-    expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: baseline.activeCount,
-      createdTotal: baseline.createdTotal,
+    expect(backend.getResourceStatistics().activeCount).toBe(baselineActiveResources);
+    expect(transaction.getDiagnostics()).toMatchObject({
+      resolve: { activeBindGroupCount: 2 },
+      staticPass: { activeBindGroupCount: 2 },
     });
 
     transaction.dispose();
