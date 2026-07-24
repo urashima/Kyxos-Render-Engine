@@ -59,7 +59,8 @@ jobs:
             08-browser-fixes.mjs \
             09-page-controls-and-resource.mjs \
             10-visual-stability.mjs \
-            11-default-performance.mjs
+            11-default-performance.mjs \
+            12-static-budget.mjs
           do
             echo "=== $script ===" | tee -a "$LOG"
             node ".github/scripts/phase-04-finalize/$script" 2>&1 | tee -a "$LOG"
