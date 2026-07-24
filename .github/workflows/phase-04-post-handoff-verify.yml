@@ -41,7 +41,7 @@ jobs:
         run: |
           cat > phase-04-final-public-verify.mjs <<'JS'
           import { writeFile } from 'node:fs/promises';
-          import { chromium } from 'playwright';
+          import { chromium } from '@playwright/test';
 
           const expectedCommit = process.env.FINAL_MAIN_SHA;
           const expectedControls = [
