@@ -29,7 +29,9 @@ jobs:
           node-version: 24.14.0
       - run: corepack enable
       - name: Apply readable core patch
-        run: python .github/scripts/apply-phase-04-final.py
+        run: |
+          python .github/scripts/apply-phase-04-final.py
+          python .github/scripts/update-phase-04-final-tests.py
       - run: pnpm install --frozen-lockfile
       - run: pnpm format
       - run: pnpm exec playwright install --with-deps chromium
@@ -40,7 +42,9 @@ jobs:
           pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-04-final-core.log
       - name: Commit verified core
         run: |
-          rm -f .github/scripts/apply-phase-04-final.py .github/workflows/phase-04-final-core.yml
+          rm -f .github/scripts/apply-phase-04-final.py
+          rm -f .github/scripts/update-phase-04-final-tests.py
+          rm -f .github/workflows/phase-04-final-core.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add --all
