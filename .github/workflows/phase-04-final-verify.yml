@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: phase-04-final-verification
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
