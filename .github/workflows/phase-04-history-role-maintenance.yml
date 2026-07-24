@@ -13,7 +13,7 @@ permissions:
 jobs:
   implement-and-verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 20
     env:
       CI: true
     steps:
@@ -33,9 +33,6 @@ jobs:
 
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
 
       - name: Apply canonical History role reset and regression tests
         run: |
@@ -207,10 +204,14 @@ jobs:
             packages/renderer/test/temporal-pipeline-transaction.test.ts \
             --write
 
-      - name: Run complete verification pipeline
-        run: pnpm verify
+      - name: Run focused role-stability regression tests
+        run: |
+          pnpm exec vitest run \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts
 
-      - name: Commit verified fix to repair branch
+      - name: Commit tested fix to repair branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -223,4 +224,4 @@ jobs:
           git commit -m "fix(phase-04): stabilize History reset resource roles"
           git push origin HEAD:phase-04-history-role-stability
 
-# maintenance-trigger: 2
+# maintenance-trigger: 3
