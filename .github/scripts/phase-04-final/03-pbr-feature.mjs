@@ -99,11 +99,19 @@ await replaceExact(
           this.#dynamicTaaOutput?.acquireViewProjectionMatrix?.() ??
           this.#camera.viewProjectionMatrix(),
         worldMatrix: item.worldMatrix,`,
-  `        currentMotionViewProjectionMatrix:
-          this.#dynamicTaaOutput?.acquireCurrentMotionViewProjectionMatrix?.(),
+  `        ...(this.#dynamicTaaOutput?.acquireCurrentMotionViewProjectionMatrix === undefined
+          ? {}
+          : {
+              currentMotionViewProjectionMatrix:
+                this.#dynamicTaaOutput.acquireCurrentMotionViewProjectionMatrix(),
+            }),
         output: this.#output,
-        previousMotionViewProjectionMatrix:
-          this.#dynamicTaaOutput?.acquirePreviousMotionViewProjectionMatrix?.(),
+        ...(this.#dynamicTaaOutput?.acquirePreviousMotionViewProjectionMatrix === undefined
+          ? {}
+          : {
+              previousMotionViewProjectionMatrix:
+                this.#dynamicTaaOutput.acquirePreviousMotionViewProjectionMatrix(),
+            }),
         previousWorldMatrix: this.#previousWorldMatrices.get(item.entity) ?? item.worldMatrix,
         viewProjectionMatrix:
           this.#dynamicTaaOutput?.acquireViewProjectionMatrix?.() ??
