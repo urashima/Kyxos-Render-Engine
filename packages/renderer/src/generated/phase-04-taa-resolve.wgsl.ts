@@ -197,10 +197,13 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   let currentColor = textureLoad(currentColorTexture, pixel, 0);
   let currentDepth = textureLoad(currentDepthTexture, pixel, 0);
   let currentNormal = taaDecodeNormal(textureLoad(currentNormalTexture, pixel, 0).rgb);
-  let depthNeighborhood = taaDepthNeighborhood(pixel, dimensions);
-  let edgeEnabled = uniforms.options1.y > 0.0;
-  let edge = edgeEnabled && depthNeighborhood.farthestDepth - depthNeighborhood.closestDepth > uniforms.options1.y;
-  let velocityPixel = select(pixel, depthNeighborhood.closestPixel, edge);
+  var velocityPixel = pixel;
+  if (uniforms.options1.y > 0.0) {
+    let depthNeighborhood = taaDepthNeighborhood(pixel, dimensions);
+    if (depthNeighborhood.farthestDepth - depthNeighborhood.closestDepth > uniforms.options1.y) {
+      velocityPixel = depthNeighborhood.closestPixel;
+    }
+  }
   let velocityNdc = textureLoad(currentVelocityTexture, velocityPixel, 0).xy;
   let explicitVelocity = dot(velocityNdc, velocityNdc) > TAA_EPSILON;
   var reprojection = taaMatrixReproject(currentUv, currentDepth);
@@ -227,17 +230,31 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
   }
 
   let neighborhood = taaColorNeighborhood(pixel, dimensions);
-  var clipMinimum = neighborhood.minimum;
-  var clipMaximum = neighborhood.maximum;
+  var clippedHistory = clamp(historyColor.rgb, neighborhood.minimum, neighborhood.maximum);
   if (uniforms.options2.x > 0.0) {
-    clipMinimum = max(clipMinimum, neighborhood.mean - neighborhood.deviation * uniforms.options2.x);
-    clipMaximum = min(clipMaximum, neighborhood.mean + neighborhood.deviation * uniforms.options2.x);
+    let clipMinimum = max(
+      neighborhood.minimum,
+      neighborhood.mean - neighborhood.deviation * uniforms.options2.x,
+    );
+    let clipMaximum = min(
+      neighborhood.maximum,
+      neighborhood.mean + neighborhood.deviation * uniforms.options2.x,
+    );
+    clippedHistory = taaClipAabb(historyColor.rgb, currentColor.rgb, clipMinimum, clipMaximum);
   }
-  let clippedHistory = taaClipAabb(historyColor.rgb, currentColor.rgb, clipMinimum, clipMaximum);
   let responsiveMask = uniforms.viewportHistoryResponsive.w;
   var historyWeight = uniforms.options0.x * (1.0 - responsiveMask * uniforms.options1.x);
+  let advancedWeightingEnabled =
+    uniforms.options1.y > 0.0 ||
+    uniforms.options1.w > 0.0 ||
+    uniforms.options2.x > 0.0 ||
+    uniforms.options2.y > 0.0 ||
+    uniforms.options2.z > 0.0;
   let velocityLength = length(reprojection.velocityPixels);
-  historyWeight *= 1.0 - clamp(velocityLength / max(uniforms.options1.z, TAA_EPSILON), 0.0, 1.0);
+  if (advancedWeightingEnabled) {
+    historyWeight *=
+      1.0 - clamp(velocityLength / max(uniforms.options1.z, TAA_EPSILON), 0.0, 1.0);
+  }
   if (uniforms.options2.y > 0.0) {
     let fractionalMotion = length(fract(abs(reprojection.velocityPixels)) - vec2f(0.5)) * 1.41421356;
     historyWeight *= 1.0 - clamp(fractionalMotion * uniforms.options2.y, 0.0, 1.0);

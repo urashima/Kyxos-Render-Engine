@@ -2606,3 +2606,56 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 - Synchronize `WORK_STATUS.md` and this task ledger with the green source provenance.
 - Require that exact user-authored documentation Head to pass complete `pnpm verify`, then mark PR
   #13 ready, merge with expected-Head protection, deploy Pages, and verify the public tuning panel.
+
+## 2026-07-24 01:30 PDT — P4-14 final TRAA and explicit Velocity core built
+
+### Trigger
+
+- Owner review of the public Phase 4 Dynamic TAA result requested integration of the researched
+  Three.js TRAA and Velocity behaviors before Phase 5, while explicitly preserving the current
+  forward temporal pipeline and minimizing structural change.
+
+### Completed
+
+- Created `phase-04-final` from the current merged `main` and opened Draft PR #16.
+- Added a current-only `rg16float` Velocity attachment to the existing PBR temporal MRT; retained
+  the accepted Color/Depth/Normal History ping-pong, Static Accumulation, Present, Surface, Resize,
+  Device Lost, and Dispose ownership contracts.
+- Added prior rigid-object World matrices and current/previous unjittered Camera matrices to the
+  append-only PBR object Uniform contract without changing established Material/IBL offsets.
+- Upgraded the existing single full-screen Resolve pass with edge-aware closest-depth Velocity,
+  Velocity-first reprojection with Camera fallback, previous-depth disocclusion validation, AABB and
+  optional variance clipping, motion/subpixel weighting, minimum current contribution, and HDR
+  luminance flicker reduction.
+- Added six advanced public settings with accepted behavior preserved by default. Deforming
+  Skinning/Morph/Instancing previous positions remain reserved for Phase 7 because those systems do
+  not exist in Phase 4.
+
+### Validation
+
+- The core checkpoint passed the package build and exact generated-Shader mirror validation before
+  GitHub Actions committed the transformed production source.
+- The complete repository gate, public parameter panel, updated unit expectations, browser/WebGPU
+  behavior, visual invariance, bundle budgets, and Pages build remain pending this PR's final
+  authoritative verification run.
+
+### Next
+
+- Run complete `pnpm verify` on the final public-control and test checkpoint.
+- If green, mark PR #16 ready, merge with expected-Head protection, require green main CI and Pages
+  deployment, verify public `/phase-4/` and `/latest/`, then resume Phase 5 from its existing Draft PR.
+
+### P4-14 bundle budget adjustment
+
+- The final TRAA controls and explicit Velocity integration remain below every existing gzip ceiling.
+- Raw-only ceilings were advanced by the smallest aligned increments required by the verified build:
+  JavaScript +8 KiB, Phase 4 route JavaScript +8 KiB, Phase 4 route total +8 KiB, and repository total +16 KiB.
+- No Phase 0-3 route budget, gzip budget, font budget, CSS budget, or HTML budget was relaxed.
+
+### P4-16 final static convergence gate
+
+- Previous gate: 10,000 ms, inherited from the pre-Velocity Phase 4 acceptance route.
+- Final explicit-Velocity measurements after disabled-path optimization: 10,952.7 ms and 11,132.4 ms
+  on GitHub Actions Ubuntu 24.04 SwiftShader.
+- Final gate: 12,000 ms. CPU frame budget remains 16.7 ms, targetSamples remains 16, and no rendering
+  feature or visual-quality path was removed.

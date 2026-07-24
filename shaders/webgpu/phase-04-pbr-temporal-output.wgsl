@@ -373,7 +373,11 @@ fn fragmentMask(
   if (shaded.color.a < object.metallicRoughnessAlphaCutoff.z) {
     discard;
   }
-  return PbrTemporalFragmentOutput(vec4f(shaded.color.rgb, 1.0), shaded.normal);
+  return PbrTemporalFragmentOutput(
+    vec4f(shaded.color.rgb, 1.0),
+    shaded.normal,
+    pbrTemporalVelocity(input),
+  );
 }
 
 @fragment

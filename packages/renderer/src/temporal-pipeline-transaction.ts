@@ -58,9 +58,9 @@ export interface TemporalPipelineExecuteInput {
   readonly convergenceError?: number;
   readonly currentInverseViewProjection: Mat4;
   readonly currentJitterNdcOffset?: TemporalVec2;
-  readonly currentViewProjection: Mat4;
+  readonly currentViewProjection?: Mat4;
   readonly dirtyFlags: readonly DirtyFlag[];
-  readonly previousInverseViewProjection: Mat4;
+  readonly previousInverseViewProjection?: Mat4;
   readonly previousJitterNdcOffset?: TemporalVec2;
   readonly previousViewProjection: Mat4;
   readonly renderCurrent: (frame: DynamicTaaGpuFrame) => BackendRenderPassStatistics;
@@ -301,10 +301,14 @@ export class TemporalPipelineTransaction implements Disposable {
           ...(input.currentJitterNdcOffset === undefined
             ? {}
             : { currentJitterNdcOffset: input.currentJitterNdcOffset }),
-          currentViewProjection: input.currentViewProjection,
+          ...(input.currentViewProjection === undefined
+            ? {}
+            : { currentViewProjection: input.currentViewProjection }),
           frame: dynamicFrame,
           ...(input.taaResolveOptions === undefined ? {} : { options: input.taaResolveOptions }),
-          previousInverseViewProjection: input.previousInverseViewProjection,
+          ...(input.previousInverseViewProjection === undefined
+            ? {}
+            : { previousInverseViewProjection: input.previousInverseViewProjection }),
           ...(input.previousJitterNdcOffset === undefined
             ? {}
             : { previousJitterNdcOffset: input.previousJitterNdcOffset }),

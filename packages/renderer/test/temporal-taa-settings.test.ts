@@ -7,7 +7,15 @@ describe('Temporal TAA settings', () => {
   it('preserves the accepted defaults in an immutable public state', () => {
     expect(TEMPORAL_TAA_DEFAULT_SETTINGS).toEqual({
       jitterScale: 1,
-      resolve: TEMPORAL_TAA_DEFAULT_OPTIONS,
+      resolve: {
+        ...TEMPORAL_TAA_DEFAULT_OPTIONS,
+        edgeDepthDifference: 0,
+        flickerReduction: 0,
+        maxVelocityLength: 128,
+        minimumCurrentWeight: 0,
+        subpixelCorrection: 0,
+        varianceClipGamma: 0,
+      },
       responsiveMask: 0,
     });
     expect(Object.isFrozen(TEMPORAL_TAA_DEFAULT_SETTINGS)).toBe(true);
@@ -33,6 +41,12 @@ describe('Temporal TAA settings', () => {
         depthRelativeThreshold: 0.02,
         normalRejectionCosine: 0.8,
         responsiveHistoryReduction: 0.75,
+        edgeDepthDifference: 0,
+        flickerReduction: 0,
+        maxVelocityLength: 128,
+        minimumCurrentWeight: 0,
+        subpixelCorrection: 0,
+        varianceClipGamma: 0,
       },
       responsiveMask: 0.1,
     });
@@ -43,6 +57,12 @@ describe('Temporal TAA settings', () => {
     expect(() => createTemporalTaaSettings({ baseHistoryWeight: 1.01 })).toThrow('History weight');
     expect(() => createTemporalTaaSettings({ normalRejectionCosine: -1.01 })).toThrow(
       'Normal rejection cosine',
+    );
+    expect(() => createTemporalTaaSettings({ maxVelocityLength: 0 })).toThrow(
+      'maximum Velocity length',
+    );
+    expect(() => createTemporalTaaSettings({ varianceClipGamma: -0.01 })).toThrow(
+      'variance clip gamma',
     );
     expect(() => createTemporalTaaSettings({ responsiveMask: Number.NaN })).toThrow(
       'responsive mask',

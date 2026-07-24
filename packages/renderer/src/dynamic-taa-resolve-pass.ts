@@ -9,6 +9,7 @@ import type {
 } from '@kyxos/render-backend-api';
 import { KyxosEngineError } from '@kyxos/render-core';
 import type { Disposable, Unsubscribe } from '@kyxos/render-core';
+import { inverseMat4 } from '@kyxos/render-math';
 import type { Mat4 } from '@kyxos/render-math';
 import type { TemporalVec2 } from '@kyxos/render-temporal';
 
@@ -40,10 +41,10 @@ export interface DynamicTaaResolvePassOptions {
 export interface DynamicTaaResolvePassInput {
   readonly currentInverseViewProjection: Mat4;
   readonly currentJitterNdcOffset?: TemporalVec2;
-  readonly currentViewProjection: Mat4;
+  readonly currentViewProjection?: Mat4;
   readonly frame: DynamicTaaGpuFrame;
   readonly options?: Partial<TemporalTaaResolveSettings>;
-  readonly previousInverseViewProjection: Mat4;
+  readonly previousInverseViewProjection?: Mat4;
   readonly previousJitterNdcOffset?: TemporalVec2;
   readonly previousViewProjection: Mat4;
   readonly responsiveMask?: number;
@@ -137,8 +138,18 @@ export function packDynamicTaaResolveUniforms(input: DynamicTaaResolvePassInput)
   const values = new Float32Array(DYNAMIC_TAA_RESOLVE_UNIFORM_LAYOUT.byteLength / FLOAT_BYTES);
   copyMatrix(values, 0, input.currentInverseViewProjection, 'Current inverse View-Projection');
   copyMatrix(values, 16, input.previousViewProjection, 'Previous View-Projection');
-  copyMatrix(values, 32, input.currentViewProjection, 'Current View-Projection');
-  copyMatrix(values, 48, input.previousInverseViewProjection, 'Previous inverse View-Projection');
+  copyMatrix(
+    values,
+    32,
+    input.currentViewProjection ?? inverseMat4(input.currentInverseViewProjection),
+    'Current View-Projection',
+  );
+  copyMatrix(
+    values,
+    48,
+    input.previousInverseViewProjection ?? inverseMat4(input.previousViewProjection),
+    'Previous inverse View-Projection',
+  );
   values[64] = frame.size.width;
   values[65] = frame.size.height;
   values[66] = frame.historyValid ? 1 : 0;

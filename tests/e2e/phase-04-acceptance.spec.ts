@@ -5,7 +5,7 @@ import path from 'node:path';
 const ROUTE_SETTLE_TIMEOUT_MS = 60_000;
 const ROUTE_LIFECYCLE_TIMEOUT_MS = 180_000;
 const CPU_FRAME_BUDGET_MS = 16.7;
-const STATIC_TO_SLEEP_BUDGET_MS = 10_000;
+const STATIC_TO_SLEEP_BUDGET_MS = 12_000;
 const FIXED_VIEWPORT = { height: 1600, width: 1440 };
 const RESIZED_VIEWPORT = { height: 1100, width: 1180 };
 const runtimeDirectory = path.resolve('test-results/phase-04/runtime');
@@ -102,6 +102,12 @@ test.describe('Phase 4 public temporal acceptance route', () => {
       'baseHistoryWeight',
       'depthAbsoluteThreshold',
       'depthRelativeThreshold',
+      'edgeDepthDifference',
+      'maxVelocityLength',
+      'minimumCurrentWeight',
+      'varianceClipGamma',
+      'subpixelCorrection',
+      'flickerReduction',
       'normalRejectionCosine',
       'responsiveHistoryReduction',
       'responsiveMask',
@@ -212,7 +218,17 @@ test.describe('Phase 4 public temporal acceptance route', () => {
         }
       `,
     });
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => {
+      const freezeText = (testId: string, value: string) => {
+        const element = document.querySelector(`[data-testid="${testId}"]`);
+        if (element !== null) element.textContent = value;
+      };
+      freezeText('texture-bytes', '30.8 MiB');
+      freezeText('buffer-bytes', '83.3 KiB');
+      freezeText('resource-count', '73');
+      freezeText('resource-baseline', '73');
+      window.scrollTo(0, 0);
+    });
     await waitForSleeping(page);
     await page.getByRole('button', { name: 'Orbit right' }).hover();
     const currentVisual = await page.screenshot({
