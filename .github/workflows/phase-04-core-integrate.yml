@@ -40,14 +40,24 @@ jobs:
           pnpm --version
 
       - name: Apply core integration
+        shell: bash
         run: |
-          node .github/scripts/phase-04-final/01-settings-camera-layout.mjs
-          node .github/scripts/phase-04-final/02-history-pbr-output.mjs
-          node .github/scripts/phase-04-final/03-pbr-feature.mjs
-          node .github/scripts/phase-04-final/03b-exact-optional.mjs
-          node .github/scripts/phase-04-final/04-resolve-pass.mjs
-          node .github/scripts/phase-04-final/05-temporal-integration.mjs
-          node .github/scripts/phase-04-final/06-exports.mjs
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          LOG=test-results/phase-04/runtime/phase-04-final-patch.log
+          : > "$LOG"
+          for script in \
+            01-settings-camera-layout.mjs \
+            02-history-pbr-output.mjs \
+            03-pbr-feature.mjs \
+            03b-exact-optional.mjs \
+            04-resolve-pass.mjs \
+            05-temporal-integration.mjs \
+            06-exports.mjs
+          do
+            echo "=== $script ===" | tee -a "$LOG"
+            node ".github/scripts/phase-04-final/$script" 2>&1 | tee -a "$LOG"
+          done
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -59,7 +69,6 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p test-results/phase-04/runtime
           pnpm build:packages 2>&1 | tee test-results/phase-04/runtime/phase-04-final-package-build.log
 
       - name: Validate shaders
