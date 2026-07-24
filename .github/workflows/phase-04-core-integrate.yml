@@ -44,6 +44,7 @@ jobs:
           node .github/scripts/phase-04-final/01-settings-camera-layout.mjs
           node .github/scripts/phase-04-final/02-history-pbr-output.mjs
           node .github/scripts/phase-04-final/03-pbr-feature.mjs
+          node .github/scripts/phase-04-final/03b-exact-optional.mjs
           node .github/scripts/phase-04-final/04-resolve-pass.mjs
           node .github/scripts/phase-04-final/05-temporal-integration.mjs
           node .github/scripts/phase-04-final/06-exports.mjs
