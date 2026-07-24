@@ -1,0 +1,60 @@
+name: Phase 4 final compatibility
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+concurrency:
+  group: phase-04-final-compatibility
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'phase-04-final'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: phase-04-final
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+      - run: corepack enable
+      - name: Apply backward-compatible matrix defaults
+        run: node .github/scripts/phase-04-finalize/01-compat.mjs
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run complete verification pipeline
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/phase-04-final-compatibility.log
+      - name: Commit verified compatibility layer
+        run: |
+          rm -rf .github/scripts/phase-04-finalize
+          rm -f .github/workflows/phase-04-finalize-compat.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "fix(phase-04): preserve temporal resolve compatibility"
+          git push origin HEAD:phase-04-final
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: phase-04-final-compatibility-${{ github.run_attempt }}
+          path: test-results/phase-04/runtime/
+          if-no-files-found: ignore
