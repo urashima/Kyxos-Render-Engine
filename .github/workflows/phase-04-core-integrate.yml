@@ -1,0 +1,88 @@
+name: Phase 4 final core integration
+
+on:
+  push:
+    branches:
+      - phase-04-final
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+concurrency:
+  group: phase-04-final-core
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.event_name == 'push' || github.head_ref == 'phase-04-final'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: phase-04-final
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Apply core integration
+        run: |
+          node .github/scripts/phase-04-final/01-settings-camera-layout.mjs
+          node .github/scripts/phase-04-final/02-history-pbr-output.mjs
+          node .github/scripts/phase-04-final/03-pbr-feature.mjs
+          node .github/scripts/phase-04-final/04-resolve-pass.mjs
+          node .github/scripts/phase-04-final/05-temporal-integration.mjs
+          node .github/scripts/phase-04-final/06-exports.mjs
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format transformed sources
+        run: pnpm format
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Validate shaders
+        run: pnpm validate:shaders
+
+      - name: Remove one-shot integration files
+        run: |
+          rm -rf .github/scripts/phase-04-final
+          rm -f .github/workflows/phase-04-core-integrate.yml
+
+      - name: Commit core checkpoint
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "feat(phase-04): integrate TRAA velocity core"
+          git push origin HEAD:phase-04-final
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-final-core-${{ github.run_attempt }}
+          path: |
+            packages/**/tsconfig.tsbuildinfo
+            test-results/phase-04/runtime/
+          if-no-files-found: ignore
+          retention-days: 7
