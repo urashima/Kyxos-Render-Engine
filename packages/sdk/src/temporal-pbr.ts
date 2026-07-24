@@ -16,6 +16,8 @@ export {
   createTemporalTaaSettings,
   type TemporalPbrRenderFeatureDiagnostics,
   type TemporalPbrRenderFeatureOptions,
+  type TemporalTaaAdvancedResolveSettings,
+  type TemporalTaaResolveSettings,
   type TemporalTaaSettings,
   type TemporalTaaSettingsDescriptor,
   type TemporalPipelineExecuteInput,

@@ -118,7 +118,7 @@ describe('DynamicTaaPresentPass', () => {
     expect(createBindGroup).toHaveBeenCalledTimes(2);
     expect(present.getDiagnostics()).toMatchObject({ activeBindGroupCount: 1, executionCount: 4 });
     expect(backend.getResourceStatistics()).toMatchObject({
-      activeCount: 13,
+      activeCount: 14,
       byKind: {
         'bind-group': { activeCount: 1 },
         buffer: { activeCount: 1, activeEstimatedBytes: 16 },
@@ -126,14 +126,14 @@ describe('DynamicTaaPresentPass', () => {
         sampler: { activeCount: 1 },
         'shader-module': { activeCount: 1 },
         surface: { activeCount: 1 },
-        texture: { activeCount: 7, activeEstimatedBytes: 1152 },
+        texture: { activeCount: 8, activeEstimatedBytes: 1248 },
       },
     });
 
     history.cancelFrame();
     present.dispose();
     present.dispose();
-    expect(backend.getResourceStatistics().activeCount).toBe(8);
+    expect(backend.getResourceStatistics().activeCount).toBe(9);
     history.dispose();
     expect(backend.getResourceStatistics().activeCount).toBe(0);
     expect(() => present.execute({ frame: resized })).toThrowError(

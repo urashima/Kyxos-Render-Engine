@@ -62,7 +62,7 @@ function expectFloatTuple(actual: ArrayLike<number>, expected: readonly number[]
 }
 
 describe('PBR GPU layout', () => {
-  it('packs a stable 448-byte world-space material, lighting, UV, and IBL contract', () => {
+  it('packs a stable 576-byte world-space material, lighting, UV, and IBL contract', () => {
     const material = new PbrMaterial({
       alphaCutoff: 0.35,
       baseColorFactor: [0.8, 0.3, 0.1, 0.7],
@@ -136,7 +136,7 @@ describe('PBR GPU layout', () => {
       worldMatrix: identityMat4(),
     });
 
-    expect(packed).toHaveLength(112);
+    expect(packed).toHaveLength(144);
     expect(packed.byteLength).toBe(PBR_OBJECT_UNIFORM_LAYOUT.byteLength);
     expectFloatTuple(packed.slice(48, 52), [0.8, 0.3, 0.1, 0.7]);
     expectFloatTuple(packed.slice(52, 56), [0.1, 0.2, 0.3, 4]);
@@ -298,7 +298,7 @@ describe('PbrRenderFeature', () => {
     ).toHaveProperty('size', 3);
     const objectUniforms = writeBuffer.mock.calls
       .map(([, data]) => data)
-      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 112);
+      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 144);
     expect(objectUniforms).toHaveLength(4);
     expect(
       objectUniforms
@@ -431,7 +431,7 @@ describe('PbrRenderFeature', () => {
     ).toHaveLength(5);
     const initialUniform = writeBuffer.mock.calls
       .map(([, data]) => data)
-      .find((data): data is Float32Array => data instanceof Float32Array && data.length === 112);
+      .find((data): data is Float32Array => data instanceof Float32Array && data.length === 144);
     expectFloatTuple(initialUniform?.slice(108, 112) ?? [], [1.5, 0, 1, 1]);
 
     const beforeControls = backend.getResourceStatistics();
@@ -457,7 +457,7 @@ describe('PbrRenderFeature', () => {
     feature.render({ backend, dirtyFlags: ['environment'], frameIndex: 2, timestamp: 16 });
     const latestUniform = writeBuffer.mock.calls
       .map(([, data]) => data)
-      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 112)
+      .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 144)
       .at(-1);
     expectFloatTuple(latestUniform?.slice(104, 108) ?? [], [1, 0, 0, 1]);
     expectFloatTuple(latestUniform?.slice(108, 112) ?? [], [2, 1, 2, 0]);
@@ -590,7 +590,7 @@ describe('PbrRenderFeature', () => {
     expect(writeTexture).toHaveBeenCalledTimes(11);
     const objectUniform = writeBuffer.mock.calls
       .map(([, data]) => data)
-      .find((data): data is Float32Array => data instanceof Float32Array && data.length === 112);
+      .find((data): data is Float32Array => data instanceof Float32Array && data.length === 144);
     expect(objectUniform).toBeDefined();
     expectFloatTuple(objectUniform?.slice(52, 56) ?? [], [0.25, 0.5, 0.75, 3]);
     expectFloatTuple(objectUniform?.slice(60, 64) ?? [], [1, 1, 1, -1]);
@@ -729,6 +729,7 @@ describe('PbrRenderFeature', () => {
       expect(descriptor.fragment?.targets?.map(({ format }) => format)).toEqual([
         'rgba16float',
         'rgba16float',
+        'rg16float',
       ]);
     }
     expect(
@@ -741,6 +742,10 @@ describe('PbrRenderFeature', () => {
         {
           clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
           texture: frame.writeNormalTexture,
+        },
+        {
+          clearColor: { a: 0, b: 0, g: 0, r: 0 },
+          texture: frame.currentVelocityTexture,
         },
       ],
       depthAttachment: { clearValue: 1, texture: frame.writeDepthTexture },

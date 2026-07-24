@@ -345,18 +345,21 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
     const historyNormalBits = Array.from(encodeFloat16(historyNormals.flat()));
     const currentDepths = Array.from(new Float32Array([0.4, 0.4, 0.4]));
     const historyDepths = Array.from(new Float32Array([0.403, 0.45, 0.403]));
-    const uniforms = new Float32Array(44);
+    const uniforms = new Float32Array(84);
     uniforms.set(identityMat4(), 0);
     uniforms.set(identityMat4(), 16);
-    uniforms[32] = width;
-    uniforms[33] = 1;
-    uniforms[34] = 1;
-    uniforms[35] = 0.5;
-    uniforms[36] = TEMPORAL_TAA_DEFAULT_OPTIONS.baseHistoryWeight;
-    uniforms[37] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthAbsoluteThreshold;
-    uniforms[38] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthRelativeThreshold;
-    uniforms[39] = TEMPORAL_TAA_DEFAULT_OPTIONS.normalRejectionCosine;
-    uniforms[40] = TEMPORAL_TAA_DEFAULT_OPTIONS.responsiveHistoryReduction;
+    uniforms.set(identityMat4(), 32);
+    uniforms.set(identityMat4(), 48);
+    uniforms[64] = width;
+    uniforms[65] = 1;
+    uniforms[66] = 1;
+    uniforms[67] = 0.5;
+    uniforms[72] = TEMPORAL_TAA_DEFAULT_OPTIONS.baseHistoryWeight;
+    uniforms[73] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthAbsoluteThreshold;
+    uniforms[74] = TEMPORAL_TAA_DEFAULT_OPTIONS.depthRelativeThreshold;
+    uniforms[75] = TEMPORAL_TAA_DEFAULT_OPTIONS.normalRejectionCosine;
+    uniforms[76] = TEMPORAL_TAA_DEFAULT_OPTIONS.responsiveHistoryReduction;
+    uniforms[78] = 128;
 
     const gpuResult = await page.evaluate(
       async ({
@@ -408,6 +411,12 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           'P4-07 Current Normal',
           textureUsage.copyDestination | textureUsage.sampled,
         );
+        const currentVelocityTexture = device.createTexture({
+          format: 'rg16float',
+          label: 'P4-07 Current Velocity',
+          size: { height: 1, width: viewportWidth },
+          usage: textureUsage.copyDestination | textureUsage.sampled,
+        });
         const historyColorTexture = createColorTexture(
           'P4-07 History Color',
           textureUsage.copyDestination | textureUsage.sampled,
@@ -507,6 +516,12 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             extent,
           );
           device.queue.writeTexture(
+            { texture: currentVelocityTexture },
+            new Uint16Array(viewportWidth * 2),
+            { bytesPerRow: viewportWidth * 4, rowsPerImage: 1 },
+            extent,
+          );
+          device.queue.writeTexture(
             { texture: historyColorTexture },
             new Uint16Array(historyColor),
             colorLayout,
@@ -549,10 +564,11 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
               { binding: 1, resource: currentColorTexture.createView() },
               { binding: 2, resource: currentDepthTexture.createView() },
               { binding: 3, resource: currentNormalTexture.createView() },
-              { binding: 4, resource: historyColorTexture.createView() },
-              { binding: 5, resource: historyDepthTexture.createView() },
-              { binding: 6, resource: historyNormalTexture.createView() },
-              { binding: 7, resource: sampler },
+              { binding: 4, resource: currentVelocityTexture.createView() },
+              { binding: 5, resource: historyColorTexture.createView() },
+              { binding: 6, resource: historyDepthTexture.createView() },
+              { binding: 7, resource: historyNormalTexture.createView() },
+              { binding: 8, resource: sampler },
             ],
             layout: pipeline.getBindGroupLayout(0),
           });
@@ -610,6 +626,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
           currentColorTexture.destroy();
           currentDepthTexture.destroy();
           currentNormalTexture.destroy();
+          currentVelocityTexture.destroy();
           historyColorTexture.destroy();
           historyDepthTexture.destroy();
           historyNormalTexture.destroy();
@@ -756,6 +773,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
               struct FragmentOutput {
                 @location(0) color: vec4f,
                 @location(1) normal: vec4f,
+                @location(2) velocity: vec2f,
               }
 
               @fragment
@@ -763,6 +781,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
                 var output: FragmentOutput;
                 output.color = vec4f(0.25, 0.5, 1.0, 1.0);
                 output.normal = vec4f(0.5, 0.5, 1.0, 1.0);
+                output.velocity = vec2f(0.0);
                 return output;
               }
             `,
@@ -780,7 +799,11 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             fragment: {
               entryPoint: 'fragmentMain',
               module: shader,
-              targets: [{ format: 'rgba16float' }, { format: 'rgba16float' }],
+              targets: [
+                { format: 'rgba16float' },
+                { format: 'rgba16float' },
+                { format: 'rg16float' },
+              ],
             },
             label: 'phase-04-offscreen-pipeline',
             vertex: { entryPoint: 'vertexMain', module: shader },
@@ -803,6 +826,12 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
                     loadOp: 'clear',
                     storeOp: 'store',
                     texture: first.writeNormalTexture,
+                  },
+                  {
+                    clearColor: { a: 0, b: 0, g: 0, r: 0 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                    texture: first.currentVelocityTexture,
                   },
                 ],
                 depthAttachment: {
@@ -840,6 +869,10 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
                     clearColor: { a: 1, b: 1, g: 0.5, r: 0.5 },
                     texture: third.writeNormalTexture,
                   },
+                  {
+                    clearColor: { a: 0, b: 0, g: 0, r: 0 },
+                    texture: third.currentVelocityTexture,
+                  },
                 ],
                 depthAttachment: { texture: third.writeDepthTexture },
                 draws: [{ pipeline, vertexCount: 3 }],
@@ -872,7 +905,9 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
             },
             firstCommit: committed,
             second: {
-              currentStable: second.currentColorTexture === first.currentColorTexture,
+              currentStable:
+                second.currentColorTexture === first.currentColorTexture &&
+                second.currentVelocityTexture === first.currentVelocityTexture,
               historyValid: second.historyValid,
               swapped:
                 second.readColorTexture === first.writeColorTexture &&
@@ -887,6 +922,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
               preparedHistoryValid: third.historyValid,
               resourcesReplaced:
                 third.currentColorTexture !== first.currentColorTexture &&
+                third.currentVelocityTexture !== first.currentVelocityTexture &&
                 third.readColorTexture !== first.readColorTexture &&
                 third.readDepthTexture !== first.readDepthTexture &&
                 third.readNormalTexture !== first.readNormalTexture &&
@@ -921,7 +957,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
       statistics: { drawCalls: 1, instances: 1, triangles: 1, vertices: 3 },
     });
     expect(result.firstCommit).toMatchObject({
-      estimatedGpuBytes: 288,
+      estimatedGpuBytes: 312,
       history: { sampleCount: 1, valid: true },
       resourceGeneration: 1,
       state: 'ready',
@@ -929,7 +965,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
     expect(result.second).toEqual({ currentStable: true, historyValid: true, swapped: true });
     expect(result.resize).toMatchObject({
       committed: {
-        estimatedGpuBytes: 960,
+        estimatedGpuBytes: 1040,
         history: { sampleCount: 1, valid: true },
         resourceGeneration: 2,
       },
@@ -950,34 +986,34 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
       state: 'ready',
     });
     expect(result.resourcesBeforeResolveDispose).toMatchObject({
-      activeCount: 14,
+      activeCount: 15,
       byKind: {
         'bind-group': { activeCount: 1 },
         buffer: { activeCount: 1 },
         pipeline: { activeCount: 2 },
         sampler: { activeCount: 1 },
         'shader-module': { activeCount: 2 },
-        texture: { activeCount: 7, activeEstimatedBytes: 960 },
+        texture: { activeCount: 8, activeEstimatedBytes: 1040 },
       },
-      createdTotal: 27,
-      destroyedTotal: 13,
+      createdTotal: 29,
+      destroyedTotal: 14,
     });
     expect(result.resourcesBeforeHistoryDispose).toMatchObject({
-      activeCount: 10,
+      activeCount: 11,
       byKind: {
         pipeline: { activeCount: 1 },
         sampler: { activeCount: 1 },
         'shader-module': { activeCount: 1 },
-        texture: { activeCount: 7, activeEstimatedBytes: 960 },
+        texture: { activeCount: 8, activeEstimatedBytes: 1040 },
       },
-      createdTotal: 27,
-      destroyedTotal: 17,
+      createdTotal: 29,
+      destroyedTotal: 18,
     });
     expect(result.resourcesAfterHistoryDispose).toMatchObject({
       activeCount: 2,
       byKind: { sampler: { activeCount: 0 }, texture: { activeCount: 0 } },
-      createdTotal: 27,
-      destroyedTotal: 25,
+      createdTotal: 29,
+      destroyedTotal: 27,
     });
     expect(runtimeErrors).toEqual([]);
 
@@ -1094,7 +1130,7 @@ test.describe('Phase 4 deterministic Dynamic TAA resolve', () => {
     expect(result.resourcesBeforeDispose.byKind).toMatchObject({
       pipeline: { activeCount: 12 },
       surface: { activeCount: 1 },
-      texture: { activeCount: 13 },
+      texture: { activeCount: 14 },
     });
     expect(result.resourcesAfterDispose.activeCount).toBe(0);
     expect(runtimeErrors).toEqual([]);

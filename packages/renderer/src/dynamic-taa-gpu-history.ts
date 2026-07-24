@@ -16,6 +16,7 @@ import {
 } from '@kyxos/render-temporal';
 
 const CURRENT_COLOR_BYTES_PER_TEXEL = 8;
+const CURRENT_VELOCITY_BYTES_PER_TEXEL = 4;
 const RESOLVED_SET_BYTES_PER_TEXEL = 8 + 4 + 8;
 const RESOLVED_SET_COUNT = 2;
 
@@ -32,6 +33,7 @@ export interface DynamicTaaGpuHistorySize {
 
 export interface DynamicTaaGpuFrame {
   readonly currentColorTexture: BackendTextureHandle;
+  readonly currentVelocityTexture: BackendTextureHandle;
   readonly historyValid: boolean;
   readonly ownerId: string;
   readonly readColorTexture: BackendTextureHandle;
@@ -57,6 +59,7 @@ export interface DynamicTaaGpuHistoryDiagnostics {
 
 interface DynamicTaaGpuResources {
   readonly currentColorTexture: BackendTextureHandle;
+  readonly currentVelocityTexture: BackendTextureHandle;
   readonly sampler: BackendSamplerHandle;
   readonly targetSets: readonly [DynamicTaaGpuTargetSet, DynamicTaaGpuTargetSet];
 }
@@ -158,6 +161,7 @@ export class DynamicTaaGpuHistory implements Disposable {
     const write = resources.targetSets[writeIndex];
     return Object.freeze({
       currentColorTexture: resources.currentColorTexture,
+      currentVelocityTexture: resources.currentVelocityTexture,
       historyValid,
       ownerId: this.#ownerId,
       readColorTexture: read.colorTexture,
@@ -237,7 +241,9 @@ export class DynamicTaaGpuHistory implements Disposable {
       estimatedGpuBytes:
         this.#width *
         this.#height *
-        (CURRENT_COLOR_BYTES_PER_TEXEL + RESOLVED_SET_BYTES_PER_TEXEL * RESOLVED_SET_COUNT),
+        (CURRENT_COLOR_BYTES_PER_TEXEL +
+          CURRENT_VELOCITY_BYTES_PER_TEXEL +
+          RESOLVED_SET_BYTES_PER_TEXEL * RESOLVED_SET_COUNT),
       frameOpen: this.#frameSignature !== undefined,
       history: this.#history.snapshot(),
       ownerId: this.#ownerId,
@@ -277,7 +283,7 @@ export class DynamicTaaGpuHistory implements Disposable {
     try {
       const createTexture = (
         label: string,
-        format: 'depth32float' | 'rgba16float',
+        format: 'depth32float' | 'rg16float' | 'rgba16float',
       ): BackendTextureHandle => {
         const texture = backend.createTexture({
           format,
@@ -291,6 +297,10 @@ export class DynamicTaaGpuHistory implements Disposable {
       const currentColorTexture = createTexture(
         `taa-history-${this.#ownerId}-current-color`,
         'rgba16float',
+      );
+      const currentVelocityTexture = createTexture(
+        `taa-history-${this.#ownerId}-current-velocity`,
+        'rg16float',
       );
       const createTargetSet = (index: 0 | 1): DynamicTaaGpuTargetSet =>
         Object.freeze({
@@ -318,6 +328,7 @@ export class DynamicTaaGpuHistory implements Disposable {
       created.push(sampler);
       return Object.freeze({
         currentColorTexture,
+        currentVelocityTexture,
         sampler,
         targetSets: Object.freeze([first, second] as const),
       });
@@ -344,6 +355,7 @@ export class DynamicTaaGpuHistory implements Disposable {
       first.normalTexture,
       first.depthTexture,
       first.colorTexture,
+      resources.currentVelocityTexture,
       resources.currentColorTexture,
     ]);
   }

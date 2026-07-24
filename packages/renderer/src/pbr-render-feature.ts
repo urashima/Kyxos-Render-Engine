@@ -66,11 +66,18 @@ const SURFACE_DEPTH_FORMAT = 'depth24plus' as const;
 const TEMPORAL_DEPTH_FORMAT = 'depth32float' as const;
 const TEMPORAL_COLOR_FORMAT = 'rgba16float' as const;
 const TEMPORAL_NORMAL_FORMAT = 'rgba16float' as const;
+const TEMPORAL_VELOCITY_FORMAT = 'rg16float' as const;
 const TEMPORAL_NORMAL_CLEAR_COLOR: BackendClearColor = Object.freeze({
   a: 1,
   b: 1,
   g: 0.5,
   r: 0.5,
+});
+const TEMPORAL_VELOCITY_CLEAR_COLOR: BackendClearColor = Object.freeze({
+  a: 0,
+  b: 0,
+  g: 0,
+  r: 0,
 });
 const PBR_VERTEX_STRIDE = 12 * Float32Array.BYTES_PER_ELEMENT;
 const PBR_ALPHA_MODES = ['opaque', 'mask', 'blend'] as const;
@@ -158,6 +165,10 @@ export interface PbrDynamicTaaOutput {
   readonly acquireFrame: () => DynamicTaaGpuFrame;
   /** Optional jittered View-Projection supplied by the temporal owner for this frame. */
   readonly acquireViewProjectionMatrix?: () => Mat4;
+  /** Optional unjittered current View-Projection used for explicit object Velocity. */
+  readonly acquireCurrentMotionViewProjectionMatrix?: () => Mat4;
+  /** Optional unjittered previous View-Projection used for explicit object Velocity. */
+  readonly acquirePreviousMotionViewProjectionMatrix?: () => Mat4;
   /** Optional borrowed output Surface contract. PBR never creates or disposes this Surface. */
   readonly surface?: PbrDynamicTaaSurface;
 }
@@ -314,6 +325,7 @@ export class PbrRenderFeature implements RenderFeature {
   readonly #meshRenderers: MeshRendererStore;
   readonly #meshResources = new Map<MeshData, MeshGpuResources>();
   readonly #objectResources = new Map<EntityHandle, ObjectGpuResources>();
+  readonly #previousWorldMatrices = new Map<EntityHandle, Mat4>();
   readonly #ownsMaterials: boolean;
   readonly #ownsEnvironmentCache: boolean;
   readonly #ownsTextures: boolean;
@@ -360,15 +372,24 @@ export class PbrRenderFeature implements RenderFeature {
           recoverable: false,
         });
       }
-      if (
-        options.dynamicTaaOutput.acquireViewProjectionMatrix !== undefined &&
-        typeof options.dynamicTaaOutput.acquireViewProjectionMatrix !== 'function'
-      ) {
-        throw new KyxosEngineError('PBR Dynamic TAA View-Projection provider must be a function.', {
-          code: 'INVALID_ARGUMENT',
-          module: 'renderer',
-          recoverable: false,
-        });
+      for (const [label, provider] of [
+        ['View-Projection', options.dynamicTaaOutput.acquireViewProjectionMatrix],
+        [
+          'current Motion View-Projection',
+          options.dynamicTaaOutput.acquireCurrentMotionViewProjectionMatrix,
+        ],
+        [
+          'previous Motion View-Projection',
+          options.dynamicTaaOutput.acquirePreviousMotionViewProjectionMatrix,
+        ],
+      ] as const) {
+        if (provider !== undefined && typeof provider !== 'function') {
+          throw new KyxosEngineError(`PBR Dynamic TAA ${label} provider must be a function.`, {
+            code: 'INVALID_ARGUMENT',
+            module: 'renderer',
+            recoverable: false,
+          });
+        }
       }
       const borrowedSurface = options.dynamicTaaOutput.surface;
       if (
@@ -620,7 +641,16 @@ export class PbrRenderFeature implements RenderFeature {
       label: `${this.#dynamicTaaOutput === undefined ? 'phase-03-pbr' : 'phase-04-pbr-temporal'}-frame-${context.frameIndex}`,
     });
     try {
-      return context.backend.executeFrame({ commandEncoder, renderPasses: [renderPass] });
+      const statistics = context.backend.executeFrame({
+        commandEncoder,
+        renderPasses: [renderPass],
+      });
+      if (this.#dynamicTaaOutput !== undefined) {
+        for (const item of [...queues.opaque, ...queues.transparent]) {
+          this.#previousWorldMatrices.set(item.entity, item.worldMatrix);
+        }
+      }
+      return statistics;
     } catch (error) {
       context.backend.destroyResource(commandEncoder);
       throw error;
@@ -736,6 +766,7 @@ export class PbrRenderFeature implements RenderFeature {
     this.#resources = undefined;
     this.#meshResources.clear();
     this.#objectResources.clear();
+    this.#previousWorldMatrices.clear();
     this.#textureResources.clear();
     this.#lastFallbackDrawCount = 0;
     this.#lastTemporalOwnerId = null;
@@ -777,6 +808,7 @@ export class PbrRenderFeature implements RenderFeature {
     }
     this.#meshResources.clear();
     this.#objectResources.clear();
+    this.#previousWorldMatrices.clear();
     this.#textureResources.clear();
 
     const errors = backend === undefined ? [] : this.#destroyHandles(backend, handles);
@@ -849,6 +881,7 @@ export class PbrRenderFeature implements RenderFeature {
       colorAttachments: [
         { clearColor: this.#clearColor, texture: frame.currentColorTexture },
         { clearColor: TEMPORAL_NORMAL_CLEAR_COLOR, texture: frame.writeNormalTexture },
+        { clearColor: TEMPORAL_VELOCITY_CLEAR_COLOR, texture: frame.currentVelocityTexture },
       ],
       depthAttachment: { clearValue: 1, texture: frame.writeDepthTexture },
       draws,
@@ -889,6 +922,7 @@ export class PbrRenderFeature implements RenderFeature {
                 format: TEMPORAL_COLOR_FORMAT,
               },
               { format: TEMPORAL_NORMAL_FORMAT },
+              { format: TEMPORAL_VELOCITY_FORMAT },
             ]
           : [
               {
@@ -1204,7 +1238,20 @@ export class PbrRenderFeature implements RenderFeature {
         light: this.#light,
         material: material.snapshot,
         normalYDirection: material.normalSource?.normalYDirection ?? 'up',
+        ...(this.#dynamicTaaOutput?.acquireCurrentMotionViewProjectionMatrix === undefined
+          ? {}
+          : {
+              currentMotionViewProjectionMatrix:
+                this.#dynamicTaaOutput.acquireCurrentMotionViewProjectionMatrix(),
+            }),
         output: this.#output,
+        ...(this.#dynamicTaaOutput?.acquirePreviousMotionViewProjectionMatrix === undefined
+          ? {}
+          : {
+              previousMotionViewProjectionMatrix:
+                this.#dynamicTaaOutput.acquirePreviousMotionViewProjectionMatrix(),
+            }),
+        previousWorldMatrix: this.#previousWorldMatrices.get(item.entity) ?? item.worldMatrix,
         viewProjectionMatrix:
           this.#dynamicTaaOutput?.acquireViewProjectionMatrix?.() ??
           this.#camera.viewProjectionMatrix(),
@@ -1411,6 +1458,7 @@ export class PbrRenderFeature implements RenderFeature {
       backend.destroyResource(object.bindGroup);
       backend.destroyResource(object.uniformBuffer);
       this.#objectResources.delete(entity);
+      this.#previousWorldMatrices.delete(entity);
     }
     for (const [mesh, resources] of this.#meshResources) {
       if (meshes.has(mesh)) continue;

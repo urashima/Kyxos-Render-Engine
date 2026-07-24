@@ -117,7 +117,7 @@ test.describe('Phase 4 final Dynamic TAA Present', () => {
       sampler: { activeCount: 1 },
       'shader-module': { activeCount: 1 },
       surface: { activeCount: 1 },
-      texture: { activeCount: 7 },
+      texture: { activeCount: 8 },
     });
     expect(result.resourcesAfterDispose.activeCount).toBe(0);
     expect(runtimeErrors).toEqual([]);

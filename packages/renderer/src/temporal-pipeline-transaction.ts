@@ -14,7 +14,7 @@ import type {
   TemporalConvergenceOptions,
   TemporalHistoryInvalidationReason,
   TemporalHistorySignatureDescriptor,
-  TemporalTaaResolveOptions,
+  TemporalVec2,
 } from '@kyxos/render-temporal';
 
 import { DynamicTaaGpuHistory } from './dynamic-taa-gpu-history.js';
@@ -23,6 +23,7 @@ import { DynamicTaaPresentPass } from './dynamic-taa-present-pass.js';
 import { DynamicTaaResolvePass } from './dynamic-taa-resolve-pass.js';
 import { StaticAccumulationGpuHistory } from './static-accumulation-gpu-history.js';
 import { StaticAccumulationPass } from './static-accumulation-pass.js';
+import type { TemporalTaaResolveSettings } from './temporal-taa-settings.js';
 
 const EMPTY_STATISTICS: BackendRenderPassStatistics = Object.freeze({
   drawCalls: 0,
@@ -56,12 +57,16 @@ export interface TemporalPipelineTransactionOptions extends TemporalConvergenceO
 export interface TemporalPipelineExecuteInput {
   readonly convergenceError?: number;
   readonly currentInverseViewProjection: Mat4;
+  readonly currentJitterNdcOffset?: TemporalVec2;
+  readonly currentViewProjection?: Mat4;
   readonly dirtyFlags: readonly DirtyFlag[];
+  readonly previousInverseViewProjection?: Mat4;
+  readonly previousJitterNdcOffset?: TemporalVec2;
   readonly previousViewProjection: Mat4;
   readonly renderCurrent: (frame: DynamicTaaGpuFrame) => BackendRenderPassStatistics;
   readonly responsiveMask?: number;
   readonly signature: TemporalHistorySignatureDescriptor;
-  readonly taaResolveOptions?: Partial<TemporalTaaResolveOptions>;
+  readonly taaResolveOptions?: Partial<TemporalTaaResolveSettings>;
   readonly temporal: TemporalFrameMetadata;
 }
 
@@ -293,8 +298,20 @@ export class TemporalPipelineTransaction implements Disposable {
         statistics,
         this.#resolve.execute({
           currentInverseViewProjection: input.currentInverseViewProjection,
+          ...(input.currentJitterNdcOffset === undefined
+            ? {}
+            : { currentJitterNdcOffset: input.currentJitterNdcOffset }),
+          ...(input.currentViewProjection === undefined
+            ? {}
+            : { currentViewProjection: input.currentViewProjection }),
           frame: dynamicFrame,
           ...(input.taaResolveOptions === undefined ? {} : { options: input.taaResolveOptions }),
+          ...(input.previousInverseViewProjection === undefined
+            ? {}
+            : { previousInverseViewProjection: input.previousInverseViewProjection }),
+          ...(input.previousJitterNdcOffset === undefined
+            ? {}
+            : { previousJitterNdcOffset: input.previousJitterNdcOffset }),
           previousViewProjection: input.previousViewProjection,
           ...(input.responsiveMask === undefined ? {} : { responsiveMask: input.responsiveMask }),
         }),
