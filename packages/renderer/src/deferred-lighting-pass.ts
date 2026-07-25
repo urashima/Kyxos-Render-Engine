@@ -80,11 +80,7 @@ interface DeferredLightingPassResources {
 
 function error(
   message: string,
-  code:
-    | 'ALREADY_DISPOSED'
-    | 'INVALID_ARGUMENT'
-    | 'INVALID_STATE'
-    | 'RESOURCE_CREATION_FAILED',
+  code: 'ALREADY_DISPOSED' | 'INVALID_ARGUMENT' | 'INVALID_STATE' | 'RESOURCE_CREATION_FAILED',
   recoverable = false,
 ): KyxosEngineError {
   return new KyxosEngineError(message, {
@@ -159,7 +155,10 @@ export function packDeferredLightingUniforms(
   );
   const lightColor = validateVector('Deferred Lighting lightColor', parameters.lightColor);
   if (lightColor.some((component) => component < 0)) {
-    throw error('Deferred Lighting lightColor components must be non-negative.', 'INVALID_ARGUMENT');
+    throw error(
+      'Deferred Lighting lightColor components must be non-negative.',
+      'INVALID_ARGUMENT',
+    );
   }
   const lightIntensity = validateNonNegative(
     'Deferred Lighting lightIntensity',
@@ -173,7 +172,10 @@ export function packDeferredLightingUniforms(
   const height = validateExtent('Deferred Lighting height', size.height);
 
   const packed = new Float32Array(DEFERRED_LIGHTING_UNIFORM_LAYOUT.byteLength / FLOAT_BYTES);
-  packed.set(inverseViewProjection, DEFERRED_LIGHTING_UNIFORM_LAYOUT.inverseViewProjectionOffset / FLOAT_BYTES);
+  packed.set(
+    inverseViewProjection,
+    DEFERRED_LIGHTING_UNIFORM_LAYOUT.inverseViewProjectionOffset / FLOAT_BYTES,
+  );
   packed.set(cameraPosition, DEFERRED_LIGHTING_UNIFORM_LAYOUT.cameraPositionOffset / FLOAT_BYTES);
   packed.set(lightDirection, DEFERRED_LIGHTING_UNIFORM_LAYOUT.lightDirectionOffset / FLOAT_BYTES);
   packed[DEFERRED_LIGHTING_UNIFORM_LAYOUT.lightIntensityOffset / FLOAT_BYTES] = lightIntensity;
@@ -352,12 +354,10 @@ export class DeferredLightingPass implements Disposable {
     }
 
     if (backend !== undefined) {
-      const cleanupErrors = this.#destroyHandles(
-        backend,
-        [previousBindGroup, previousColor].filter(
-          (handle): handle is BackendResourceHandle => handle !== undefined,
-        ),
-      );
+      const cleanupHandles: BackendResourceHandle[] = [];
+      if (previousBindGroup !== undefined) cleanupHandles.push(previousBindGroup);
+      if (previousColor !== undefined) cleanupHandles.push(previousColor);
+      const cleanupErrors = this.#destroyHandles(backend, cleanupHandles);
       if (cleanupErrors.length === 1) throw cleanupErrors[0];
       if (cleanupErrors.length > 1) {
         throw new AggregateError(cleanupErrors, 'Deferred Lighting Resize cleanup failed.');
@@ -493,7 +493,10 @@ export class DeferredLightingPass implements Disposable {
       throw error('Deferred Lighting GBuffer belongs to another owner.', 'INVALID_ARGUMENT');
     }
     if (gbuffer.size.width !== this.#width || gbuffer.size.height !== this.#height) {
-      throw error('Deferred Lighting GBuffer extent does not match the HDR target.', 'INVALID_ARGUMENT');
+      throw error(
+        'Deferred Lighting GBuffer extent does not match the HDR target.',
+        'INVALID_ARGUMENT',
+      );
     }
   }
 

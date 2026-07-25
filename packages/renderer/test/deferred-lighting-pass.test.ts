@@ -5,19 +5,19 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DEFERRED_LIGHTING_UNIFORM_LAYOUT,
   DeferredGBuffer,
+  type DeferredLightingParameters,
   DeferredLightingPass,
   packDeferredLightingUniforms,
-  type DeferredLightingParameters,
 } from '../src/index.js';
 
-const PARAMETERS = Object.freeze({
+const PARAMETERS: DeferredLightingParameters = Object.freeze({
   ambientIntensity: 0.125,
-  cameraPosition: [1, 2, 3],
+  cameraPosition: [1, 2, 3] as const,
   inverseViewProjection: identityMat4(),
-  lightColor: [0.8, 0.7, 0.6],
-  lightDirection: [0.25, 0.5, 1],
+  lightColor: [0.8, 0.7, 0.6] as const,
+  lightDirection: [0.25, 0.5, 1] as const,
   lightIntensity: 4,
-}) satisfies DeferredLightingParameters;
+});
 
 describe('Deferred Lighting uniforms', () => {
   it('packs the fixed 128-byte camera, light, and viewport layout', () => {
@@ -25,26 +25,56 @@ describe('Deferred Lighting uniforms', () => {
 
     expect(packed.byteLength).toBe(DEFERRED_LIGHTING_UNIFORM_LAYOUT.byteLength);
     expect([...packed]).toEqual([
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-      1, 2, 3, 0,
-      0.25, 0.5, 1, 4,
-      expect.closeTo(0.8), expect.closeTo(0.7), expect.closeTo(0.6), 0.125,
-      8, 4, 0.125, 0.25,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      2,
+      3,
+      0,
+      0.25,
+      0.5,
+      1,
+      4,
+      expect.closeTo(0.8),
+      expect.closeTo(0.7),
+      expect.closeTo(0.6),
+      0.125,
+      8,
+      4,
+      0.125,
+      0.25,
     ]);
   });
 
   it('rejects non-finite, negative, and zero-direction inputs', () => {
     expect(() =>
-      packDeferredLightingUniforms({ ...PARAMETERS, lightDirection: [0, 0, 0] }, { height: 1, width: 1 }),
+      packDeferredLightingUniforms(
+        { ...PARAMETERS, lightDirection: [0, 0, 0] },
+        { height: 1, width: 1 },
+      ),
     ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
     expect(() =>
       packDeferredLightingUniforms({ ...PARAMETERS, lightIntensity: -1 }, { height: 1, width: 1 }),
     ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
     expect(() =>
-      packDeferredLightingUniforms({ ...PARAMETERS, cameraPosition: [0, Number.NaN, 0] }, { height: 1, width: 1 }),
+      packDeferredLightingUniforms(
+        { ...PARAMETERS, cameraPosition: [0, Number.NaN, 0] },
+        { height: 1, width: 1 },
+      ),
     ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
   });
 });
@@ -182,7 +212,10 @@ describe('DeferredLightingPass', () => {
     gbuffer.initialize(backend);
     const lighting = new DeferredLightingPass({ height: 2, ownerId: 'viewport-c', width: 3 });
     await lighting.initialize(backend);
-    const before = lighting.execute({ gbuffer: gbuffer.acquireFrame(), parameters: PARAMETERS }).frame;
+    const before = lighting.execute({
+      gbuffer: gbuffer.acquireFrame(),
+      parameters: PARAMETERS,
+    }).frame;
 
     backend.simulateLoss({ message: 'forced Deferred Lighting loss' });
     expect(lighting.getDiagnostics()).toMatchObject({ resourceGeneration: 1, state: 'detached' });
@@ -210,9 +243,9 @@ describe('DeferredLightingPass', () => {
     expect(() => new DeferredLightingPass({ height: 1, ownerId: ' ', width: 1 })).toThrowError(
       expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
     );
-    expect(() => new DeferredLightingPass({ height: 0, ownerId: 'viewport', width: 1 })).toThrowError(
-      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
-    );
+    expect(
+      () => new DeferredLightingPass({ height: 0, ownerId: 'viewport', width: 1 }),
+    ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
 
     const backend = new MockBackend();
     await backend.initialize();
