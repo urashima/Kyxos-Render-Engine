@@ -1,0 +1,127 @@
+name: Phase 4 Deferred Lighting governance
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-lighting-governance.yml
+  push:
+    branches:
+      - agent/phase-04-deferred-traa-rebuild
+    paths:
+      - .github/workflows/phase-04-lighting-governance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    name: Record verified Deferred Lighting checkpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-deferred-traa-rebuild
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Update canonical ledgers
+        shell: python
+        run: |
+          from pathlib import Path
+
+          ledger = Path('docs/execution/PHASE_04_TASKS.md')
+          source = ledger.read_text(encoding='utf-8')
+          marker = '### P4-15 independent Deferred Lighting checkpoint'
+          if marker not in source:
+              anchor = '''- Five lifecycle tests passed with the existing renderer suite; complete `pnpm verify` passed in Run
+            `30150141951`, job `89659013343`, covering 65 test files / 293 tests and all pinned Chromium/WebGPU cases.
+          '''
+              section = '''
+          ### P4-15 independent Deferred Lighting checkpoint
+
+          - Added a full-screen Deferred Lighting pass that samples only current-frame Base Color/Metallic,
+            Normal/Roughness, Emissive/Occlusion, and Depth attachments and writes one independent RGBA16F
+            linear-HDR target.
+          - Added a fixed 128-byte Camera/Light/Viewport uniform contract, world-position reconstruction from
+            Depth, direct GGX metallic-roughness lighting, ambient occlusion, and emissive contribution.
+          - Bind Groups are keyed only by the new GBuffer generation and handles; Resize, Device Lost,
+            cross-owner rejection, extent validation, recovery, and exact disposal remain independent from
+            legacy Dynamic TAA, Static Accumulation, and Canvas Present resources.
+          - Complete `pnpm verify` passed in Run `30151328444`, job `89662093585`; Artifact `8617755998`
+            preserves focused and full verification logs covering 66 test files / 300 tests, 15 Shader mirrors,
+            and all pinned Chromium/WebGPU cases.
+          '''
+              if anchor not in source:
+                  raise SystemExit('Phase 4 GBuffer checkpoint anchor was not found')
+              ledger.write_text(source.replace(anchor, anchor + section, 1), encoding='utf-8')
+
+          log = Path('docs/execution/WORK_LOG.md')
+          source = log.read_text(encoding='utf-8')
+          marker = '## 2026-07-25 11:42 PDT — P4-15 GBuffer ownership and Deferred Lighting checkpoints'
+          if marker not in source:
+              entry = '''
+          ## 2026-07-25 11:42 PDT — P4-15 GBuffer ownership and Deferred Lighting checkpoints
+
+          ### Completed
+
+          - Added the independent five-target Deferred GBuffer ownership set: Base Color/Metallic,
+            Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F.
+          - Added atomic whole-set Resize, partial-allocation rollback, Device Lost detachment/recovery,
+            owner/extent validation, generation diagnostics, and exact disposal for the GBuffer.
+          - Added the independent Deferred Lighting pass with a linear-HDR RGBA16F output, fixed Camera/Light
+            uniforms, depth-based world-position reconstruction, direct GGX metallic-roughness lighting,
+            ambient occlusion, and emissive output.
+          - Kept all new attachments, Bind Groups, Pipeline state, and output ownership separate from legacy
+            Dynamic TAA, Static Accumulation, Post Process, Present, and the immutable Phase 4 baseline.
+
+          ### Validation
+
+          - GBuffer ownership complete `pnpm verify`: PASS — Run `30150141951`, job `89659013343`.
+          - Deferred Lighting complete `pnpm verify`: PASS — Run `30151328444`, job `89662093585`.
+          - Deferred Lighting Artifact `8617755998`, digest
+            `sha256:d0d6fe2591d03f01f88c39a4fb909878aeb1db2b261b0a12973ac1d069a9667c`, preserves focused and full logs.
+          - Final Lighting verification covered 66 test files / 300 tests, 15 exact canonical/runtime Shader
+            mirrors, production and Pages builds, bundle budgets, and all pinned Chromium/WebGPU regressions.
+
+          ### Next
+
+          - Implement the independent GBuffer raster pass and write the five current-frame targets using
+            current jittered raster position but current/previous unjittered rigid-object motion transforms.
+          - Connect GBuffer raster output to the verified Deferred Lighting pass before adding the independent
+            TRAA Color/Depth History and Resolve.
+          '''
+              log.write_text(source.rstrip() + '\n' + entry.strip() + '\n', encoding='utf-8')
+
+      - name: Format governance files
+        run: pnpm exec prettier --write WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+
+      - name: Run governance gates
+        run: |
+          pnpm format:check
+          pnpm check:docs
+          pnpm check:architecture
+
+      - name: Commit verified governance record
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add WORK_STATUS.md docs/execution/PHASE_04_TASKS.md docs/execution/WORK_LOG.md
+          git diff --cached --quiet && exit 0
+          git commit -m "docs(phase-04): record Deferred Lighting checkpoint"
+          git push origin HEAD:agent/phase-04-deferred-traa-rebuild
