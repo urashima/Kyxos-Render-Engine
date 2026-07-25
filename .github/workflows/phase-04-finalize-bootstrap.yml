@@ -1,0 +1,49 @@
+name: Phase 4 finalize bootstrap
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-finalize-bootstrap.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-04-finalize-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  format-and-trigger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out finalization branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-resource-stability-accepted
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Format finalization workflow
+        run: pnpm exec prettier .github/workflows/phase-04-finalize-acceptance.yml --write
+
+      - name: Commit formatted workflow and remove bootstrap
+        run: |
+          rm .github/workflows/phase-04-finalize-bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "ci(phase-04): format final acceptance workflow"
+          git push origin HEAD:phase-04-resource-stability-accepted
