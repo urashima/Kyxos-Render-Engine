@@ -159,6 +159,20 @@ architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa
 - Five lifecycle tests passed with the existing renderer suite; complete `pnpm verify` passed in Run
   `30150141951`, job `89659013343`, covering 65 test files / 293 tests and all pinned Chromium/WebGPU cases.
 
+### P4-15 independent Deferred Lighting checkpoint
+
+- Added a full-screen Deferred Lighting pass that samples only current-frame Base Color/Metallic,
+  Normal/Roughness, Emissive/Occlusion, and Depth attachments and writes one independent RGBA16F
+  linear-HDR target.
+- Added a fixed 128-byte Camera/Light/Viewport uniform contract, world-position reconstruction from
+  Depth, direct GGX metallic-roughness lighting, ambient occlusion, and emissive contribution.
+- Bind Groups are keyed only by the new GBuffer generation and handles; Resize, Device Lost,
+  cross-owner rejection, extent validation, recovery, and exact disposal remain independent from
+  legacy Dynamic TAA, Static Accumulation, and Canvas Present resources.
+- Complete `pnpm verify` passed in Run `30151328444`, job `89662093585`; Artifact `8617755998`
+  preserves focused and full verification logs covering 66 test files / 300 tests, 15 Shader mirrors,
+  and all pinned Chromium/WebGPU cases.
+
 ### P4-14 visual-baseline isolation
 
 - The final visual comparison showed the three material spheres, edges, highlights, layout, and all

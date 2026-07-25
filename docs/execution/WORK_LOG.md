@@ -2703,3 +2703,33 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 
 - Implement the independently owned GBuffer target set and Deferred Lighting pass behind the new scheduler contract.
 - Add new TRAA Color/Depth History and Resolve ownership, switch the local comparison route, and perform stationary/orbit/disocclusion visual review before public deployment.
+
+## 2026-07-25 11:42 PDT — P4-15 GBuffer ownership and Deferred Lighting checkpoints
+
+### Completed
+
+- Added the independent five-target Deferred GBuffer ownership set: Base Color/Metallic,
+  Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F.
+- Added atomic whole-set Resize, partial-allocation rollback, Device Lost detachment/recovery,
+  owner/extent validation, generation diagnostics, and exact disposal for the GBuffer.
+- Added the independent Deferred Lighting pass with a linear-HDR RGBA16F output, fixed Camera/Light
+  uniforms, depth-based world-position reconstruction, direct GGX metallic-roughness lighting,
+  ambient occlusion, and emissive output.
+- Kept all new attachments, Bind Groups, Pipeline state, and output ownership separate from legacy
+  Dynamic TAA, Static Accumulation, Post Process, Present, and the immutable Phase 4 baseline.
+
+### Validation
+
+- GBuffer ownership complete `pnpm verify`: PASS — Run `30150141951`, job `89659013343`.
+- Deferred Lighting complete `pnpm verify`: PASS — Run `30151328444`, job `89662093585`.
+- Deferred Lighting Artifact `8617755998`, digest
+  `sha256:d0d6fe2591d03f01f88c39a4fb909878aeb1db2b261b0a12973ac1d069a9667c`, preserves focused and full logs.
+- Final Lighting verification covered 66 test files / 300 tests, 15 exact canonical/runtime Shader
+  mirrors, production and Pages builds, bundle budgets, and all pinned Chromium/WebGPU regressions.
+
+### Next
+
+- Implement the independent GBuffer raster pass and write the five current-frame targets using
+  current jittered raster position but current/previous unjittered rigid-object motion transforms.
+- Connect GBuffer raster output to the verified Deferred Lighting pass before adding the independent
+  TRAA Color/Depth History and Resolve.
