@@ -138,8 +138,25 @@ describe('DynamicTaaGpuHistory', () => {
     expect(second.writeNormalTexture).toBe(first.readNormalTexture);
     history.cancelFrame();
 
+    const changed = history.prepareFrame(signature({ materials: 2 }));
+    expect(changed.historyValid).toBe(false);
+    expect(changed.readColorTexture).toBe(first.readColorTexture);
+    expect(changed.readDepthTexture).toBe(first.readDepthTexture);
+    expect(changed.readNormalTexture).toBe(first.readNormalTexture);
+    expect(changed.writeColorTexture).toBe(first.writeColorTexture);
+    expect(changed.writeDepthTexture).toBe(first.writeDepthTexture);
+    expect(changed.writeNormalTexture).toBe(first.writeNormalTexture);
+    expect(history.commitFrame()).toMatchObject({
+      history: {
+        generation: 1,
+        lastInvalidation: 'signature-mismatch',
+        sampleCount: 1,
+        valid: true,
+      },
+    });
+
     history.invalidate('post-process');
-    const reset = history.prepareFrame(signature({ postProcess: 2 }));
+    const reset = history.prepareFrame(signature({ materials: 2, postProcess: 2 }));
     expect(reset.historyValid).toBe(false);
     expect(reset.readColorTexture).toBe(first.readColorTexture);
     expect(reset.readDepthTexture).toBe(first.readDepthTexture);
@@ -148,17 +165,6 @@ describe('DynamicTaaGpuHistory', () => {
     expect(reset.writeDepthTexture).toBe(first.writeDepthTexture);
     expect(reset.writeNormalTexture).toBe(first.writeNormalTexture);
     history.cancelFrame();
-
-    const changed = history.prepareFrame(signature({ materials: 2 }));
-    expect(changed.historyValid).toBe(false);
-    expect(history.commitFrame()).toMatchObject({
-      history: {
-        generation: 1,
-        lastInvalidation: 'post-process',
-        sampleCount: 1,
-        valid: true,
-      },
-    });
 
     history.dispose();
     backend.dispose();
