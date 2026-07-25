@@ -50,11 +50,13 @@ describe('DeferredTraaFrameScheduler', () => {
     driver.flush(32);
 
     expect(frames).toHaveLength(3);
-    expect(frames.map(({ historyAction, jitterSampleIndex, mode }) => ({
-      historyAction,
-      jitterSampleIndex,
-      mode,
-    }))).toEqual([
+    expect(
+      frames.map(({ historyAction, jitterSampleIndex, mode }) => ({
+        historyAction,
+        jitterSampleIndex,
+        mode,
+      })),
+    ).toEqual([
       { historyAction: 'reset', jitterSampleIndex: 1, mode: 'interactive' },
       { historyAction: 'advance', jitterSampleIndex: 2, mode: 'resolving' },
       { historyAction: 'advance', jitterSampleIndex: 3, mode: 'resolving' },
@@ -112,11 +114,13 @@ describe('DeferredTraaFrameScheduler', () => {
     scheduler.invalidate('post-process');
     driver.flush(32);
 
-    expect(frames.map(({ historyAction, historyGeneration, jitterSampleIndex }) => ({
-      historyAction,
-      historyGeneration,
-      jitterSampleIndex,
-    }))).toEqual([
+    expect(
+      frames.map(({ historyAction, historyGeneration, jitterSampleIndex }) => ({
+        historyAction,
+        historyGeneration,
+        jitterSampleIndex,
+      })),
+    ).toEqual([
       { historyAction: 'reset', historyGeneration: 1, jitterSampleIndex: 1 },
       { historyAction: 'reuse', historyGeneration: 1, jitterSampleIndex: 1 },
       { historyAction: 'reuse', historyGeneration: 1, jitterSampleIndex: 1 },
@@ -143,11 +147,13 @@ describe('DeferredTraaFrameScheduler', () => {
     driver.flush(32);
     driver.flush(48);
 
-    expect(frames.map(({ historyAction, historyGeneration, mode }) => ({
-      historyAction,
-      historyGeneration,
-      mode,
-    }))).toEqual([
+    expect(
+      frames.map(({ historyAction, historyGeneration, mode }) => ({
+        historyAction,
+        historyGeneration,
+        mode,
+      })),
+    ).toEqual([
       { historyAction: 'reset', historyGeneration: 1, mode: 'interactive' },
       { historyAction: 'advance', historyGeneration: 1, mode: 'resolving' },
       { historyAction: 'reset', historyGeneration: 2, mode: 'interactive' },

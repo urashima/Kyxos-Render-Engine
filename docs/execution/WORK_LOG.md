@@ -2682,3 +2682,24 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 ### Next
 
 - Synchronize `agent/phase-05-lighting-postfx` / Draft PR #12 with current `main`, preserve P5-01 and existing P5-02 work, and run complete `pnpm verify`.
+
+## 2026-07-25 10:05 PDT — P4-15 independent Deferred TRAA scheduling boundary
+
+### Completed
+
+- Reproduced the public Dynamic TAA shaking on the local Phase 4 Playground and reopened owner visual acceptance without moving the immutable `phase-04-accepted` tag.
+- Accepted ADR-006: the legacy forward temporal transaction remains a comparison path, while the replacement uses independent `GBuffer → Deferred Lighting → TRAA Resolve → Post Process → Present` ownership.
+- Added `DeferredTraaFrameScheduler` with only Interactive, bounded Resolving, and Sleeping modes; it imports neither the legacy Temporal Scheduler transaction nor Static Accumulation.
+- Added explicit History actions (`reset`, `advance`, `reuse`), coalesced generation resets, a fixed pass order, bounded resolve tails, and stable Jitter reuse for Selection/Post-only frames.
+- Added regression coverage for pass order, dirty-batch coalescing, non-History reuse, resolve interruption/restart, suspension, and disposal.
+
+### Validation
+
+- Local owner observation: the legacy Dynamic TAA path visibly shakes under the current Phase 4 route.
+- The temporary checkpoint workflow formats the exact changed files and runs complete `pnpm verify` before publishing the canonical checkpoint commit.
+- No legacy TAA Shader, History resource, Static Accumulation implementation, accepted visual baseline, or public Phase 4 default was modified in this checkpoint.
+
+### Next
+
+- Implement the independently owned GBuffer target set and Deferred Lighting pass behind the new scheduler contract.
+- Add new TRAA Color/Depth History and Resolve ownership, switch the local comparison route, and perform stationary/orbit/disocclusion visual review before public deployment.
