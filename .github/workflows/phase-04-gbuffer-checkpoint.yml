@@ -1,0 +1,80 @@
+name: Phase 4 Deferred GBuffer checkpoint
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-gbuffer-checkpoint.yml
+  push:
+    branches:
+      - agent/phase-04-deferred-traa-rebuild
+    paths:
+      - .github/workflows/phase-04-gbuffer-checkpoint.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-record:
+    name: Format and verify GBuffer ownership
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-deferred-traa-rebuild
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Format exact GBuffer checkpoint files
+        run: |
+          pnpm exec prettier --write \
+            packages/renderer/src/deferred-gbuffer.ts \
+            packages/renderer/test/deferred-gbuffer.test.ts
+
+      - name: Run complete verification
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/deferred-gbuffer-checkpoint.log
+
+      - name: Commit verified GBuffer checkpoint
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            packages/renderer/src/deferred-gbuffer.ts \
+            packages/renderer/test/deferred-gbuffer.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "feat(phase-04): own independent Deferred GBuffer targets"
+          git push origin HEAD:agent/phase-04-deferred-traa-rebuild
+
+      - name: Upload verification log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: deferred-gbuffer-checkpoint-${{ github.run_attempt }}
+          path: test-results/phase-04/runtime/deferred-gbuffer-checkpoint.log
+          if-no-files-found: ignore
+          retention-days: 7
