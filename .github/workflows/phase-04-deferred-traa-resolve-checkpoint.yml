@@ -84,24 +84,17 @@ jobs:
 
           validator = Path('tools/shader-build/validate-shaders.mjs')
           source = validator.read_text()
-          needle = """  [
-            'webgpu/phase-04-deferred-lighting.wgsl',
-            {
-              exportName: 'PHASE_04_DEFERRED_LIGHTING_WGSL',
-              path: 'packages/renderer/src/generated/phase-04-deferred-lighting.wgsl.ts',
-            },
-          ],
-          """
-          insert = needle + """  [
+          needle = "  [\n    'webgpu/phase-04-pbr-temporal-output.wgsl',"
+          insert = """  [
             'webgpu/phase-04-deferred-traa-resolve.wgsl',
             {
               exportName: 'PHASE_04_DEFERRED_TRAA_RESOLVE_WGSL',
               path: 'packages/renderer/src/generated/phase-04-deferred-traa-resolve.wgsl.ts',
             },
           ],
-          """
+          """ + needle
           if source.count(needle) != 1:
-              raise SystemExit('Shader mirror Deferred Lighting boundary changed.')
+              raise SystemExit('Shader mirror temporal-output boundary changed.')
           validator.write_text(source.replace(needle, insert))
 
           status = Path('WORK_STATUS.md')
