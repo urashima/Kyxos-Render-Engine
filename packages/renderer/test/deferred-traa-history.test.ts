@@ -267,9 +267,9 @@ describe('DeferredTraaHistory', () => {
     expect(() => new DeferredTraaHistory({ height: 1, ownerId: ' ', width: 1 })).toThrowError(
       expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
     );
-    expect(() => new DeferredTraaHistory({ height: 0, ownerId: 'viewport', width: 1 })).toThrowError(
-      expect.objectContaining({ code: 'INVALID_ARGUMENT' }),
-    );
+    expect(
+      () => new DeferredTraaHistory({ height: 0, ownerId: 'viewport', width: 1 }),
+    ).toThrowError(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
 
     const backend = new MockBackend();
     await backend.initialize();

@@ -11,12 +11,7 @@ const HISTORY_SET_BYTES_PER_TEXEL = 8 + 4;
 const HISTORY_SET_COUNT = 2;
 
 export type DeferredTraaHistoryResetReason =
-  | 'camera'
-  | 'device-lost'
-  | 'manual'
-  | 'scene'
-  | 'settings'
-  | 'viewport';
+  'camera' | 'device-lost' | 'manual' | 'scene' | 'settings' | 'viewport';
 
 export interface DeferredTraaHistoryOptions {
   readonly height: number;
@@ -198,7 +193,7 @@ export class DeferredTraaHistory implements Disposable {
     const readIndex: 0 | 1 = invalidated ? 0 : this.#readIndex;
     const writeIndex: 0 | 1 = readIndex === 0 ? 1 : 0;
     const resetReason = invalidated
-      ? (input.resetReason ?? (generationChanged ? 'scene' : this.#lastResetReason ?? 'manual'))
+      ? (input.resetReason ?? (generationChanged ? 'scene' : (this.#lastResetReason ?? 'manual')))
       : null;
     this.#prepared = Object.freeze({
       historyGeneration,
@@ -246,7 +241,10 @@ export class DeferredTraaHistory implements Disposable {
   acquireResolvedFrame(): DeferredTraaResolvedFrame {
     this.#assertActive();
     if (this.#prepared !== undefined) {
-      throw error('Deferred TRAA History cannot reuse History during an open frame.', 'INVALID_STATE');
+      throw error(
+        'Deferred TRAA History cannot reuse History during an open frame.',
+        'INVALID_STATE',
+      );
     }
     const backend = this.#backend;
     const resources = this.#resources;
