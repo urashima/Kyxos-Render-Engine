@@ -1,8 +1,8 @@
 # Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
 
 Phase status: **Acceptance Reopened — P4-14 Public Resource-Stability Re-verification**
-Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`
-Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`
+Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`, `phase-04-coordinated-history-roles`
+Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
 Previous accepted source: `f926f544c94da2c5ea8f9630c959398b15d2d84f`
 Immutable baseline tag: `phase-04-accepted`
@@ -55,7 +55,7 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
   the Canvas Surface, or the Renderer.
 - The accepted Phase 3 direct Surface path remains the default and is not rewritten.
 - Temporal output remains opt-in; Present remains the sole Canvas Surface owner in temporal mode.
-- Phase 5 development resumes only after PR #27 passes the exact public resource-stability gate.
+- Phase 5 development resumes only after PR #31 passes the exact public resource-stability gate.
 
 ## P4-14 final TRAA and Velocity scope
 
@@ -103,14 +103,22 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
   `30140103609`; Pages Run `30140285927` built and deployed successfully but its official public gate
   deterministically reproduced 74 → 76 after the first signature-only Jitter update. Failure Artifact
   `8614309986` preserves the exact assertion and also identified the separate Phase 4 wake timeout.
-- Refined root cause: public TAA configuration can make History non-reusable through signature
-  mismatch without first invoking explicit invalidation, so arbitrary prior ping-pong roles still
-  selected two new cross-phase Bind Groups.
-- PR #27 canonicalizes Dynamic TAA and Static Accumulation read roles whenever `isReusable()` returns
-  false, adds direct signature-mismatch and complete Pipeline regressions, and applies the existing
-  60-second Phase 4 convergence budget to the initial online wake assertion. Atomic complete Verify Run
-  `30140959472` passed; trusted standard PR CI, main CI, Pages deployment, and official public
-  Chromium/WebGPU verification remain mandatory before P4-14 returns to Completed.
+- PR #27 canonicalized both read roles whenever History was non-reusable, passed atomic Verify Run
+  `30140959472` and trusted PR Run `30141336145`, and was merged as
+  `e9ba237744dc33253a40dd05dc47ded15fb586d9`.
+- Exact merge source `e9ba237744dc33253a40dd05dc47ded15fb586d9` passed main Run
+  `30141565606`; Pages Run `30141747236` built and deployed successfully as deployment `5598030104`,
+  but official public Job `89636281875` still observed 74/75 → 76. Failure Artifact `8614740470`
+  preserved both attempts.
+- Final refined root cause: when a signature mismatch occurs directly on an accumulating frame,
+  independently canonicalizing both History read indices selects a Dynamic write role and Static read
+  role from different warmed pairs. The next frame selects the opposite cross-pair, creating exactly
+  two additional Static Accumulation Bind Groups.
+- PR #31 exposes the prepared Dynamic write role and coordinates the non-reusable Static read role to
+  preserve the two original `(0,0)` and `(1,1)` Bind Group pairs. Its focused regressions, workspace
+  build, and complete `pnpm verify` passed in atomic Run `30142165936`; trusted standard PR CI, exact
+  main CI, Pages deployment, and official public Chromium/WebGPU verification remain mandatory before
+  P4-14 returns to Completed.
 
 ### P4-14 visual-baseline isolation
 
