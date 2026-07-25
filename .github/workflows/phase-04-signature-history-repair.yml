@@ -76,6 +76,7 @@ jobs:
       - name: Format repair scope
         run: |
           pnpm exec prettier \
+            .github/workflows/phase-04-signature-history-repair.yml \
             packages/renderer/src/dynamic-taa-gpu-history.ts \
             packages/renderer/src/static-accumulation-gpu-history.ts \
             packages/renderer/test/dynamic-taa-gpu-history.test.ts \
@@ -109,7 +110,23 @@ jobs:
         run: exit 1
 
       - name: Run complete verification
-        run: pnpm verify
+        id: complete
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee /tmp/complete-verification.log
+
+      - name: Upload complete verification output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-complete-verification
+          path: /tmp/complete-verification.log
+          if-no-files-found: error
+
+      - name: Require complete verification
+        if: steps.complete.outcome != 'success'
+        run: exit 1
 
       - name: Commit verified repair and remove temporary workflow
         run: |
