@@ -1,0 +1,45 @@
+name: Phase 4 final evidence snapshot
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-final-evidence-snapshot.yml
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      TARGET_SHA: 0a36ee51b5b40ae2d248f6643deda22090e37e81
+    steps:
+      - name: Capture exact main and Pages state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_SHA}&per_page=100" > /tmp/runs.json
+          jq -r '.workflow_runs[] | [.id,.name,.event,.status,.conclusion,.head_sha] | @tsv' /tmp/runs.json
+          pages_run="$(jq -r '[.workflow_runs[] | select(.name == "Deploy accepted Playgrounds" and .event == "workflow_run")] | sort_by(.created_at) | reverse | .[0].id // empty' /tmp/runs.json)"
+          if [ -n "$pages_run" ]; then
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${pages_run}/jobs?per_page=100" > /tmp/pages-jobs.json
+          else
+            echo '{"jobs":[]}' > /tmp/pages-jobs.json
+          fi
+          gh api "/repos/${GITHUB_REPOSITORY}/deployments?sha=${TARGET_SHA}&environment=github-pages&per_page=20" > /tmp/deployments.json
+
+      - name: Upload exact state
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-final-evidence-snapshot
+          path: |
+            /tmp/runs.json
+            /tmp/pages-jobs.json
+            /tmp/deployments.json
+          if-no-files-found: error
