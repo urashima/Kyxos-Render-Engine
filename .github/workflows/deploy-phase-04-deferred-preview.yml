@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -47,3 +48,14 @@ jobs:
           pnpm --filter @kyxos/render-playground build
           test -f apps/playground/dist/index.html
           grep -F '/Kyxos-Render-Engine/preview/phase-04-deferred-traa-resolve/app/assets/' apps/playground/dist/index.html
+
+      - name: Dispatch trusted Main Pages deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-pages.yml',
+              ref: 'main',
+            });
