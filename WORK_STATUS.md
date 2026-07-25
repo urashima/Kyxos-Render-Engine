@@ -6,10 +6,10 @@
 - **Current Task:** P4-15 — Replace the coupled forward temporal transaction with an independent Deferred GBuffer, Lighting, TRAA, Post Process, and Present pipeline
 - **Last Completed Task:** P4-14 — Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity in the legacy forward temporal comparison path
 - **Next Action:** Connect independent Post Process and Present after the verified TRAA Resolve, then expose a local legacy-versus-Deferred comparison for stationary, orbit, thin-edge, and disocclusion visual review
-- **CI Status:** Scheduler PASS — Run `30149668021`; GBuffer ownership PASS — Run `30150141951`; Deferred Lighting PASS — Run `30151328444`; independent TRAA History PASS — Run `30151722000`; GBuffer raster PASS — Run `30158519929`, trusted PR Run `30158791712`; independent TRAA Resolve PASS — Run `30159610163`
+- **CI Status:** Scheduler PASS — Run `30149668021`; GBuffer ownership PASS — Run `30150141951`; Deferred Lighting PASS — Run `30151328444`; independent TRAA History PASS — Run `30151722000`; GBuffer raster PASS — Run `30158519929`, trusted PR Run `30158791712`; independent TRAA Resolve PASS — Run `30159610163`, job `89682673437`, Artifact `8619916233`, digest `sha256:347061df0bd405dd33b181e5b397bd27e9e8bb7af0796f1d226fd0b319ee04df`; trusted standard PR CI pending
 - **Acceptance Status:** Phase 0–3 Accepted; immutable Phase 4 tag preserved but owner visual acceptance reopened after the public and local Dynamic TAA paths reproduced strong shaking; Phase 5 paused without discarding P5-01
 - **Known Blockers:** The legacy forward temporal architecture remains visually unstable and must not return to Accepted status; the independent Deferred/TRAA path still requires Post Process/Present integration, local visual review, CI, Pages, and owner acceptance
-- **Last Updated:** 2026-07-25 06:23 PDT
+- **Last Updated:** 2026-07-25 06:29 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one
