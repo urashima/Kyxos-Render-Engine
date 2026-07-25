@@ -1,0 +1,201 @@
+name: Phase 4 Deferred GBuffer Raster Checkpoint
+
+on:
+  pull_request:
+    branches: [main]
+    paths: [.github/workflows/phase-04-deferred-gbuffer-raster-checkpoint.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-04-deferred-gbuffer-raster-checkpoint
+  cancel-in-progress: false
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/phase-04-deferred-traa-rebuild
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply raster source and governance checkpoint
+        shell: bash
+        env:
+          CHECKPOINT_RUN_ID: ${{ github.run_id }}
+        run: |
+          cp .github/phase-04-deferred-gbuffer-raster-payload.b64 /tmp/payload.b64
+          base64 -d /tmp/payload.b64 >/tmp/payload.tar.gz
+          tar -xzf /tmp/payload.tar.gz
+          python <<'PY'
+          from pathlib import Path
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import os
+
+          run_id = os.environ['CHECKPOINT_RUN_ID']
+          now = datetime.now(ZoneInfo('America/Los_Angeles'))
+          stamp = now.strftime('%Y-%m-%d %H:%M PDT')
+          log_stamp = now.strftime('%Y-%m-%d %H:%M PDT')
+
+          index_path = Path('packages/renderer/src/index.ts')
+          source = index_path.read_text()
+          needle = """export {
+            DeferredGBuffer,
+            type DeferredGBufferDiagnostics,
+            type DeferredGBufferFrame,
+            type DeferredGBufferOptions,
+            type DeferredGBufferSize,
+          } from './deferred-gbuffer.js';
+          """
+          insert = needle + """export {
+            DeferredGBufferRasterPass,
+            type DeferredGBufferRasterAlphaMode,
+            type DeferredGBufferRasterDraw,
+            type DeferredGBufferRasterExecutionResult,
+            type DeferredGBufferRasterPassDiagnostics,
+            type DeferredGBufferRasterPassInput,
+            type DeferredGBufferRasterPassOptions,
+            type DeferredGBufferRasterTextureBinding,
+          } from './deferred-gbuffer-raster-pass.js';
+          """
+          if source.count(needle) != 1:
+              raise SystemExit('Renderer index insertion boundary changed.')
+          index_path.write_text(source.replace(needle, insert))
+
+          validator = Path('tools/shader-build/validate-shaders.mjs')
+          source = validator.read_text()
+          needle = "  \n    'webgpu/phase-04-deferred-lighting.wgsl',"
+          insert = """  [
+            'webgpu/phase-04-deferred-gbuffer.wgsl',
+            {
+              exportName: 'PHASE_04_DEFERRED_GBUFFER_WGSL',
+              path: 'packages/renderer/src/generated/phase-04-deferred-gbuffer.wgsl.ts',
+            },
+          ],
+          """ + needle
+          if source.count(needle) != 1:
+              raise SystemExit('Shader mirror registration boundary changed.')
+          validator.write_text(source.replace(needle, insert))
+
+          status = Path('WORK_STATUS.md')
+          source = status.read_text()
+          replacements = {
+            '- **Next Action:** Implement the independent GBuffer raster pass with current jittered raster position and unjittered current/previous rigid-object Velocity, connect it to Deferred Lighting, then implement TRAA Resolve against the verified independent History owner':
+              '- **Next Action:** Implement the independent TRAA Resolve using current Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner; then connect Post Process and Present for local visual comparison',
+            '- **CI Status:** Scheduler PASS — Run `30149668021`, job `89657745639`; GBuffer ownership PASS — Run `30150141951`, job `89659013343`; Deferred Lighting PASS — Run `30151328444`, job `89662093585`; independent TRAA History PASS — Run `30151722000`, job `89663115587`, Artifact `8617857896`':
+              f'- **CI Status:** Scheduler PASS — Run `30149668021`; GBuffer ownership PASS — Run `30150141951`; Deferred Lighting PASS — Run `30151328444`; independent TRAA History PASS — Run `30151722000`; GBuffer raster and Lighting integration PASS — Run `{run_id}`',
+            '- **Known Blockers:** The legacy forward temporal architecture remains visually unstable and must not return to Accepted status; the independent Deferred/TRAA path still requires GBuffer rasterization, TRAA Resolve, local visual review, CI, Pages, and owner acceptance':
+              '- **Known Blockers:** The legacy forward temporal architecture remains visually unstable and must not return to Accepted status; the independent Deferred/TRAA path still requires TRAA Resolve, Post Process/Present integration, local visual review, CI, Pages, and owner acceptance',
+            '- **Last Updated:** 2026-07-25 11:55 PDT': f'- **Last Updated:** {stamp}',
+            '|    04 | Acceptance Reopened | `agent/phase-04-deferred-traa-rebuild` | #34 | HISTORY CHECKPOINT PASS | Re-verification | `phase-04-accepted` |':
+              '|    04 | Acceptance Reopened | `agent/phase-04-deferred-traa-rebuild` | #34 | RASTER CHECKPOINT PASS  | Re-verification | `phase-04-accepted` |',
+          }
+          for old,new in replacements.items():
+              if source.count(old) != 1:
+                  raise SystemExit(f'WORK_STATUS boundary changed: {old}')
+              source = source.replace(old,new)
+          status.write_text(source)
+
+          tasks = Path('docs/execution/PHASE_04_TASKS.md')
+          source = tasks.read_text()
+          needle = """- Complete `pnpm verify` passed in Run `30151328444`, job `89662093585`; Artifact `8617755998`
+            preserves focused and full verification logs covering 66 test files / 300 tests, 15 Shader mirrors,
+            and all pinned Chromium/WebGPU cases.
+
+          ### P4-14 visual-baseline isolation
+          """
+          section = f"""- Complete `pnpm verify` passed in Run `30151328444`, job `89662093585`; Artifact `8617755998`
+            preserves focused and full verification logs covering 66 test files / 300 tests, 15 Shader mirrors,
+            and all pinned Chromium/WebGPU cases.
+
+          ### P4-15 independent GBuffer raster checkpoint
+
+          - Added an independent geometry raster pass that writes Base Color/Metallic, encoded world Normal/Roughness,
+            Emissive/Occlusion, RG16F Velocity, and Depth32F into the owner-scoped GBuffer attachment set.
+          - Raster position uses the current jittered View-Projection, while rigid-object Velocity uses current and
+            previous unjittered View-Projection and World transforms; no jitter is baked into the motion vector.
+          - Added bounded Opaque/Mask × single/double-sided Pipeline variants, caller-owned geometry and texture
+            bindings, per-object Uniform updates, stale Bind Group cleanup, Device Lost recovery, and exact disposal.
+          - The integration regression executes GBuffer raster followed by the verified Deferred Lighting pass without
+            importing legacy Dynamic TAA, Static Accumulation, Surface Present, or their attachment roles.
+          - Complete `pnpm verify` passed in Run `{run_id}`; the uploaded
+            `phase-04-deferred-gbuffer-raster-verify` Artifact preserves the full gate log.
+
+          ### P4-14 visual-baseline isolation
+          """
+          if source.count(needle) != 1:
+              raise SystemExit('PHASE_04_TASKS insertion boundary changed.')
+          tasks.write_text(source.replace(needle, section))
+
+          work_log = Path('docs/execution/WORK_LOG.md')
+          with work_log.open('a') as stream:
+              stream.write(f"""
+
+          ## {log_stamp} — P4-15 independent GBuffer raster and Lighting integration
+
+          ### Completed
+
+          - Added the independent GBuffer geometry raster pass and canonical WGSL/runtime mirror.
+          - Wrote Base Color/Metallic, Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F in one ordered MRT pass.
+          - Kept raster jitter separate from current/previous unjittered rigid-object motion transforms.
+          - Added four bounded Pipeline variants, borrowed geometry/texture bindings, object Uniform updates, cache cleanup, Device Lost recovery, and disposal.
+          - Connected the resulting current-frame GBuffer to the independent Deferred Lighting pass in regression coverage.
+          - Left the legacy forward temporal feature and immutable Phase 4 accepted tag unchanged.
+
+          ### Validation
+
+          - Complete `pnpm verify`: PASS — Run `{run_id}`.
+          - Artifact `phase-04-deferred-gbuffer-raster-verify` preserves the complete verification output.
+          - The checkpoint is committed only after formatting, strict typecheck, unit tests, architecture and Shader mirror checks, builds, budgets, and all pinned Chromium/WebGPU gates pass.
+
+          ### Next
+
+          - Implement the independent TRAA Resolve using Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner.
+          - Connect Post Process and Present, then expose a local legacy-versus-Deferred comparison for stationary/orbit/disocclusion visual review.
+          """)
+
+          Path('.github/phase-04-deferred-gbuffer-raster-payload.b64').unlink()
+          Path('.github/workflows/phase-04-deferred-gbuffer-raster-checkpoint.yml').unlink()
+          PY
+      - name: Format exact checkpoint scope
+        run: >-
+          pnpm exec prettier --write
+          WORK_STATUS.md
+          docs/execution/PHASE_04_TASKS.md
+          docs/execution/WORK_LOG.md
+          packages/renderer/src/generated/phase-04-deferred-gbuffer.wgsl.ts
+          packages/renderer/src/deferred-gbuffer-raster-pass.ts
+          packages/renderer/src/index.ts
+          packages/renderer/test/deferred-gbuffer-raster-pass.test.ts
+          tools/shader-build/validate-shaders.mjs
+      - name: Verify complete repository
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee /tmp/phase-04-deferred-gbuffer-raster-verify.log
+      - name: Preserve verification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-04-deferred-gbuffer-raster-verify
+          path: /tmp/phase-04-deferred-gbuffer-raster-verify.log
+          if-no-files-found: warn
+      - name: Publish verified checkpoint
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'feat(phase-04): add independent GBuffer raster pass'
+          git push origin HEAD:agent/phase-04-deferred-traa-rebuild
