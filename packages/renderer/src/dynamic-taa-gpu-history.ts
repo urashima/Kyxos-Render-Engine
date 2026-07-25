@@ -117,6 +117,14 @@ export class DynamicTaaGpuHistory implements Disposable {
     return this.#disposed;
   }
 
+  getPreparedWriteIndex(): 0 | 1 {
+    this.#assertActive();
+    if (this.#frameSignature === undefined) {
+      throw error('Dynamic TAA GPU History has no prepared write role.', 'INVALID_STATE');
+    }
+    return this.#readIndex === 0 ? 1 : 0;
+  }
+
   initialize(backend: GraphicsBackend): void {
     this.#assertActive();
     if (backend.state !== 'ready') {

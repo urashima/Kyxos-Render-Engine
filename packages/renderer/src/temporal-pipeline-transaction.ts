@@ -319,7 +319,10 @@ export class TemporalPipelineTransaction implements Disposable {
 
       let presentedHistory: TemporalPipelineExecuteResult['presentedHistory'] = 'dynamic';
       if (input.temporal.mode === 'accumulating') {
-        const staticFrame = this.#staticHistory.prepareFrame(input.signature);
+        const staticFrame = this.#staticHistory.prepareFrame(
+          input.signature,
+          this.#dynamicHistory.getPreparedWriteIndex(),
+        );
         staticPrepared = true;
         statistics = addStatistics(
           statistics,

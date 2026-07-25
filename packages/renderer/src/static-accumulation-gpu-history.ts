@@ -144,7 +144,10 @@ export class StaticAccumulationGpuHistory implements Disposable {
     this.#unsubscribeLost = backend.on('lost', () => this.#onBackendLost(backend));
   }
 
-  prepareFrame(signature: TemporalHistorySignatureDescriptor): StaticAccumulationGpuFrame {
+  prepareFrame(
+    signature: TemporalHistorySignatureDescriptor,
+    nonReusableReadIndex: 0 | 1 = 0,
+  ): StaticAccumulationGpuFrame {
     this.#assertActive();
     if (this.#frameSignature !== undefined) {
       throw error('Static Accumulation GPU History already has an open frame.', 'INVALID_STATE');
@@ -159,6 +162,9 @@ export class StaticAccumulationGpuHistory implements Disposable {
       );
     }
 
+    if (nonReusableReadIndex !== 0 && nonReusableReadIndex !== 1) {
+      throw error('Static Accumulation read index must be 0 or 1.', 'INVALID_ARGUMENT');
+    }
     const candidate = createTemporalHistorySignature(signature);
     const historySnapshot = this.#history.snapshot();
     if (
@@ -176,7 +182,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
     }
 
     const historyValid = this.#history.isReusable(candidate);
-    if (!historyValid) this.#readIndex = 0;
+    if (!historyValid) this.#readIndex = nonReusableReadIndex;
     this.#frameSignature = candidate;
     const writeIndex = this.#readIndex === 0 ? 1 : 0;
     return Object.freeze({
