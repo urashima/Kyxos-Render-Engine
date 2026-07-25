@@ -89,6 +89,7 @@ jobs:
             tools/shader-build/validate-shaders.mjs \
             WORK_STATUS.md \
             docs/execution/PHASE_04_TASKS.md
+          pnpm exec eslint packages/renderer/test/deferred-lighting-pass.test.ts --fix
 
       - name: Run focused compile and lifecycle gates
         shell: bash
