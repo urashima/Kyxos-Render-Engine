@@ -11,6 +11,16 @@ export {
   type DeferredGBufferSize,
 } from './deferred-gbuffer.js';
 export {
+  DeferredGBufferRasterPass,
+  type DeferredGBufferRasterAlphaMode,
+  type DeferredGBufferRasterDraw,
+  type DeferredGBufferRasterExecutionResult,
+  type DeferredGBufferRasterPassDiagnostics,
+  type DeferredGBufferRasterPassInput,
+  type DeferredGBufferRasterPassOptions,
+  type DeferredGBufferRasterTextureBinding,
+} from './deferred-gbuffer-raster-pass.js';
+export {
   DEFERRED_LIGHTING_UNIFORM_LAYOUT,
   DeferredLightingPass,
   packDeferredLightingUniforms,

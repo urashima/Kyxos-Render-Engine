@@ -2733,3 +2733,25 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
   current jittered raster position but current/previous unjittered rigid-object motion transforms.
 - Connect GBuffer raster output to the verified Deferred Lighting pass before adding the independent
   TRAA Color/Depth History and Resolve.
+
+## 2026-07-25 05:46 PDT — P4-15 independent GBuffer raster and Lighting integration
+
+### Completed
+
+- Added the independent GBuffer geometry raster pass and canonical WGSL/runtime mirror.
+- Wrote Base Color/Metallic, Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F in one ordered MRT pass.
+- Kept raster jitter separate from current/previous unjittered rigid-object motion transforms.
+- Added four bounded Pipeline variants, borrowed geometry/texture bindings, object Uniform updates, cache cleanup, Device Lost recovery, and disposal.
+- Connected the resulting current-frame GBuffer to the independent Deferred Lighting pass in regression coverage.
+- Left the legacy forward temporal feature and immutable Phase 4 accepted tag unchanged.
+
+### Validation
+
+- Complete `pnpm verify`: PASS — Run `30158519929`.
+- Artifact `phase-04-deferred-gbuffer-raster-verify` preserves the complete verification output.
+- The checkpoint is committed only after formatting, strict typecheck, unit tests, architecture and Shader mirror checks, builds, budgets, and all pinned Chromium/WebGPU gates pass.
+
+### Next
+
+- Implement the independent TRAA Resolve using Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner.
+- Connect Post Process and Present, then expose a local legacy-versus-Deferred comparison for stationary/orbit/disocclusion visual review.

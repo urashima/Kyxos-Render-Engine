@@ -55,6 +55,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-deferred-gbuffer.wgsl',
+    {
+      exportName: 'PHASE_04_DEFERRED_GBUFFER_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-deferred-gbuffer.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-deferred-lighting.wgsl',
     {
       exportName: 'PHASE_04_DEFERRED_LIGHTING_WGSL',

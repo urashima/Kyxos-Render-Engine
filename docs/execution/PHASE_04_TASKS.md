@@ -173,6 +173,19 @@ architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa
   preserves focused and full verification logs covering 66 test files / 300 tests, 15 Shader mirrors,
   and all pinned Chromium/WebGPU cases.
 
+### P4-15 independent GBuffer raster checkpoint
+
+- Added an independent geometry raster pass that writes Base Color/Metallic, encoded world Normal/Roughness,
+  Emissive/Occlusion, RG16F Velocity, and Depth32F into the owner-scoped GBuffer attachment set.
+- Raster position uses the current jittered View-Projection, while rigid-object Velocity uses current and
+  previous unjittered View-Projection and World transforms; no jitter is baked into the motion vector.
+- Added bounded Opaque/Mask × single/double-sided Pipeline variants, caller-owned geometry and texture
+  bindings, per-object Uniform updates, stale Bind Group cleanup, Device Lost recovery, and exact disposal.
+- The integration regression executes GBuffer raster followed by the verified Deferred Lighting pass without
+  importing legacy Dynamic TAA, Static Accumulation, Surface Present, or their attachment roles.
+- Complete `pnpm verify` passed in Run `30158519929`; the uploaded
+  `phase-04-deferred-gbuffer-raster-verify` Artifact preserves the full gate log.
+
 ### P4-14 visual-baseline isolation
 
 - The final visual comparison showed the three material spheres, edges, highlights, layout, and all
