@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   verify-and-record:
-    name: Format and verify GBuffer ownership
+    name: Format and verify corrected GBuffer ownership
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -49,7 +49,8 @@ jobs:
         run: |
           pnpm exec prettier --write \
             packages/renderer/src/deferred-gbuffer.ts \
-            packages/renderer/test/deferred-gbuffer.test.ts
+            packages/renderer/test/deferred-gbuffer.test.ts \
+            WORK_STATUS.md
 
       - name: Run complete verification
         shell: bash
@@ -65,7 +66,8 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
             packages/renderer/src/deferred-gbuffer.ts \
-            packages/renderer/test/deferred-gbuffer.test.ts
+            packages/renderer/test/deferred-gbuffer.test.ts \
+            WORK_STATUS.md
           git diff --cached --quiet && exit 0
           git commit -m "feat(phase-04): own independent Deferred GBuffer targets"
           git push origin HEAD:agent/phase-04-deferred-traa-rebuild
