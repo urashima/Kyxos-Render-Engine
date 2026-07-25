@@ -4,6 +4,13 @@ export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
 export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
 export {
+  DeferredGBuffer,
+  type DeferredGBufferDiagnostics,
+  type DeferredGBufferFrame,
+  type DeferredGBufferOptions,
+  type DeferredGBufferSize,
+} from './deferred-gbuffer.js';
+export {
   DynamicTaaGpuHistory,
   type DynamicTaaGpuFrame,
   type DynamicTaaGpuHistoryDiagnostics,
