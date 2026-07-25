@@ -69,6 +69,13 @@ const generatedMirrors = new Map([
     },
   ],
   [
+    'webgpu/phase-04-deferred-traa-resolve.wgsl',
+    {
+      exportName: 'PHASE_04_DEFERRED_TRAA_RESOLVE_WGSL',
+      path: 'packages/renderer/src/generated/phase-04-deferred-traa-resolve.wgsl.ts',
+    },
+  ],
+  [
     'webgpu/phase-04-pbr-temporal-output.wgsl',
     {
       exportName: 'PHASE_04_PBR_TEMPORAL_OUTPUT_WGSL',

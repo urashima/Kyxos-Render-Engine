@@ -42,6 +42,18 @@ export {
   type DeferredTraaResolvedFrame,
 } from './deferred-traa-history.js';
 export {
+  DEFERRED_TRAA_DEFAULT_SETTINGS,
+  DEFERRED_TRAA_RESOLVE_UNIFORM_LAYOUT,
+  DeferredTraaResolvePass,
+  createDeferredTraaResolveSettings,
+  packDeferredTraaResolveUniforms,
+  type DeferredTraaResolveExecutionResult,
+  type DeferredTraaResolvePassDiagnostics,
+  type DeferredTraaResolvePassInput,
+  type DeferredTraaResolvePassOptions,
+  type DeferredTraaResolveSettings,
+} from './deferred-traa-resolve-pass.js';
+export {
   DynamicTaaGpuHistory,
   type DynamicTaaGpuFrame,
   type DynamicTaaGpuHistoryDiagnostics,

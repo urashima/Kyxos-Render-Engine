@@ -2755,3 +2755,26 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 
 - Implement the independent TRAA Resolve using Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner.
 - Connect Post Process and Present, then expose a local legacy-versus-Deferred comparison for stationary/orbit/disocclusion visual review.
+
+## 2026-07-25 06:23 PDT — P4-15 independent TRAA Resolve
+
+### Completed
+
+- Added the independent full-screen TRAA Resolve Shader, runtime mirror, Pipeline, Uniform contract, and bounded Bind Group cache.
+- Consumed current Deferred Lighting Color, current GBuffer Velocity/Depth, and caller-prepared independent History only.
+- Applied current/previous Jitter compensation exactly once to unjittered rigid-object Velocity.
+- Added previous raster Depth reprojection, edge Velocity selection, neighborhood/variance clipping, motion and responsive weighting, minimum current contribution, and HDR flicker reduction.
+- Wrote current Depth beside resolved linear-HDR Color while leaving History commit/cancel entirely caller-owned.
+- Preserved the legacy Forward temporal comparison implementation and immutable Phase 4 accepted tag unchanged.
+
+### Validation
+
+- Raster trusted standard Phase verification: PASS — Run `30158791712`, job `89680564561`.
+- Independent TRAA Resolve complete `pnpm verify`: PASS — Run `30159610163`.
+- Artifact `phase-04-deferred-traa-resolve-verify` preserves the complete apply and verification output.
+- The checkpoint is committed only after formatting, strict typecheck, unit and lifecycle tests, architecture and Shader mirror checks, builds, budgets, and all pinned Chromium/WebGPU gates pass.
+
+### Next
+
+- Connect independent Post Process and Present after the resolved History output.
+- Expose a local legacy-versus-Deferred comparison and perform stationary, slow/fast orbit, thin-edge, disocclusion, resize, wake/sleep, and resource-stability review.

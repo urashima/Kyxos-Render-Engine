@@ -183,8 +183,22 @@ architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa
   bindings, per-object Uniform updates, stale Bind Group cleanup, Device Lost recovery, and exact disposal.
 - The integration regression executes GBuffer raster followed by the verified Deferred Lighting pass without
   importing legacy Dynamic TAA, Static Accumulation, Surface Present, or their attachment roles.
-- Complete `pnpm verify` passed in Run `30158519929`; the uploaded
-  `phase-04-deferred-gbuffer-raster-verify` Artifact preserves the full gate log.
+- Complete `pnpm verify` passed in Run `30158519929`, job `89679879092`; Artifact
+  `8619635406`, digest `sha256:45036b5e1e99ea9e1e051bda9b9cbc923c40499e051b4333c4ed1ae272a53e2a`,
+  preserves the full gate log. Trusted standard PR Run `30158791712`, job `89680564561`, also passed.
+
+### P4-15 independent TRAA Resolve checkpoint
+
+- Added an independent full-screen TRAA Resolve that samples current Deferred Lighting Color, current
+  GBuffer Velocity/Depth, and the caller-prepared independent Color/Depth History frame.
+- Rigid-object Velocity remains unjittered; the Resolve applies the current/previous Jitter delta exactly
+  once, validates History with previous raster Depth reprojection, and writes current Depth with resolved HDR.
+- Added closest-depth edge Velocity selection, 3×3 AABB plus variance clipping, motion/subpixel History
+  reduction, responsive weighting, minimum current contribution, and luminance flicker reduction.
+- The pass owns only one Shader, Pipeline, Uniform Buffer, and bounded role Bind Groups. It does not commit,
+  cancel, resize, present, or import legacy Dynamic TAA and Static Accumulation ownership.
+- Complete `pnpm verify` passed in Run `30159610163`; the uploaded
+  `phase-04-deferred-traa-resolve-verify` Artifact preserves the full gate log.
 
 ### P4-14 visual-baseline isolation
 
