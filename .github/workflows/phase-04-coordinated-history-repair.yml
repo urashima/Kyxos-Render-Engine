@@ -1,0 +1,122 @@
+name: Phase 4 coordinated History repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-coordinated-history-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-04-coordinated-history-repair
+  cancel-in-progress: false
+
+jobs:
+  repair-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      CI: true
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-coordinated-history-roles
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Coordinate Dynamic and Static History roles
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              target = Path(path)
+              content = target.read_text()
+              count = content.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected one match in {path}, found {count}")
+              target.write_text(content.replace(old, new, 1))
+
+          replace_once(
+              'packages/renderer/src/dynamic-taa-gpu-history.ts',
+              """  get disposed(): boolean {\n    return this.#disposed;\n  }\n\n  initialize(backend: GraphicsBackend): void {\n""",
+              """  get disposed(): boolean {\n    return this.#disposed;\n  }\n\n  getPreparedWriteIndex(): 0 | 1 {\n    this.#assertActive();\n    if (this.#frameSignature === undefined) {\n      throw error('Dynamic TAA GPU History has no prepared write role.', 'INVALID_STATE');\n    }\n    return this.#readIndex === 0 ? 1 : 0;\n  }\n\n  initialize(backend: GraphicsBackend): void {\n""",
+          )
+          replace_once(
+              'packages/renderer/src/static-accumulation-gpu-history.ts',
+              """  prepareFrame(signature: TemporalHistorySignatureDescriptor): StaticAccumulationGpuFrame {\n""",
+              """  prepareFrame(\n    signature: TemporalHistorySignatureDescriptor,\n    nonReusableReadIndex: 0 | 1 = 0,\n  ): StaticAccumulationGpuFrame {\n""",
+          )
+          replace_once(
+              'packages/renderer/src/static-accumulation-gpu-history.ts',
+              """    const candidate = createTemporalHistorySignature(signature);\n""",
+              """    if (nonReusableReadIndex !== 0 && nonReusableReadIndex !== 1) {\n      throw error('Static Accumulation read index must be 0 or 1.', 'INVALID_ARGUMENT');\n    }\n    const candidate = createTemporalHistorySignature(signature);\n""",
+          )
+          replace_once(
+              'packages/renderer/src/static-accumulation-gpu-history.ts',
+              """    if (!historyValid) this.#readIndex = 0;\n""",
+              """    if (!historyValid) this.#readIndex = nonReusableReadIndex;\n""",
+          )
+          replace_once(
+              'packages/renderer/src/temporal-pipeline-transaction.ts',
+              """        const staticFrame = this.#staticHistory.prepareFrame(input.signature);\n""",
+              """        const staticFrame = this.#staticHistory.prepareFrame(\n          input.signature,\n          this.#dynamicHistory.getPreparedWriteIndex(),\n        );\n""",
+          )
+
+          marker = """  it('reuses the same Bind Groups across repeated History resets', async () => {\n"""
+          regression = """  it('coordinates canonical Bind Groups when History resets directly in accumulation', async () => {\n    const backend = new MockBackend();\n    await backend.initialize();\n    const transaction = createTransaction();\n    await transaction.initialize(backend);\n\n    transaction.execute({\n      currentInverseViewProjection: identityMat4(),\n      dirtyFlags: [],\n      previousViewProjection: identityMat4(),\n      renderCurrent: () => currentStatistics,\n      signature,\n      temporal: temporal('interactive', 0),\n    });\n    transaction.execute({\n      currentInverseViewProjection: identityMat4(),\n      dirtyFlags: [],\n      previousViewProjection: identityMat4(),\n      renderCurrent: () => currentStatistics,\n      signature,\n      temporal: temporal('accumulating', 1),\n    });\n    transaction.execute({\n      currentInverseViewProjection: identityMat4(),\n      dirtyFlags: [],\n      previousViewProjection: identityMat4(),\n      renderCurrent: () => currentStatistics,\n      signature,\n      temporal: temporal('accumulating', 2),\n    });\n\n    const baselineActiveResources = backend.getResourceStatistics().activeCount;\n    expect(transaction.getDiagnostics()).toMatchObject({\n      resolve: { activeBindGroupCount: 2 },\n      staticPass: { activeBindGroupCount: 2 },\n    });\n\n    const changedSignature = { ...signature, postProcess: 2 };\n    transaction.execute({\n      currentInverseViewProjection: identityMat4(),\n      dirtyFlags: [],\n      previousViewProjection: identityMat4(),\n      renderCurrent: () => currentStatistics,\n      signature: changedSignature,\n      temporal: temporal('accumulating', 1),\n    });\n    transaction.execute({\n      currentInverseViewProjection: identityMat4(),\n      dirtyFlags: [],\n      previousViewProjection: identityMat4(),\n      renderCurrent: () => currentStatistics,\n      signature: changedSignature,\n      temporal: temporal('accumulating', 2),\n    });\n\n    expect(backend.getResourceStatistics().activeCount).toBe(baselineActiveResources);\n    expect(transaction.getDiagnostics()).toMatchObject({\n      resolve: { activeBindGroupCount: 2 },\n      staticPass: { activeBindGroupCount: 2 },\n    });\n\n    transaction.dispose();\n    expect(backend.getResourceStatistics().activeCount).toBe(0);\n    backend.dispose();\n  });\n\n"""
+          replace_once(
+              'packages/renderer/test/temporal-pipeline-transaction.test.ts',
+              marker,
+              regression + marker,
+          )
+          PY
+
+      - name: Format repair scope
+        run: |
+          pnpm exec prettier \
+            .github/workflows/phase-04-coordinated-history-repair.yml \
+            packages/renderer/src/dynamic-taa-gpu-history.ts \
+            packages/renderer/src/static-accumulation-gpu-history.ts \
+            packages/renderer/src/temporal-pipeline-transaction.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            --write
+
+      - name: Build workspace packages
+        run: pnpm build:packages
+
+      - name: Run focused History and pipeline regressions
+        run: |
+          pnpm exec vitest run \
+            packages/renderer/test/dynamic-taa-gpu-history.test.ts \
+            packages/renderer/test/static-accumulation-gpu-history.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts
+
+      - name: Run complete verification
+        run: pnpm verify
+
+      - name: Commit verified repair and remove temporary workflow
+        run: |
+          rm .github/workflows/phase-04-coordinated-history-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(phase-04): coordinate temporal History roles"
+          git push origin HEAD:phase-04-coordinated-history-roles
