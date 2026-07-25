@@ -58,12 +58,17 @@ jobs:
             packages/renderer/test/deferred-traa-history.test.ts \
             --fix
 
-      - name: Enforce independent History boundary
+      - name: Enforce independent History import boundary
         shell: bash
         run: |
-          if grep -E "dynamic-taa|static-accumulation|TemporalHistory|TemporalPipelineTransaction" \
+          if grep -En "^import .*?(dynamic-taa|static-accumulation|temporal-pipeline-transaction|@kyxos/render-temporal)" \
             packages/renderer/src/deferred-traa-history.ts; then
-            echo "Deferred TRAA History imported or referenced a legacy temporal owner." >&2
+            echo "Deferred TRAA History imported a legacy temporal owner." >&2
+            exit 1
+          fi
+          if grep -En "new (DynamicTaaGpuHistory|StaticAccumulationGpuHistory|TemporalHistory|TemporalPipelineTransaction)" \
+            packages/renderer/src/deferred-traa-history.ts; then
+            echo "Deferred TRAA History constructed a legacy temporal owner." >&2
             exit 1
           fi
 
