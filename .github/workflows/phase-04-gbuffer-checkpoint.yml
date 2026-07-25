@@ -1,4 +1,4 @@
-name: Phase 4 Deferred GBuffer checkpoint
+name: Phase 4 Deferred GBuffer governance checkpoint
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   verify-and-record:
-    name: Format and verify corrected GBuffer ownership
+    name: Record and verify GBuffer checkpoint
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -45,38 +45,129 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Format exact GBuffer checkpoint files
+      - name: Record canonical GBuffer checkpoint
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              source = path.read_text(encoding='utf-8')
+              if old not in source:
+                  raise SystemExit(f'{path}: expected governance text not found: {old!r}')
+              path.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          status = Path('WORK_STATUS.md')
+          replace_once(
+              status,
+              '- **Next Action:** Complete verification of the independently owned GBuffer target set, then implement Deferred Lighting and new TRAA Color/Depth History and Resolve before switching the local Phase 4 comparison route',
+              '- **Next Action:** Implement the independent GBuffer raster pass and Deferred Lighting pass, then add new TRAA Color/Depth History and Resolve before switching the local Phase 4 comparison route',
+          )
+          replace_once(
+              status,
+              '- **CI Status:** Deferred TRAA scheduler checkpoint passed complete `pnpm verify` in Run `30149668021`, job `89657745639`; GBuffer ownership passed format, lint, typecheck, package build, and 65 files / 293 unit tests in Run `30150062971` before a corrected documentation-governance retry',
+              '- **CI Status:** Deferred TRAA scheduler checkpoint passed Run `30149668021`, job `89657745639`; independent GBuffer ownership passed complete `pnpm verify` in Run `30150141951`, job `89659013343`',
+          )
+          replace_once(
+              status,
+              '- **Last Updated:** 2026-07-25 10:57 PDT',
+              '- **Last Updated:** 2026-07-25 11:18 PDT',
+          )
+          replace_once(status, 'GBUFFER RETRY IN PROGRESS', 'GBUFFER CHECKPOINT PASS')
+
+          ledger = Path('docs/execution/PHASE_04_TASKS.md')
+          replace_once(
+              ledger,
+              'Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`',
+              'Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`, `#34`',
+          )
+          replace_once(
+              ledger,
+              '- Unit coverage freezes pass order, generation coalescing, History reuse, resolve restart, suspension,\n  and disposal. Complete repository verification is pending.',
+              '- Unit coverage freezes pass order, generation coalescing, History reuse, resolve restart, suspension,\n  and disposal. Complete `pnpm verify` passed in Run `30149668021`, job `89657745639`.',
+          )
+          insert_after = '''- Unit coverage freezes pass order, generation coalescing, History reuse, resolve restart, suspension,
+  and disposal. Complete `pnpm verify` passed in Run `30149668021`, job `89657745639`.
+'''
+          gbuffer_section = '''
+### P4-15 independent GBuffer ownership checkpoint
+
+- Added owner-scoped current-frame Base Color/Metallic, Normal/Roughness, Emissive/Occlusion,
+  RG16F Velocity, and Depth32F targets totaling 32 bytes per pixel.
+- The attachment set is independent from legacy Dynamic TAA Color/Normal/Velocity History and Static
+  Accumulation resources; only the new Deferred path may acquire the frame handles.
+- Resize publishes a complete replacement set atomically, partial allocation rolls back without changing
+  extent or generation, Device Lost detaches all stale handles, recovery creates a fresh generation, and
+  disposal releases every target exactly once.
+- Five lifecycle tests passed with the existing renderer suite; complete `pnpm verify` passed in Run
+  `30150141951`, job `89659013343`, covering 65 test files / 293 tests and all pinned Chromium/WebGPU cases.
+'''
+          ledger_source = ledger.read_text(encoding='utf-8')
+          if '### P4-15 independent GBuffer ownership checkpoint' not in ledger_source:
+              ledger.write_text(
+                  ledger_source.replace(insert_after, insert_after + gbuffer_section, 1),
+                  encoding='utf-8',
+              )
+
+          work_log = Path('docs/execution/WORK_LOG.md')
+          marker = '## 2026-07-25 11:18 PDT — P4-15 independent GBuffer ownership checkpoint'
+          entry = '''## 2026-07-25 11:18 PDT — P4-15 independent GBuffer ownership checkpoint
+
+          ### Completed
+
+          - Added an owner-scoped five-target Deferred GBuffer: Base Color/Metallic, Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F.
+          - Kept the complete attachment set independent from legacy Dynamic TAA History, Static Accumulation, and Canvas Present ownership.
+          - Added atomic whole-set Resize, rollback after partial allocation failure, Device Lost detachment and recovery generation, exact diagnostics, and idempotent disposal.
+          - Exported the GBuffer contract from `@kyxos/render-renderer` without switching the accepted Phase 3 or legacy Phase 4 public route.
+
+          ### Validation
+
+          - Complete `pnpm verify`: PASS — Run `30150141951`, job `89659013343`.
+          - Verification covered format, lint, strict typecheck, 65 test files / 293 tests, documentation and architecture governance, Shader validation, production and Pages builds, bundle budgets, and pinned Chromium/WebGPU E2E.
+          - The first attempt correctly stopped after detecting a documentation-governance mismatch; no test or quality gate was relaxed.
+
+          ### Next
+
+          - Implement the independent GBuffer raster pass and Deferred Lighting pass using the new attachment contract.
+          - Preserve unjittered rigid-object Velocity and keep TRAA History, post-processing, and Present ownership separate.
+          '''
+          source = work_log.read_text(encoding='utf-8')
+          if marker not in source:
+              work_log.write_text(source.rstrip() + '\n\n' + entry.strip() + '\n', encoding='utf-8')
+          PY
+
+      - name: Format governance files
         run: |
           pnpm exec prettier --write \
-            packages/renderer/src/deferred-gbuffer.ts \
-            packages/renderer/test/deferred-gbuffer.test.ts \
-            WORK_STATUS.md
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            docs/execution/WORK_LOG.md
 
       - name: Run complete verification
         shell: bash
         run: |
           set -o pipefail
           mkdir -p test-results/phase-04/runtime
-          pnpm verify 2>&1 | tee test-results/phase-04/runtime/deferred-gbuffer-checkpoint.log
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/deferred-gbuffer-governance.log
 
-      - name: Commit verified GBuffer checkpoint
+      - name: Commit verified governance checkpoint
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
-            packages/renderer/src/deferred-gbuffer.ts \
-            packages/renderer/test/deferred-gbuffer.test.ts \
-            WORK_STATUS.md
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            docs/execution/WORK_LOG.md
           git diff --cached --quiet && exit 0
-          git commit -m "feat(phase-04): own independent Deferred GBuffer targets"
+          git commit -m "docs(phase-04): record Deferred GBuffer checkpoint"
           git push origin HEAD:agent/phase-04-deferred-traa-rebuild
 
       - name: Upload verification log
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: deferred-gbuffer-checkpoint-${{ github.run_attempt }}
-          path: test-results/phase-04/runtime/deferred-gbuffer-checkpoint.log
+          name: deferred-gbuffer-governance-${{ github.run_attempt }}
+          path: test-results/phase-04/runtime/deferred-gbuffer-governance.log
           if-no-files-found: ignore
           retention-days: 7
