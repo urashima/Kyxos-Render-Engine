@@ -46,6 +46,27 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Apply exact Resize cleanup type fix
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('packages/renderer/src/deferred-lighting-pass.ts')
+          source = path.read_text()
+          before = """      const cleanupErrors = this.#destroyHandles(
+                backend,
+                [previousBindGroup, previousColor].filter(
+                  (handle): handle is BackendResourceHandle => handle !== undefined,
+                ),
+              );"""
+          after = """      const cleanupHandles: BackendResourceHandle[] = [];
+              if (previousBindGroup !== undefined) cleanupHandles.push(previousBindGroup);
+              if (previousColor !== undefined) cleanupHandles.push(previousColor);
+              const cleanupErrors = this.#destroyHandles(backend, cleanupHandles);"""
+          if before not in source:
+              raise SystemExit('Expected Deferred Lighting cleanup block was not found.')
+          path.write_text(source.replace(before, after))
+
       - name: Format exact Deferred Lighting files
         run: |
           pnpm exec prettier --write \
