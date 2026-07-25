@@ -1,0 +1,86 @@
+name: Phase 4 finalize governance
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-finalize-governance.yml
+
+permissions:
+  actions: read
+  contents: write
+  deployments: read
+
+concurrency:
+  group: phase-04-finalize-governance
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      CI: true
+      TARGET_SHA: 0a36ee51b5b40ae2d248f6643deda22090e37e81
+    steps:
+      - name: Check out finalization branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-resource-stability-finalize
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Require exact accepted public evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api /repos/${GITHUB_REPOSITORY}/actions/runs/30142381965 --jq '.head_sha + ":" + .conclusion')" = "${TARGET_SHA}:success"
+          test "$(gh api /repos/${GITHUB_REPOSITORY}/actions/runs/30142555067 --jq '.head_sha + ":" + .conclusion')" = "${TARGET_SHA}:success"
+          test "$(gh api /repos/${GITHUB_REPOSITORY}/actions/jobs/89638542938 --jq '.conclusion')" = success
+          test "$(gh api /repos/${GITHUB_REPOSITORY}/actions/runs/30142636656 --jq '.conclusion')" = success
+          test "$(gh api /repos/${GITHUB_REPOSITORY}/deployments/5598181946 --jq '.sha + ":" + .environment')" = "${TARGET_SHA}:github-pages"
+          gh api /repos/${GITHUB_REPOSITORY}/actions/artifacts/8615063109 --jq '.name + ":" + (.expired | tostring)' | grep -Fx 'phase-04-final-public-evidence:false'
+
+      - name: Apply authoritative Phase 4 closure
+        run: python scripts/phase-04-finalize-public-acceptance.py
+
+      - name: Remove temporary verification tooling
+        run: |
+          rm -f .github/workflows/phase-04-final-public-observer.yml
+          rm -f .github/workflows/phase-04-final-evidence-snapshot.yml
+          rm -f .github/workflows/phase-04-finalize-governance.yml
+          rm -f scripts/phase-04-finalize-public-acceptance.py
+
+      - name: Format authoritative documents
+        run: |
+          pnpm exec prettier \
+            WORK_STATUS.md \
+            docs/execution/PHASE_04_TASKS.md \
+            docs/execution/WORK_LOG.md \
+            --write
+
+      - name: Run complete final verification
+        run: pnpm verify
+
+      - name: Commit verified Phase 4 closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "docs(phase-04): finalize coordinated public acceptance"
+          git push origin HEAD:phase-04-resource-stability-finalize
