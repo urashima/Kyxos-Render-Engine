@@ -36,7 +36,7 @@ jobs:
         run: |
           set -o pipefail
           exec > >(tee /tmp/phase-04-deferred-gbuffer-raster-apply.log) 2>&1
-          cp .github/phase-04-deferred-gbuffer-raster-payload.b64 /tmp/payload.b64
+          cat .github/phase-04-raster-payload/part-* > /tmp/payload.b64
           base64 -d /tmp/payload.b64 >/tmp/payload.tar.gz
           tar -xzf /tmp/payload.tar.gz
           python <<'PY'
@@ -167,6 +167,10 @@ jobs:
           - Connect Post Process and Present, then expose a local legacy-versus-Deferred comparison for stationary/orbit/disocclusion visual review.
           """)
 
+          payload_directory = Path('.github/phase-04-raster-payload')
+          for payload_part in payload_directory.glob('part-*'):
+              payload_part.unlink()
+          payload_directory.rmdir()
           Path('.github/phase-04-deferred-gbuffer-raster-payload.b64').unlink()
           Path('.github/workflows/phase-04-deferred-gbuffer-raster-checkpoint.yml').unlink()
           PY
