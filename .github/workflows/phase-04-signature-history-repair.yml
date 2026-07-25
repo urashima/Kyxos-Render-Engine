@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies from lockfile
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Apply canonical signature-mismatch roles and regressions
         run: |
           python - <<'PY'
