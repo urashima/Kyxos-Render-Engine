@@ -46,23 +46,36 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Apply Resize cleanup type fix
+      - name: Apply focused type corrections
         shell: python
         run: |
           from pathlib import Path
 
-          path = Path('packages/renderer/src/deferred-lighting-pass.ts')
-          source = path.read_text(encoding='utf-8')
+          pass_path = Path('packages/renderer/src/deferred-lighting-pass.ts')
+          pass_source = pass_path.read_text(encoding='utf-8')
           start_marker = '      const cleanupErrors = this.#destroyHandles('
           end_marker = '      if (cleanupErrors.length === 1)'
-          start = source.index(start_marker, source.index('  resize('))
-          end = source.index(end_marker, start)
+          start = pass_source.index(start_marker, pass_source.index('  resize('))
+          end = pass_source.index(end_marker, start)
           replacement = '''      const cleanupHandles: BackendResourceHandle[] = [];
                 if (previousBindGroup !== undefined) cleanupHandles.push(previousBindGroup);
                 if (previousColor !== undefined) cleanupHandles.push(previousColor);
                 const cleanupErrors = this.#destroyHandles(backend, cleanupHandles);
           '''
-          path.write_text(source[:start] + replacement + source[end:], encoding='utf-8')
+          pass_path.write_text(pass_source[:start] + replacement + pass_source[end:], encoding='utf-8')
+
+          test_path = Path('packages/renderer/test/deferred-lighting-pass.test.ts')
+          test_source = test_path.read_text(encoding='utf-8')
+          test_source = test_source.replace(
+              'const PARAMETERS = Object.freeze({',
+              'const PARAMETERS: DeferredLightingParameters = Object.freeze({',
+              1,
+          ).replace(
+              '}) satisfies DeferredLightingParameters;',
+              '});',
+              1,
+          )
+          test_path.write_text(test_source, encoding='utf-8')
 
       - name: Format exact Deferred Lighting files
         run: |
