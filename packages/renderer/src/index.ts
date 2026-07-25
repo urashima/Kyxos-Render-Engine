@@ -22,6 +22,16 @@ export {
   type DeferredLightingPassOptions,
 } from './deferred-lighting-pass.js';
 export {
+  DeferredTraaHistory,
+  type DeferredTraaHistoryDiagnostics,
+  type DeferredTraaHistoryFrame,
+  type DeferredTraaHistoryOptions,
+  type DeferredTraaHistoryPrepareInput,
+  type DeferredTraaHistoryResetReason,
+  type DeferredTraaHistorySize,
+  type DeferredTraaResolvedFrame,
+} from './deferred-traa-history.js';
+export {
   DynamicTaaGpuHistory,
   type DynamicTaaGpuFrame,
   type DynamicTaaGpuHistoryDiagnostics,
