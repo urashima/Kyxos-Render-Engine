@@ -37,7 +37,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Format finalization workflow
-        run: pnpm exec prettier .github/workflows/phase-04-finalize-acceptance.yml --write
+        id: format
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm exec prettier .github/workflows/phase-04-finalize-acceptance.yml --write 2>&1 | tee /tmp/phase-04-finalize-prettier.log
+
+      - name: Upload formatter diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-finalize-prettier
+          path: /tmp/phase-04-finalize-prettier.log
+          if-no-files-found: error
+
+      - name: Require formatter success
+        if: steps.format.outcome != 'success'
+        run: exit 1
 
       - name: Commit formatted workflow and remove bootstrap
         run: |
