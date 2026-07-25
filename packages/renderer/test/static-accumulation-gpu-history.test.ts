@@ -128,6 +128,8 @@ describe('StaticAccumulationGpuHistory', () => {
 
     const changed = history.prepareFrame(signature({ materials: 2 }));
     expect(changed).toMatchObject({ historyValid: false, previousSampleCount: 0 });
+    expect(changed.readColorTexture).toBe(first.readColorTexture);
+    expect(changed.writeColorTexture).toBe(first.writeColorTexture);
     expect(history.commitFrame()).toMatchObject({
       convergence: { converged: false, sampleCount: 1 },
       history: {

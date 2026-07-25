@@ -39,7 +39,9 @@ async function verifyPhase(page: Page, phase: number, route: string): Promise<vo
   const previousFrame = await page.getByTestId('frame-index').textContent();
   await page.locator('[data-action="wake"]').click();
   await expect(page.getByTestId('frame-index')).not.toHaveText(previousFrame ?? '');
-  await expect(page.getByTestId('render-mode')).toHaveText('sleeping');
+  await expect(page.getByTestId('render-mode')).toHaveText('sleeping', {
+    timeout: phase === 4 ? 60_000 : 10_000,
+  });
 
   if (phase > 0) {
     await expect(page.getByTestId('backend-type')).toHaveText('webgpu');

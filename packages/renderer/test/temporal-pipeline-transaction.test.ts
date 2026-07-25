@@ -176,6 +176,64 @@ describe('TemporalPipelineTransaction', () => {
     backend.dispose();
   });
 
+  it('reuses canonical Bind Groups when History becomes non-reusable by signature only', async () => {
+    const backend = new MockBackend();
+    await backend.initialize();
+    const transaction = createTransaction();
+    await transaction.initialize(backend);
+
+    transaction.execute({
+      currentInverseViewProjection: identityMat4(),
+      dirtyFlags: [],
+      previousViewProjection: identityMat4(),
+      renderCurrent: () => currentStatistics,
+      signature,
+      temporal: temporal('interactive', 0),
+    });
+    transaction.execute({
+      currentInverseViewProjection: identityMat4(),
+      dirtyFlags: [],
+      previousViewProjection: identityMat4(),
+      renderCurrent: () => currentStatistics,
+      signature,
+      temporal: temporal('accumulating', 1),
+    });
+
+    const baseline = backend.getResourceStatistics();
+    expect(transaction.getDiagnostics()).toMatchObject({
+      resolve: { activeBindGroupCount: 2 },
+      staticPass: { activeBindGroupCount: 1 },
+    });
+
+    const changedSignature = { ...signature, postProcess: 2 };
+    transaction.execute({
+      currentInverseViewProjection: identityMat4(),
+      dirtyFlags: [],
+      previousViewProjection: identityMat4(),
+      renderCurrent: () => currentStatistics,
+      signature: changedSignature,
+      temporal: temporal('interactive', 0),
+    });
+    transaction.execute({
+      currentInverseViewProjection: identityMat4(),
+      dirtyFlags: [],
+      previousViewProjection: identityMat4(),
+      renderCurrent: () => currentStatistics,
+      signature: changedSignature,
+      temporal: temporal('accumulating', 1),
+    });
+
+    expect(backend.getResourceStatistics().activeCount).toBe(baseline.activeCount);
+    expect(transaction.getDiagnostics()).toMatchObject({
+      resolve: { activeBindGroupCount: 2 },
+      staticPass: { activeBindGroupCount: 1 },
+    });
+
+    transaction.dispose();
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    backend.dispose();
+  });
+
   it('reuses the same Bind Groups across repeated History resets', async () => {
     const backend = new MockBackend();
     await backend.initialize();
