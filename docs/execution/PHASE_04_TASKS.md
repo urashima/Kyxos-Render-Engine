@@ -1,8 +1,8 @@
 # Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
 
 Phase status: **Acceptance Reopened — P4-14 Public Resource-Stability Re-verification**
-Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`
-Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`
+Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`
+Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
 Previous accepted source: `f926f544c94da2c5ea8f9630c959398b15d2d84f`
 Immutable baseline tag: `phase-04-accepted`
@@ -55,7 +55,7 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
   the Canvas Surface, or the Renderer.
 - The accepted Phase 3 direct Surface path remains the default and is not rewritten.
 - Temporal output remains opt-in; Present remains the sole Canvas Surface owner in temporal mode.
-- Phase 5 development resumes only after PR #20 passes the exact public resource-stability gate.
+- Phase 5 development resumes only after PR #27 passes the exact public resource-stability gate.
 
 ## P4-14 final TRAA and Velocity scope
 
@@ -91,17 +91,26 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
 
 ## P4-14 public resource-stability re-verification
 
-- The repository-wide official public Pages gate later reproduced a resource count change from 74 to
+- The repository-wide official public Pages gate first reproduced a resource count change from 74 to
   76 after Jitter → Default TAA resets in Run `30096963069`; Pipeline count, Texture memory, and Buffer
   memory remained unchanged.
 - Focused resource-transition Run `30098217002`, Artifact `8598500935`, proved the delta consists of
   two lazily discovered Static Accumulation Bind Groups rather than Texture, Buffer, Pipeline, or
   Renderer leakage.
-- Root cause: Dynamic TAA and Static Accumulation invalidation cleared logical History but retained the
-  previous ping-pong read role, allowing cross-phase Bind Group combinations after repeated resets.
-- PR #20 restores both read roles to index 0 on invalidation and adds Dynamic History, Static History,
-  and complete Temporal Pipeline regression tests. The complete PR, main, Pages, and official public
-  Chromium/WebGPU gates remain mandatory before P4-14 returns to Completed.
+- PR #20 restored both read roles to index 0 for explicit `invalidate()` calls, passed complete Verify
+  Run `30120876531`, and was merged as `eadddc6340fad6a05ad1fa65266a7e3bec95b1f7`.
+- Clean deployment source `5faf7a8bcf643954dc42e3442f33690efd608a66` passed main Run
+  `30140103609`; Pages Run `30140285927` built and deployed successfully but its official public gate
+  deterministically reproduced 74 → 76 after the first signature-only Jitter update. Failure Artifact
+  `8614309986` preserves the exact assertion and also identified the separate Phase 4 wake timeout.
+- Refined root cause: public TAA configuration can make History non-reusable through signature
+  mismatch without first invoking explicit invalidation, so arbitrary prior ping-pong roles still
+  selected two new cross-phase Bind Groups.
+- PR #27 canonicalizes Dynamic TAA and Static Accumulation read roles whenever `isReusable()` returns
+  false, adds direct signature-mismatch and complete Pipeline regressions, and applies the existing
+  60-second Phase 4 convergence budget to the initial online wake assertion. Atomic complete Verify Run
+  `30140959472` passed; trusted standard PR CI, main CI, Pages deployment, and official public
+  Chromium/WebGPU verification remain mandatory before P4-14 returns to Completed.
 
 ### P4-14 visual-baseline isolation
 

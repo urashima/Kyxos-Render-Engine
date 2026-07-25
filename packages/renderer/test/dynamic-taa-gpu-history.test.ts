@@ -170,6 +170,40 @@ describe('DynamicTaaGpuHistory', () => {
     backend.dispose();
   });
 
+  it('restores canonical ping-pong roles after signature mismatch', async () => {
+    const backend = new MockBackend();
+    await backend.initialize();
+    const history = new DynamicTaaGpuHistory({
+      height: 1,
+      ownerId: 'dynamic-signature-role-reset',
+      width: 1,
+    });
+    history.initialize(backend);
+
+    const first = history.prepareFrame(signature());
+    history.commitFrame();
+    const changed = history.prepareFrame(signature({ materials: 2 }));
+    expect(changed.historyValid).toBe(false);
+    expect(changed.readColorTexture).toBe(first.readColorTexture);
+    expect(changed.readDepthTexture).toBe(first.readDepthTexture);
+    expect(changed.readNormalTexture).toBe(first.readNormalTexture);
+    expect(changed.writeColorTexture).toBe(first.writeColorTexture);
+    expect(changed.writeDepthTexture).toBe(first.writeDepthTexture);
+    expect(changed.writeNormalTexture).toBe(first.writeNormalTexture);
+    expect(history.commitFrame()).toMatchObject({
+      history: {
+        generation: 1,
+        lastInvalidation: 'signature-mismatch',
+        sampleCount: 1,
+        valid: true,
+      },
+    });
+
+    history.dispose();
+    expect(backend.getResourceStatistics().activeCount).toBe(0);
+    backend.dispose();
+  });
+
   it('atomically resizes, invalidates Viewport history, and disposes without owning Backend', async () => {
     const backend = new MockBackend();
     await backend.initialize();
