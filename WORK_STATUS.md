@@ -6,10 +6,10 @@
 - **Current Task:** P4-15 — Replace the coupled forward temporal transaction with an independent Deferred GBuffer, Lighting, TRAA, Post Process, and Present pipeline
 - **Last Completed Task:** P4-14 — Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity in the legacy forward temporal comparison path
 - **Next Action:** Implement the independent TRAA Resolve using current Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner; then connect Post Process and Present for local visual comparison
-- **CI Status:** Scheduler PASS — Run `30149668021`; GBuffer ownership PASS — Run `30150141951`; Deferred Lighting PASS — Run `30151328444`; independent TRAA History PASS — Run `30151722000`; GBuffer raster and Lighting integration PASS — Run `30158519929`
+- **CI Status:** Scheduler PASS — Run `30149668021`; GBuffer ownership PASS — Run `30150141951`; Deferred Lighting PASS — Run `30151328444`; independent TRAA History PASS — Run `30151722000`; GBuffer raster and Lighting integration PASS — Run `30158519929`, job `89679879092`, Artifact `8619635406`, digest `sha256:45036b5e1e99ea9e1e051bda9b9cbc923c40499e051b4333c4ed1ae272a53e2a`; trusted standard PR CI pending
 - **Acceptance Status:** Phase 0–3 Accepted; immutable Phase 4 tag preserved but owner visual acceptance reopened after the public and local Dynamic TAA paths reproduced strong shaking; Phase 5 paused without discarding P5-01
 - **Known Blockers:** The legacy forward temporal architecture remains visually unstable and must not return to Accepted status; the independent Deferred/TRAA path still requires TRAA Resolve, Post Process/Present integration, local visual review, CI, Pages, and owner acceptance
-- **Last Updated:** 2026-07-25 05:46 PDT
+- **Last Updated:** 2026-07-25 05:55 PDT
 
 `WORK_STATUS.md` intentionally does not duplicate the branch Head SHA. GitHub branch/PR metadata is the
 source of truth for the current Commit; this file contains only human-readable current state and one
