@@ -1,9 +1,9 @@
-name: Deploy Phase 4 Preview from Staging
+name: Deploy Phase 4 Preview from Verification
 
 on:
   workflow_run:
     workflows:
-      - Phase 4 Preview Staging
+      - Phase verification
     branches:
       - agent/phase-04-deferred-traa-rebuild
     types:
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   build:
-    name: Build accepted site plus staged Deferred TRAA preview
+    name: Build accepted site plus verified Deferred TRAA preview
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -37,7 +37,7 @@ jobs:
           path: main-source
           persist-credentials: false
 
-      - name: Check out exact staged preview source
+      - name: Check out exact verified preview source
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -88,7 +88,7 @@ jobs:
           pnpm build:pages
           pnpm check:pages
 
-      - name: Build staged Deferred TRAA preview app
+      - name: Build verified Deferred TRAA preview app
         working-directory: preview-source
         env:
           PLAYGROUND_BASE_PATH: ${{ steps.pages.outputs.base_path }}/preview/phase-04-deferred-traa-resolve/app/
@@ -186,7 +186,7 @@ jobs:
           grep -F "${PREVIEW_SHA}" /tmp/checkpoint.json
 
   report:
-    name: Report staged preview deployment
+    name: Report verified preview deployment
     if: always()
     needs:
       - build
@@ -205,6 +205,6 @@ jobs:
             const previewUrl = 'https://urashima.github.io/Kyxos-Render-Engine/preview/phase-04-deferred-traa-resolve/';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = passed
-              ? `✅ Phase 4 Deferred TRAA preview deployed.\n\n- Preview: ${previewUrl}\n- Branch source: \`${process.env.PREVIEW_SHA}\`\n- Workflow: ${runUrl}\n\nThe preview explicitly states that independent Post Process / Present integration is still pending.`
+              ? `✅ Phase 4 Deferred TRAA preview deployed after complete PR verification.\n\n- Preview: ${previewUrl}\n- Branch source: \`${process.env.PREVIEW_SHA}\`\n- Workflow: ${runUrl}\n\nThe preview explicitly states that independent Post Process / Present integration is still pending.`
               : `❌ Phase 4 Deferred TRAA preview deployment failed.\n\n- Build: ${process.env.BUILD_RESULT}\n- Deploy: ${process.env.DEPLOY_RESULT}\n- Workflow: ${runUrl}`;
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 34, body });
