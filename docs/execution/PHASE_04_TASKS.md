@@ -2,7 +2,7 @@
 
 Phase status: **Acceptance Reopened — P4-15 Independent Deferred + TRAA Rebuild**
 Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`, `phase-04-coordinated-history-roles`, `agent/phase-04-deferred-traa-rebuild`
-Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`
+Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`, `#34`
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
 Last verified legacy forward-temporal source: `0a36ee51b5b40ae2d248f6643deda22090e37e81`
 Immutable baseline tag: `phase-04-accepted`
@@ -95,7 +95,7 @@ architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa
 - Main `Phase verification` Run `30093770426` passed on the exact merge source.
 - GitHub Pages deployment `5588976992`, associated Run `30094384391`, completed successfully.
 - Focused public Chromium acceptance Run `30094335571` verified both `/phase-4/` and `/latest/` at the
-  exact merge Commit with all 13 required TAA controls.
+  exact merge Commit with all 13 public TAA controls.
 
 ## P4-14 public resource-stability re-verification
 
@@ -145,7 +145,19 @@ architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa
   post-process-only frames reuse resolved History without advancing Jitter.
 - The scheduler imports no legacy `TemporalFrameScheduler`, Static Accumulation, or Renderer transaction.
 - Unit coverage freezes pass order, generation coalescing, History reuse, resolve restart, suspension,
-  and disposal. Complete repository verification is pending.
+  and disposal. Complete `pnpm verify` passed in Run `30149668021`, job `89657745639`.
+
+### P4-15 independent GBuffer ownership checkpoint
+
+- Added owner-scoped current-frame Base Color/Metallic, Normal/Roughness, Emissive/Occlusion,
+  RG16F Velocity, and Depth32F targets totaling 32 bytes per pixel.
+- The attachment set is independent from legacy Dynamic TAA Color/Normal/Velocity History and Static
+  Accumulation resources; only the new Deferred path may acquire the frame handles.
+- Resize publishes a complete replacement set atomically, partial allocation rolls back without changing
+  extent or generation, Device Lost detaches all stale handles, recovery creates a fresh generation, and
+  disposal releases every target exactly once.
+- Five lifecycle tests passed with the existing renderer suite; complete `pnpm verify` passed in Run
+  `30150141951`, job `89659013343`, covering 65 test files / 293 tests and all pinned Chromium/WebGPU cases.
 
 ### P4-14 visual-baseline isolation
 
