@@ -83,11 +83,27 @@ jobs:
             --write
 
       - name: Run focused History and pipeline regressions
+        id: focused
+        continue-on-error: true
         run: |
+          set -o pipefail
           pnpm exec vitest run \
             packages/renderer/test/dynamic-taa-gpu-history.test.ts \
             packages/renderer/test/static-accumulation-gpu-history.test.ts \
-            packages/renderer/test/temporal-pipeline-transaction.test.ts
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            2>&1 | tee /tmp/focused-history-tests.log
+
+      - name: Upload focused regression output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-focused-history-tests
+          path: /tmp/focused-history-tests.log
+          if-no-files-found: error
+
+      - name: Require focused regressions
+        if: steps.focused.outcome != 'success'
+        run: exit 1
 
       - name: Run complete verification
         run: pnpm verify
