@@ -1,0 +1,172 @@
+name: Deploy Phase 4 Deferred TRAA Preview
+
+on:
+  push:
+    branches:
+      - agent/phase-04-deferred-traa-rebuild
+    paths:
+      - .github/workflows/deploy-phase-04-deferred-preview.yml
+  workflow_dispatch:
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build accepted site plus Deferred TRAA preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      preview_sha: ${{ steps.source.outputs.preview_sha }}
+    steps:
+      - name: Check out accepted main source
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: accepted-source
+          persist-credentials: false
+
+      - name: Check out Deferred TRAA preview source
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-deferred-traa-rebuild
+          path: preview-source
+          persist-credentials: false
+
+      - name: Resolve source commits
+        id: source
+        run: |
+          echo "main_sha=$(git -C accepted-source rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "preview_sha=$(git -C preview-source rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Install accepted-site dependencies
+        run: pnpm --dir accepted-source install --frozen-lockfile
+
+      - name: Install preview dependencies
+        run: pnpm --dir preview-source install --frozen-lockfile
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Build accepted main Playgrounds
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PAGES_COMMIT_SHA: ${{ steps.source.outputs.main_sha }}
+          PAGES_OUTPUT_DIR: ../site
+        run: |
+          pnpm --dir accepted-source build:packages
+          pnpm --dir accepted-source build:pages
+          pnpm --dir accepted-source check:pages
+
+      - name: Build Deferred TRAA branch Playground
+        env:
+          PLAYGROUND_BASE_PATH: ${{ steps.pages.outputs.base_path }}/preview/phase-04-deferred-traa-resolve/app/
+          VITE_COMMIT_SHA: ${{ steps.source.outputs.preview_sha }}
+          VITE_DEPLOYED_PHASE: '4'
+          VITE_LATEST_ACCEPTED_PHASE: '4'
+        run: |
+          pnpm --dir preview-source build:packages
+          pnpm --dir preview-source --filter @kyxos/render-playground build
+          mkdir -p site/preview/phase-04-deferred-traa-resolve/app
+          cp -R preview-source/apps/playground/dist/. site/preview/phase-04-deferred-traa-resolve/app/
+
+      - name: Add explicit checkpoint landing page
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PREVIEW_SHA: ${{ steps.source.outputs.preview_sha }}
+        run: |
+          mkdir -p site/preview/phase-04-deferred-traa-resolve
+          cat > site/preview/phase-04-deferred-traa-resolve/checkpoint.json <<EOF
+          {
+            "schemaVersion": 1,
+            "phase": 4,
+            "checkpoint": "independent-deferred-traa-resolve",
+            "commitSha": "${PREVIEW_SHA}",
+            "status": "Automated Verification Passed",
+            "visibleRoute": "legacy Phase 4 comparison Playground",
+            "independentPipeline": "GBuffer, Deferred Lighting, History and TRAA Resolve are implemented; independent Post Process and Present are not connected yet"
+          }
+          EOF
+          cat > site/preview/phase-04-deferred-traa-resolve/index.html <<EOF
+          <!doctype html>
+          <html lang="zh-CN">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Kyxos Phase 4 Deferred TRAA Preview</title>
+              <style>
+                :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+                * { box-sizing: border-box; }
+                body { margin: 0; background: #0a0d12; color: #eef3f8; }
+                header { padding: 18px 24px; border-bottom: 1px solid #263141; background: #101722; }
+                h1 { margin: 0 0 8px; font-size: 20px; }
+                p { margin: 4px 0; color: #aebdce; line-height: 1.5; }
+                code { color: #86d9ff; overflow-wrap: anywhere; }
+                .status { color: #8ee7a8; font-weight: 700; }
+                .warning { color: #ffd487; }
+                iframe { width: 100%; height: calc(100vh - 174px); border: 0; background: #000; }
+                a { color: #86d9ff; }
+              </style>
+            </head>
+            <body>
+              <header>
+                <h1>Phase 4 · Independent Deferred TRAA Resolve Preview</h1>
+                <p class="status">GBuffer → Deferred Lighting → History → TRAA Resolve：完整 CI 已通过</p>
+                <p class="warning">当前独立 Resolve 尚未连接新的 Post Process / Present；下方仍是旧 Phase 4 比较 Playground，不能作为新管线最终视觉验收。</p>
+                <p>Branch Head：<code>${PREVIEW_SHA}</code> · <a href="./checkpoint.json">Checkpoint JSON</a> · <a href="./app/">单独打开 Playground</a></p>
+              </header>
+              <iframe title="Kyxos Phase 4 branch Playground" src="${BASE_PATH}/preview/phase-04-deferred-traa-resolve/app/"></iframe>
+            </body>
+          </html>
+          EOF
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Deploy accepted site and preview
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}preview/phase-04-deferred-traa-resolve/
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Verify public accepted and preview routes
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          PREVIEW_SHA: ${{ needs.build.outputs.preview_sha }}
+        run: |
+          base_url="${PAGE_URL%/}/"
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 "${base_url}latest/" >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 "${base_url}phase-4/" >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 "${base_url}preview/phase-04-deferred-traa-resolve/" >/tmp/preview.html
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 "${base_url}preview/phase-04-deferred-traa-resolve/app/" >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 "${base_url}preview/phase-04-deferred-traa-resolve/checkpoint.json" >/tmp/checkpoint.json
+          grep -F "${PREVIEW_SHA}" /tmp/preview.html
+          grep -F "${PREVIEW_SHA}" /tmp/checkpoint.json
