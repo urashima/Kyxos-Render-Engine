@@ -2682,3 +2682,99 @@ Playgrounds` workflow succeeds on `main`. That deployment itself requires the ex
 ### Next
 
 - Synchronize `agent/phase-05-lighting-postfx` / Draft PR #12 with current `main`, preserve P5-01 and existing P5-02 work, and run complete `pnpm verify`.
+
+## 2026-07-25 10:05 PDT — P4-15 independent Deferred TRAA scheduling boundary
+
+### Completed
+
+- Reproduced the public Dynamic TAA shaking on the local Phase 4 Playground and reopened owner visual acceptance without moving the immutable `phase-04-accepted` tag.
+- Accepted ADR-006: the legacy forward temporal transaction remains a comparison path, while the replacement uses independent `GBuffer → Deferred Lighting → TRAA Resolve → Post Process → Present` ownership.
+- Added `DeferredTraaFrameScheduler` with only Interactive, bounded Resolving, and Sleeping modes; it imports neither the legacy Temporal Scheduler transaction nor Static Accumulation.
+- Added explicit History actions (`reset`, `advance`, `reuse`), coalesced generation resets, a fixed pass order, bounded resolve tails, and stable Jitter reuse for Selection/Post-only frames.
+- Added regression coverage for pass order, dirty-batch coalescing, non-History reuse, resolve interruption/restart, suspension, and disposal.
+
+### Validation
+
+- Local owner observation: the legacy Dynamic TAA path visibly shakes under the current Phase 4 route.
+- The temporary checkpoint workflow formats the exact changed files and runs complete `pnpm verify` before publishing the canonical checkpoint commit.
+- No legacy TAA Shader, History resource, Static Accumulation implementation, accepted visual baseline, or public Phase 4 default was modified in this checkpoint.
+
+### Next
+
+- Implement the independently owned GBuffer target set and Deferred Lighting pass behind the new scheduler contract.
+- Add new TRAA Color/Depth History and Resolve ownership, switch the local comparison route, and perform stationary/orbit/disocclusion visual review before public deployment.
+
+## 2026-07-25 11:42 PDT — P4-15 GBuffer ownership and Deferred Lighting checkpoints
+
+### Completed
+
+- Added the independent five-target Deferred GBuffer ownership set: Base Color/Metallic,
+  Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F.
+- Added atomic whole-set Resize, partial-allocation rollback, Device Lost detachment/recovery,
+  owner/extent validation, generation diagnostics, and exact disposal for the GBuffer.
+- Added the independent Deferred Lighting pass with a linear-HDR RGBA16F output, fixed Camera/Light
+  uniforms, depth-based world-position reconstruction, direct GGX metallic-roughness lighting,
+  ambient occlusion, and emissive output.
+- Kept all new attachments, Bind Groups, Pipeline state, and output ownership separate from legacy
+  Dynamic TAA, Static Accumulation, Post Process, Present, and the immutable Phase 4 baseline.
+
+### Validation
+
+- GBuffer ownership complete `pnpm verify`: PASS — Run `30150141951`, job `89659013343`.
+- Deferred Lighting complete `pnpm verify`: PASS — Run `30151328444`, job `89662093585`.
+- Deferred Lighting Artifact `8617755998`, digest
+  `sha256:d0d6fe2591d03f01f88c39a4fb909878aeb1db2b261b0a12973ac1d069a9667c`, preserves focused and full logs.
+- Final Lighting verification covered 66 test files / 300 tests, 15 exact canonical/runtime Shader
+  mirrors, production and Pages builds, bundle budgets, and all pinned Chromium/WebGPU regressions.
+
+### Next
+
+- Implement the independent GBuffer raster pass and write the five current-frame targets using
+  current jittered raster position but current/previous unjittered rigid-object motion transforms.
+- Connect GBuffer raster output to the verified Deferred Lighting pass before adding the independent
+  TRAA Color/Depth History and Resolve.
+
+## 2026-07-25 05:46 PDT — P4-15 independent GBuffer raster and Lighting integration
+
+### Completed
+
+- Added the independent GBuffer geometry raster pass and canonical WGSL/runtime mirror.
+- Wrote Base Color/Metallic, Normal/Roughness, Emissive/Occlusion, RG16F Velocity, and Depth32F in one ordered MRT pass.
+- Kept raster jitter separate from current/previous unjittered rigid-object motion transforms.
+- Added four bounded Pipeline variants, borrowed geometry/texture bindings, object Uniform updates, cache cleanup, Device Lost recovery, and disposal.
+- Connected the resulting current-frame GBuffer to the independent Deferred Lighting pass in regression coverage.
+- Left the legacy forward temporal feature and immutable Phase 4 accepted tag unchanged.
+
+### Validation
+
+- Complete `pnpm verify`: PASS — Run `30158519929`.
+- Artifact `phase-04-deferred-gbuffer-raster-verify` preserves the complete verification output.
+- The checkpoint is committed only after formatting, strict typecheck, unit tests, architecture and Shader mirror checks, builds, budgets, and all pinned Chromium/WebGPU gates pass.
+
+### Next
+
+- Implement the independent TRAA Resolve using Deferred Lighting color, GBuffer Velocity/Depth, and the verified independent History owner.
+- Connect Post Process and Present, then expose a local legacy-versus-Deferred comparison for stationary/orbit/disocclusion visual review.
+
+## 2026-07-25 06:23 PDT — P4-15 independent TRAA Resolve
+
+### Completed
+
+- Added the independent full-screen TRAA Resolve Shader, runtime mirror, Pipeline, Uniform contract, and bounded Bind Group cache.
+- Consumed current Deferred Lighting Color, current GBuffer Velocity/Depth, and caller-prepared independent History only.
+- Applied current/previous Jitter compensation exactly once to unjittered rigid-object Velocity.
+- Added previous raster Depth reprojection, edge Velocity selection, neighborhood/variance clipping, motion and responsive weighting, minimum current contribution, and HDR flicker reduction.
+- Wrote current Depth beside resolved linear-HDR Color while leaving History commit/cancel entirely caller-owned.
+- Preserved the legacy Forward temporal comparison implementation and immutable Phase 4 accepted tag unchanged.
+
+### Validation
+
+- Raster trusted standard Phase verification: PASS — Run `30158791712`, job `89680564561`.
+- Independent TRAA Resolve complete `pnpm verify`: PASS — Run `30159610163`.
+- Artifact `phase-04-deferred-traa-resolve-verify` preserves the complete apply and verification output.
+- The checkpoint is committed only after formatting, strict typecheck, unit and lifecycle tests, architecture and Shader mirror checks, builds, budgets, and all pinned Chromium/WebGPU gates pass.
+
+### Next
+
+- Connect independent Post Process and Present after the resolved History output.
+- Expose a local legacy-versus-Deferred comparison and perform stationary, slow/fast orbit, thin-edge, disocclusion, resize, wake/sleep, and resource-stability review.

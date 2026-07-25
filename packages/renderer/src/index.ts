@@ -4,6 +4,56 @@ export const RENDERER_PACKAGE_NAME = '@kyxos/render-renderer' as const;
 export type { BasicGeometryFeatureOptions } from './basic-geometry-feature.js';
 export { BASIC_GEOMETRY_FEATURE_ID, BasicGeometryFeature } from './basic-geometry-feature.js';
 export {
+  DeferredGBuffer,
+  type DeferredGBufferDiagnostics,
+  type DeferredGBufferFrame,
+  type DeferredGBufferOptions,
+  type DeferredGBufferSize,
+} from './deferred-gbuffer.js';
+export {
+  DeferredGBufferRasterPass,
+  type DeferredGBufferRasterAlphaMode,
+  type DeferredGBufferRasterDraw,
+  type DeferredGBufferRasterExecutionResult,
+  type DeferredGBufferRasterPassDiagnostics,
+  type DeferredGBufferRasterPassInput,
+  type DeferredGBufferRasterPassOptions,
+  type DeferredGBufferRasterTextureBinding,
+} from './deferred-gbuffer-raster-pass.js';
+export {
+  DEFERRED_LIGHTING_UNIFORM_LAYOUT,
+  DeferredLightingPass,
+  packDeferredLightingUniforms,
+  type DeferredLightingExecutionResult,
+  type DeferredLightingFrame,
+  type DeferredLightingParameters,
+  type DeferredLightingPassDiagnostics,
+  type DeferredLightingPassInput,
+  type DeferredLightingPassOptions,
+} from './deferred-lighting-pass.js';
+export {
+  DeferredTraaHistory,
+  type DeferredTraaHistoryDiagnostics,
+  type DeferredTraaHistoryFrame,
+  type DeferredTraaHistoryOptions,
+  type DeferredTraaHistoryPrepareInput,
+  type DeferredTraaHistoryResetReason,
+  type DeferredTraaHistorySize,
+  type DeferredTraaResolvedFrame,
+} from './deferred-traa-history.js';
+export {
+  DEFERRED_TRAA_DEFAULT_SETTINGS,
+  DEFERRED_TRAA_RESOLVE_UNIFORM_LAYOUT,
+  DeferredTraaResolvePass,
+  createDeferredTraaResolveSettings,
+  packDeferredTraaResolveUniforms,
+  type DeferredTraaResolveExecutionResult,
+  type DeferredTraaResolvePassDiagnostics,
+  type DeferredTraaResolvePassInput,
+  type DeferredTraaResolvePassOptions,
+  type DeferredTraaResolveSettings,
+} from './deferred-traa-resolve-pass.js';
+export {
   DynamicTaaGpuHistory,
   type DynamicTaaGpuFrame,
   type DynamicTaaGpuHistoryDiagnostics,
