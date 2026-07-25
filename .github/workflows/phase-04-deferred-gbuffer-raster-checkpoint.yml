@@ -75,7 +75,7 @@ jobs:
 
           validator = Path('tools/shader-build/validate-shaders.mjs')
           source = validator.read_text()
-          needle = "  \n    'webgpu/phase-04-deferred-lighting.wgsl',"
+          needle = "  [\n    'webgpu/phase-04-deferred-lighting.wgsl',"
           insert = """  [
             'webgpu/phase-04-deferred-gbuffer.wgsl',
             {
