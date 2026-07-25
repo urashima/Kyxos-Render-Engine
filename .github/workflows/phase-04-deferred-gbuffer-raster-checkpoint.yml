@@ -29,6 +29,8 @@ jobs:
           corepack prepare pnpm@11.7.0 --activate
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install pinned Chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Apply raster source and governance checkpoint
         shell: bash
         env:
