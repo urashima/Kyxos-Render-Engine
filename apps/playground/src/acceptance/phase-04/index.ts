@@ -160,6 +160,9 @@ interface AcceptanceRuntime {
   roughness: number;
   staticToSleepMs: number | undefined;
   taa: TemporalTaaSettings;
+  taaResourceWarmupComplete: boolean;
+  taaResourceWarmupPasses: number;
+  taaResourceWarmupPending: boolean;
   textureAlternate: boolean;
   wakeCount: number;
 }
@@ -661,6 +664,9 @@ function applyTaaSettings(
 ): void {
   const base = replaceCurrent ? TEMPORAL_TAA_DEFAULT_SETTINGS : runtime.taa;
   const next = createTemporalTaaSettings(descriptor, base);
+  if (runtime.renderer !== undefined && !runtime.taaResourceWarmupComplete) {
+    runtime.taaResourceWarmupPending = true;
+  }
   runtime.taa = runtime.renderer?.setTemporalTaaSettings(taaSettingsDescriptor(next)) ?? next;
   syncTaaPanel(root, runtime.taa);
 }
@@ -825,7 +831,15 @@ function bindRendererEvents(
     if (runtime.accumulationStartedAt !== undefined) {
       runtime.staticToSleepMs = performance.now() - runtime.accumulationStartedAt;
     }
-    runtime.baselineResources ??= renderer.getDiagnostics().backend.resources.activeCount;
+    const activeResources = renderer.getDiagnostics().backend.resources.activeCount;
+    if (runtime.taaResourceWarmupPending) {
+      runtime.baselineResources = Math.max(runtime.baselineResources ?? 0, activeResources);
+      runtime.taaResourceWarmupPasses += 1;
+      runtime.taaResourceWarmupPending = false;
+      runtime.taaResourceWarmupComplete = runtime.taaResourceWarmupPasses >= 2;
+    } else {
+      runtime.baselineResources ??= activeResources;
+    }
     updateDiagnostics(root, runtime);
   });
   renderer.on('device-lost', () => {
@@ -841,6 +855,9 @@ function bindRendererEvents(
 async function createRenderer(root: ParentNode, runtime: AcceptanceRuntime): Promise<void> {
   disposeRenderer(runtime);
   runtime.baselineResources = undefined;
+  runtime.taaResourceWarmupComplete = false;
+  runtime.taaResourceWarmupPasses = 0;
+  runtime.taaResourceWarmupPending = false;
   runtime.disposedResources = undefined;
   runtime.lastDirtyFlags = [];
   runtime.lastFrameTimestamp = undefined;
@@ -1084,6 +1101,9 @@ export async function mountPhase04Acceptance(root: HTMLElement): Promise<void> {
     roughness: 0.22,
     staticToSleepMs: undefined,
     taa: TEMPORAL_TAA_DEFAULT_SETTINGS,
+    taaResourceWarmupComplete: false,
+    taaResourceWarmupPasses: 0,
+    taaResourceWarmupPending: false,
     textureAlternate: false,
     wakeCount: 0,
   };
