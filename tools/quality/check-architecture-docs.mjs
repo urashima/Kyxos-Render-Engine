@@ -13,6 +13,7 @@ const adrFiles = [
   'docs/adr/ADR-003-render-graph.md',
   'docs/adr/ADR-004-public-sdk-boundary.md',
   'docs/adr/ADR-005-temporal-accumulation-and-sleep.md',
+  'docs/adr/ADR-006-independent-deferred-traa-pipeline.md',
 ];
 const requiredAdrSections = [
   '## Context',
