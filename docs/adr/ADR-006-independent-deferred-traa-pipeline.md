@@ -55,3 +55,15 @@ It must not be extended with new Deferred/TRAA responsibilities.
   Phase 4 default or is explicitly rejected with evidence.
 - Visual acceptance must include stationary-camera stability, slow orbit, fast orbit, thin-edge motion,
   disocclusion, resize, wake/sleep, and zero-growth GPU resource checks.
+
+## Alternatives rejected
+
+- **Continue tuning the legacy Dynamic TAA resolve:** rejected because it leaves PBR MRT, History role swaps,
+  Static Accumulation, and Present inside one transaction and cannot prove one authoritative jitter/motion
+  convention.
+- **Insert a GBuffer only for Velocity while retaining forward color:** rejected because two geometry paths
+  would still share temporal ownership and could diverge at depth, alpha, and transform boundaries.
+- **Reuse Static Accumulation as TRAA History:** rejected because static convergence and real-time temporal
+  antialiasing have different invalidation, cadence, and presentation requirements.
+- **Rewrite the existing accepted feature in place:** rejected because the legacy path is needed as an exact
+  comparison and rollback target until the new path passes every acceptance gate.
