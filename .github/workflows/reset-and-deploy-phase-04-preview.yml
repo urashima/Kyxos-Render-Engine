@@ -10,11 +10,11 @@ permissions:
 
 jobs:
   reset-and-dispatch:
-    name: Cancel stale Pages deployment and dispatch trusted deploy
+    name: Clear stale Pages state and dispatch trusted deploy
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Cancel stale Pages deployment
+      - name: Clear stale Pages deployment state
         uses: actions/github-script@v7
         with:
           script: |
@@ -27,8 +27,14 @@ jobs:
               });
               core.info('Cancelled stale Pages deployment 7596a09.');
             } catch (error) {
-              if (error.status !== 404) throw error;
-              core.info('Stale Pages deployment was already absent.');
+              const alreadyFinished =
+                error.status === 400 && String(error.message).includes("it's finished");
+              if (error.status !== 404 && !alreadyFinished) throw error;
+              core.info(
+                alreadyFinished
+                  ? 'Stale Pages deployment is already finished; continuing.'
+                  : 'Stale Pages deployment was already absent; continuing.',
+              );
             }
 
       - name: Wait for Pages lock release
