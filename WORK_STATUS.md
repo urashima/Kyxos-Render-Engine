@@ -17,20 +17,20 @@ Next Action.
 
 ## Phase Progress
 
-| Phase | Status              | Branch                               | PR  | CI                    | Acceptance      | Tag                 |
-| ----: | ------------------- | ------------------------------------ | --- | --------------------- | --------------- | ------------------- |
-|    00 | Phase Accepted      | `agent/phase-00-foundation`          | #1  | PASS                  | Phase Accepted  | `phase-00-accepted` |
-|    01 | Phase Accepted      | `agent/phase-01-webgpu-core`         | #2  | PASS                  | Phase Accepted  | `phase-01-accepted` |
-|    02 | Phase Accepted      | `agent/phase-02-scene-camera`        | #3  | PASS                  | Phase Accepted  | `phase-02-accepted` |
-|    03 | Phase Accepted      | `agent/phase-03-pbr-ibl`             | #5  | PASS                  | Phase Accepted  | `phase-03-accepted` |
+| Phase | Status              | Branch                                | PR  | CI                       | Acceptance      | Tag                 |
+| ----: | ------------------- | ------------------------------------- | --- | ------------------------ | --------------- | ------------------- |
+|    00 | Phase Accepted      | `agent/phase-00-foundation`           | #1  | PASS                     | Phase Accepted  | `phase-00-accepted` |
+|    01 | Phase Accepted      | `agent/phase-01-webgpu-core`          | #2  | PASS                     | Phase Accepted  | `phase-01-accepted` |
+|    02 | Phase Accepted      | `agent/phase-02-scene-camera`         | #3  | PASS                     | Phase Accepted  | `phase-02-accepted` |
+|    03 | Phase Accepted      | `agent/phase-03-pbr-ibl`              | #5  | PASS                     | Phase Accepted  | `phase-03-accepted` |
 |    04 | Acceptance Reopened | `phase-04-non-reusable-history-roles` | #27 | VERIFY PASS / PR PENDING | Re-verification | `phase-04-accepted` |
-|    05 | Paused              | `agent/phase-05-lighting-postfx`     | #12 | PAUSED                | Paused          | —                   |
-|    06 | Planned             | `agent/phase-06-assets`              | —   | —                     | Planned         | —                   |
-|    07 | Planned             | `agent/phase-07-animation`           | —   | —                     | Planned         | —                   |
-|    08 | Planned             | `agent/phase-08-material-extensions` | —   | —                     | Planned         | —                   |
-|    09 | Planned             | `agent/phase-09-sss`                 | —   | —                     | Planned         | —                   |
-|    10 | Planned             | `agent/phase-10-webgl2`              | —   | —                     | Planned         | —                   |
-|    11 | Planned             | `agent/phase-11-texture-lab`         | —   | —                     | Planned         | —                   |
-|    12 | Planned             | `agent/phase-12-advanced-features`   | —   | —                     | Planned         | —                   |
-|    13 | Planned             | `agent/phase-13-production`          | —   | —                     | Planned         | —                   |
-|    14 | Planned             | `agent/phase-14-release`             | —   | —                     | Planned         | —                   |
+|    05 | Paused              | `agent/phase-05-lighting-postfx`      | #12 | PAUSED                   | Paused          | —                   |
+|    06 | Planned             | `agent/phase-06-assets`               | —   | —                        | Planned         | —                   |
+|    07 | Planned             | `agent/phase-07-animation`            | —   | —                        | Planned         | —                   |
+|    08 | Planned             | `agent/phase-08-material-extensions`  | —   | —                        | Planned         | —                   |
+|    09 | Planned             | `agent/phase-09-sss`                  | —   | —                        | Planned         | —                   |
+|    10 | Planned             | `agent/phase-10-webgl2`               | —   | —                        | Planned         | —                   |
+|    11 | Planned             | `agent/phase-11-texture-lab`          | —   | —                        | Planned         | —                   |
+|    12 | Planned             | `agent/phase-12-advanced-features`    | —   | —                        | Planned         | —                   |
+|    13 | Planned             | `agent/phase-13-production`           | —   | —                        | Planned         | —                   |
+|    14 | Planned             | `agent/phase-14-release`              | —   | —                        | Planned         | —                   |
