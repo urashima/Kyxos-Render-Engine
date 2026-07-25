@@ -184,8 +184,7 @@ export class DeferredGBuffer implements Disposable {
 
   getDiagnostics(): DeferredGBufferDiagnostics {
     return Object.freeze({
-      estimatedGpuBytes:
-        this.#width * this.#height * DEFERRED_GBUFFER_BYTES_PER_TEXEL,
+      estimatedGpuBytes: this.#width * this.#height * DEFERRED_GBUFFER_BYTES_PER_TEXEL,
       ownerId: this.#ownerId,
       resourceGeneration: this.#resourceGeneration,
       size: this.#size(),
@@ -239,10 +238,7 @@ export class DeferredGBuffer implements Disposable {
           `deferred-gbuffer-${this.#ownerId}-base-color-metallic`,
           'rgba16float',
         ),
-        depthTexture: createTexture(
-          `deferred-gbuffer-${this.#ownerId}-depth`,
-          'depth32float',
-        ),
+        depthTexture: createTexture(`deferred-gbuffer-${this.#ownerId}-depth`, 'depth32float'),
         emissiveOcclusionTexture: createTexture(
           `deferred-gbuffer-${this.#ownerId}-emissive-occlusion`,
           'rgba16float',
@@ -251,10 +247,7 @@ export class DeferredGBuffer implements Disposable {
           `deferred-gbuffer-${this.#ownerId}-normal-roughness`,
           'rgba16float',
         ),
-        velocityTexture: createTexture(
-          `deferred-gbuffer-${this.#ownerId}-velocity`,
-          'rg16float',
-        ),
+        velocityTexture: createTexture(`deferred-gbuffer-${this.#ownerId}-velocity`, 'rg16float'),
       });
     } catch (cause) {
       const cleanupErrors = this.#destroyHandles(backend, created.reverse());

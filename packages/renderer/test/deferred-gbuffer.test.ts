@@ -60,13 +60,15 @@ describe('DeferredGBuffer', () => {
     });
     expect(Object.isFrozen(frame)).toBe(true);
     expect(Object.isFrozen(frame.size)).toBe(true);
-    expect(new Set([
-      frame.baseColorMetallicTexture,
-      frame.depthTexture,
-      frame.emissiveOcclusionTexture,
-      frame.normalRoughnessTexture,
-      frame.velocityTexture,
-    ]).size).toBe(5);
+    expect(
+      new Set([
+        frame.baseColorMetallicTexture,
+        frame.depthTexture,
+        frame.emissiveOcclusionTexture,
+        frame.normalRoughnessTexture,
+        frame.velocityTexture,
+      ]).size,
+    ).toBe(5);
     expect(backend.getResourceStatistics()).toMatchObject({
       activeCount: 5,
       activeEstimatedBytes: 256,
