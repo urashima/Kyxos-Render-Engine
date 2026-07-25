@@ -1,33 +1,35 @@
-# Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, and Static Accumulation
+# Phase 04 Tasks — Temporal Scheduling, Dynamic TAA, Static Accumulation, and Deferred TRAA
 
-Phase status: **Acceptance Reopened — P4-14 Public Resource-Stability Re-verification**
-Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`
-Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`
+Phase status: **Acceptance Reopened — P4-15 Independent Deferred + TRAA Rebuild**
+Branches: `agent/phase-04-temporal`, `agent/phase-04-public-verification`, `agent/phase-04-taa-tuning-panel`, `phase-04-final`, `phase-04-history-role-stability`, `phase-04-non-reusable-history-roles`, `phase-04-coordinated-history-roles`, `agent/phase-04-deferred-traa-rebuild`
+Pull requests: `#7`, `#10`, `#13`, `#16`, `#20`, `#27`, `#31`
 Base: accepted Phase 3 source `6b3331251fd1a20257aeebab26a72c2f26103f0a`
-Previous accepted source: `f926f544c94da2c5ea8f9630c959398b15d2d84f`
+Last verified legacy forward-temporal source: `0a36ee51b5b40ae2d248f6643deda22090e37e81`
 Immutable baseline tag: `phase-04-accepted`
 
 This file is the authoritative Phase 4 task ledger. Detailed checkpoint history, Commit SHAs, CI Runs,
 and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof remains under
 [`docs/acceptance/phase-04/`](../acceptance/phase-04/). Research rationale remains consolidated in
-[`phase-04-temporal-state-contract.md`](../research/phase-04-temporal-state-contract.md).
+[`phase-04-temporal-state-contract.md`](../research/phase-04-temporal-state-contract.md). The replacement
+architecture is governed by [`ADR-006`](../adr/ADR-006-independent-deferred-traa-pipeline.md).
 
-| ID    | Task                                                                                                          | Depends on        | Verification                                                                                                                                  | Status         |
-| ----- | ------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| P4-01 | Add owner-scoped Temporal History and opt-in Interactive → Stabilizing → Accumulating → Sleeping scheduling   | Phase 3 Accepted  | Deterministic scheduler transitions, dirty coalescing, convergence, suspension, and owner isolation                                           | Completed      |
-| P4-02 | Add deterministic Halton jitter and Current/Previous temporal Camera matrix tracking                          | P4-01             | Fixed sample vectors, unjittered canonical Camera, generation/reset and prior-matrix tests                                                    | Completed      |
-| P4-03 | Freeze Dynamic TAA neighborhood clamp, depth/normal rejection, and responsive weighting CPU/WGSL parity       | P4-02             | Accepted/rejected branches and float32 WebGPU compute/readback parity                                                                         | Completed      |
-| P4-04 | Add validated offscreen Color attachments and owner-scoped `rgba16float` Dynamic TAA GPU History              | P4-01,P4-03       | Attachment validation, atomic Resize, Device Lost restoration, and exact resource release                                                     | Completed      |
-| P4-05 | Add deterministic Current-Depth Camera reprojection to Previous jittered View-Projection                      | P4-02,P4-03       | Stationary/moving/rejected/background CPU/WGSL reference parity                                                                               | Completed      |
-| P4-06 | Add ordered MRT and complete Current plus resolved Color/Depth/Normal ping-pong target ownership              | P4-04,P4-05       | Ordered format/count validation, whole-set role swaps, rollback, Resize, recovery, and disposal                                               | Completed      |
-| P4-07 | Implement sampled Dynamic TAA Resolve using Current and prior Color/Depth/Normal History                      | P4-03,P4-05,P4-06 | Native MRT → Resolve submissions; accepted, depth-rejected, and normal-rejected GPU pixels                                                    | Completed      |
-| P4-08 | Add opt-in forward PBR temporal MRT output while preserving the accepted direct Surface path                  | P4-06,P4-07       | Exact owner/extent validation, separate HDR/Normal Pipelines, SDK composition, native cube evidence                                           | Completed      |
-| P4-09 | Add final Present pass with Exposure, Khronos PBR Neutral, and exactly one linear-to-sRGB conversion          | P4-07,P4-08       | Real Canvas submission, CPU/GPU output parity, single Surface ownership, zero-resource cleanup                                                | Completed      |
-| P4-10 | Add owner-scoped Static Accumulation running mean, sample/error convergence, and complete reset semantics     | P4-07,P4-09       | CPU/WGSL parity, native multi-frame readback, convergence, invalidation, Resize, recovery, disposal                                           | Completed      |
-| P4-11 | Orchestrate PBR MRT → Dynamic TAA → optional Static Accumulation → Present → atomic commit/cancel             | P4-08,P4-09,P4-10 | Real Scheduler/WebGPU mode sequence, ordered draw counts, failure cancellation, exact lifecycle                                               | Completed      |
-| P4-12 | Expose public Temporal PBR lifecycle, acceptance Playground, deterministic evidence, and online freeze        | P4-11             | SDK-only route, zero-diff visual, bounded lazy resources, Phase 0–4/Latest public operations, immutable accepted tag                          | Completed      |
-| P4-13 | Expose complete live Dynamic TAA tuning through the public SDK and Phase 4 Pages panel                        | P4-12             | Seven parameters, four presets, History-only resets, unchanged GPU resources, local/public E2E, exact Pages deployment                        | Completed      |
-| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity as the final Phase 4 refinement | P4-13             | Current-only RG16F Velocity MRT, prior rigid transforms, edge/disocclusion/variance/motion/flicker controls, complete verify and public Pages | In Development |
+| ID    | Task                                                                                                                   | Depends on        | Verification                                                                                                                                                     | Status         |
+| ----- | ---------------------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| P4-01 | Add owner-scoped Temporal History and opt-in Interactive → Stabilizing → Accumulating → Sleeping scheduling            | Phase 3 Accepted  | Deterministic scheduler transitions, dirty coalescing, convergence, suspension, and owner isolation                                                              | Completed      |
+| P4-02 | Add deterministic Halton jitter and Current/Previous temporal Camera matrix tracking                                   | P4-01             | Fixed sample vectors, unjittered canonical Camera, generation/reset and prior-matrix tests                                                                       | Completed      |
+| P4-03 | Freeze Dynamic TAA neighborhood clamp, depth/normal rejection, and responsive weighting CPU/WGSL parity                | P4-02             | Accepted/rejected branches and float32 WebGPU compute/readback parity                                                                                            | Completed      |
+| P4-04 | Add validated offscreen Color attachments and owner-scoped `rgba16float` Dynamic TAA GPU History                       | P4-01,P4-03       | Attachment validation, atomic Resize, Device Lost restoration, and exact resource release                                                                        | Completed      |
+| P4-05 | Add deterministic Current-Depth Camera reprojection to Previous jittered View-Projection                               | P4-02,P4-03       | Stationary/moving/rejected/background CPU/WGSL reference parity                                                                                                  | Completed      |
+| P4-06 | Add ordered MRT and complete Current plus resolved Color/Depth/Normal ping-pong target ownership                       | P4-04,P4-05       | Ordered format/count validation, whole-set role swaps, rollback, Resize, recovery, and disposal                                                                  | Completed      |
+| P4-07 | Implement sampled Dynamic TAA Resolve using Current and prior Color/Depth/Normal History                               | P4-03,P4-05,P4-06 | Native MRT → Resolve submissions; accepted, depth-rejected, and normal-rejected GPU pixels                                                                       | Completed      |
+| P4-08 | Add opt-in forward PBR temporal MRT output while preserving the accepted direct Surface path                           | P4-06,P4-07       | Exact owner/extent validation, separate HDR/Normal Pipelines, SDK composition, native cube evidence                                                              | Completed      |
+| P4-09 | Add final Present pass with Exposure, Khronos PBR Neutral, and exactly one linear-to-sRGB conversion                   | P4-07,P4-08       | Real Canvas submission, CPU/GPU output parity, single Surface ownership, zero-resource cleanup                                                                   | Completed      |
+| P4-10 | Add owner-scoped Static Accumulation running mean, sample/error convergence, and complete reset semantics              | P4-07,P4-09       | CPU/WGSL parity, native multi-frame readback, convergence, invalidation, Resize, recovery, disposal                                                              | Completed      |
+| P4-11 | Orchestrate PBR MRT → Dynamic TAA → optional Static Accumulation → Present → atomic commit/cancel                      | P4-08,P4-09,P4-10 | Real Scheduler/WebGPU mode sequence, ordered draw counts, failure cancellation, exact lifecycle                                                                  | Completed      |
+| P4-12 | Expose public Temporal PBR lifecycle, acceptance Playground, deterministic evidence, and online freeze                 | P4-11             | SDK-only route, zero-diff visual, bounded lazy resources, Phase 0–4/Latest public operations, immutable accepted tag                                             | Completed      |
+| P4-13 | Expose complete live Dynamic TAA tuning through the public SDK and Phase 4 Pages panel                                 | P4-12             | Seven parameters, four presets, History-only resets, unchanged GPU resources, local/public E2E, exact Pages deployment                                           | Completed      |
+| P4-14 | Integrate compatible TRAA resolve behavior and explicit rigid-object Velocity in the legacy forward temporal path       | P4-13             | Current-only RG16F Velocity MRT, prior rigid transforms, edge/disocclusion/variance/motion/flicker controls, complete verify and public Pages                    | Completed      |
+| P4-15 | Replace the coupled forward temporal transaction with independent Deferred GBuffer, Lighting, TRAA, Post, and Present   | P4-14             | Fixed pass graph, independent scheduler/History, unjittered Velocity, one jitter compensation, stationary/orbit/disocclusion stability, lifecycle and public gate | In Development |
 
 ## P4-13 tuning scope
 
@@ -49,28 +51,34 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
 
 ## Required boundaries
 
-- The immutable `phase-04-accepted` baseline tag was not rewritten or moved.
-- Accepted TAA defaults and frozen CPU/WGSL reference tolerances remain unchanged.
-- Parameter changes reset History through the public SDK without recreating GPU Pipelines, Bind Groups,
-  the Canvas Surface, or the Renderer.
-- The accepted Phase 3 direct Surface path remains the default and is not rewritten.
-- Temporal output remains opt-in; Present remains the sole Canvas Surface owner in temporal mode.
-- Phase 5 development resumes only after PR #27 passes the exact public resource-stability gate.
+- The immutable `phase-04-accepted` baseline tag must not be rewritten or moved.
+- The legacy `TemporalPbrRenderFeature` remains available only as a comparison path and receives no new
+  Deferred/TRAA responsibilities.
+- The replacement path must execute `GBuffer → Deferred Lighting → TRAA → Post Process → Present` through
+  explicit, independently owned passes.
+- The replacement scheduler must not import or invoke legacy Static Accumulation or its
+  Interactive → Stabilizing → Accumulating transaction.
+- Motion vectors use unjittered current/previous transforms; raster jitter and resolve jitter compensation
+  each occur exactly once.
+- The accepted Phase 3 direct Surface path remains the default until the replacement passes owner review.
+- Present remains the sole Canvas Surface owner in temporal mode.
+- Phase 5 development resumes only after P4-15 passes local visual review, complete CI, public Pages, and
+  owner acceptance.
 
 ## P4-14 final TRAA and Velocity scope
 
-- Add one current-only `rg16float` Velocity MRT while retaining the accepted Color/Depth/Normal
+- Added one current-only `rg16float` Velocity MRT while retaining the accepted Color/Depth/Normal
   History ping-pong sets and the existing forward PBR pass order.
-- Store prior rigid-object World transforms plus current/previous unjittered Camera transforms and
-  generate explicit screen-space Velocity without creating a Deferred or G-buffer pipeline.
-- Integrate closest-depth edge selection, Velocity-first reprojection with Camera fallback,
+- Stored prior rigid-object World transforms plus current/previous unjittered Camera transforms and
+  generated explicit screen-space Velocity without creating a Deferred or G-buffer pipeline.
+- Integrated closest-depth edge selection, Velocity-first reprojection with Camera fallback,
   previous-depth disocclusion validation, AABB plus optional variance clipping, motion and subpixel
   History reduction, minimum current-frame contribution, and HDR luminance flicker reduction.
-- Expose Edge Depth Difference, Max Velocity Length, Minimum Current Weight, Variance Clip Gamma,
+- Exposed Edge Depth Difference, Max Velocity Length, Minimum Current Weight, Variance Clip Gamma,
   Subpixel Correction, and Flicker Reduction alongside all existing public TAA controls.
-- Keep advanced controls disabled by default except the inert Velocity range so the accepted visual
-  reference and numerical TAA oracle remain unchanged until a user selects a new preset or value.
-- Reserve deforming previous-position support for Skinning, Morph, and Instancing to Phase 7, where
+- Kept advanced controls disabled by default except the inert Velocity range so the accepted visual
+  reference and numerical TAA oracle remained unchanged until a user selected a new preset or value.
+- Reserved deforming previous-position support for Skinning, Morph, and Instancing to Phase 7, where
   those geometry systems and ownership contracts actually exist.
 
 ## P4-14 original verification and deployment evidence
@@ -106,11 +114,38 @@ and Artifact digests remain in [`WORK_LOG.md`](./WORK_LOG.md); acceptance proof 
 - Refined root cause: public TAA configuration can make History non-reusable through signature
   mismatch without first invoking explicit invalidation, so arbitrary prior ping-pong roles still
   selected two new cross-phase Bind Groups.
-- PR #27 canonicalizes Dynamic TAA and Static Accumulation read roles whenever `isReusable()` returns
-  false, adds direct signature-mismatch and complete Pipeline regressions, and applies the existing
-  60-second Phase 4 convergence budget to the initial online wake assertion. Atomic complete Verify Run
-  `30140959472` passed; trusted standard PR CI, main CI, Pages deployment, and official public
-  Chromium/WebGPU verification remain mandatory before P4-14 returns to Completed.
+- PR #27 canonicalized non-reusable History roles but did not eliminate every cross-role combination.
+- PR #31 coordinated Static Accumulation's reset read role with the prepared Dynamic TAA write role.
+  Source `0a36ee51b5b40ae2d248f6643deda22090e37e81` passed complete Verify Run `30142165936`, main CI,
+  Pages deployment, and official public Chromium/WebGPU resource verification without exceeding the
+  canonical resource set.
+- Resource stability closes P4-14's lifecycle defect, but it does not overrule the owner's later visual
+  finding that the forward temporal output still shakes strongly.
+
+## P4-15 independent Deferred + TRAA scope
+
+- Establish an independent scheduler with only `interactive`, bounded `resolving`, and `sleeping` modes.
+- Establish a fixed `GBuffer → Deferred Lighting → TRAA → Post Process → Present` graph.
+- Allocate GBuffer material, normal/roughness, Velocity, and Depth targets independently from legacy
+  Dynamic TAA and Static Accumulation resources.
+- Generate rigid-object Velocity from current/previous unjittered transforms and apply the jitter delta
+  once inside TRAA reprojection.
+- Own a new linear-HDR Color/Depth History pair with explicit reset, advance, reuse, Resize, Device Lost,
+  cancellation, and disposal behavior.
+- Compare legacy and replacement paths locally without sharing History, scheduling metadata, Bind Groups,
+  or attachment roles.
+- Require owner visual inspection for stationary-camera stability, slow/fast orbit, thin edges,
+  disocclusion, resize, wake/sleep, and resource stability before switching the public default.
+
+### P4-15 first scheduler checkpoint
+
+- Added `DeferredTraaFrameScheduler` as a separate public frame-scheduler contract.
+- Fixed the pass order to GBuffer, Deferred Lighting, TRAA Resolve, Post Process, and Present.
+- History-affecting changes reset one generation and emit a bounded resolve tail; selection and
+  post-process-only frames reuse resolved History without advancing Jitter.
+- The scheduler imports no legacy `TemporalFrameScheduler`, Static Accumulation, or Renderer transaction.
+- Unit coverage freezes pass order, generation coalescing, History reuse, resolve restart, suspension,
+  and disposal. Complete repository verification is pending.
 
 ### P4-14 visual-baseline isolation
 
