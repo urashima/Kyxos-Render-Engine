@@ -1,4 +1,4 @@
-name: Phase 4 finalize bootstrap
+name: Phase 4 final evidence diagnostic
 
 on:
   pull_request:
@@ -8,58 +8,38 @@ on:
       - .github/workflows/phase-04-finalize-bootstrap.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: phase-04-finalize-bootstrap
-  cancel-in-progress: false
+  actions: read
+  contents: read
+  deployments: read
 
 jobs:
-  format-and-trigger:
+  snapshot:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - name: Check out finalization branch
-        uses: actions/checkout@v7
-        with:
-          ref: phase-04-resource-stability-accepted
-          fetch-depth: 0
-
-      - name: Install Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24.14.0
-
-      - name: Enable pinned pnpm
-        run: corepack enable
-
-      - name: Install dependencies from lockfile
-        run: pnpm install --frozen-lockfile
-
-      - name: Format finalization workflow
-        id: format
-        continue-on-error: true
+      - name: Capture exact merge workflow evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACCEPTED_SOURCE_SHA: bef550cc38084418277712a206d6ccc150a05f3e
         run: |
-          set -o pipefail
-          pnpm exec prettier .github/workflows/phase-04-finalize-acceptance.yml --write 2>&1 | tee /tmp/phase-04-finalize-prettier.log
+          set -euo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${ACCEPTED_SOURCE_SHA}&per_page=100" > /tmp/runs.json
+          jq -r '.workflow_runs[] | [.id,.name,.event,.status,.conclusion,.head_sha] | @tsv' /tmp/runs.json
+          pages_run="$(jq -r '[.workflow_runs[] | select(.name == "Deploy accepted Playgrounds" and .event == "workflow_run")] | sort_by(.created_at) | reverse | .[0].id // empty' /tmp/runs.json)"
+          if [ -n "$pages_run" ]; then
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${pages_run}/jobs?per_page=100" > /tmp/pages-jobs.json
+            jq -r '.jobs[] | [.id,.name,.status,.conclusion] | @tsv' /tmp/pages-jobs.json
+          else
+            echo '{"jobs":[]}' > /tmp/pages-jobs.json
+          fi
+          gh api "/repos/${GITHUB_REPOSITORY}/deployments?sha=${ACCEPTED_SOURCE_SHA}&environment=github-pages&per_page=20" > /tmp/deployments.json
 
-      - name: Upload formatter diagnostics
-        if: always()
+      - name: Upload exact merge evidence
         uses: actions/upload-artifact@v7
         with:
-          name: phase-04-finalize-prettier
-          path: /tmp/phase-04-finalize-prettier.log
+          name: phase-04-final-evidence-diagnostic
+          path: |
+            /tmp/runs.json
+            /tmp/pages-jobs.json
+            /tmp/deployments.json
           if-no-files-found: error
-
-      - name: Require formatter success
-        if: steps.format.outcome != 'success'
-        run: exit 1
-
-      - name: Commit formatted workflow and remove bootstrap
-        run: |
-          rm .github/workflows/phase-04-finalize-bootstrap.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "ci(phase-04): format final acceptance workflow"
-          git push origin HEAD:phase-04-resource-stability-accepted
