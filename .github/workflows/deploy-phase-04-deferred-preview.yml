@@ -61,36 +61,40 @@ jobs:
           pnpm --version
 
       - name: Install accepted-site dependencies
-        run: pnpm --dir accepted-source install --frozen-lockfile
+        working-directory: accepted-source
+        run: pnpm install --frozen-lockfile
 
       - name: Install preview dependencies
-        run: pnpm --dir preview-source install --frozen-lockfile
+        working-directory: preview-source
+        run: pnpm install --frozen-lockfile
 
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v6
 
       - name: Build accepted main Playgrounds
+        working-directory: accepted-source
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           PAGES_COMMIT_SHA: ${{ steps.source.outputs.main_sha }}
           PAGES_OUTPUT_DIR: ../site
         run: |
-          pnpm --dir accepted-source build:packages
-          pnpm --dir accepted-source build:pages
-          pnpm --dir accepted-source check:pages
+          pnpm build:packages
+          pnpm build:pages
+          pnpm check:pages
 
       - name: Build Deferred TRAA branch Playground
+        working-directory: preview-source
         env:
           PLAYGROUND_BASE_PATH: ${{ steps.pages.outputs.base_path }}/preview/phase-04-deferred-traa-resolve/app/
           VITE_COMMIT_SHA: ${{ steps.source.outputs.preview_sha }}
           VITE_DEPLOYED_PHASE: '4'
           VITE_LATEST_ACCEPTED_PHASE: '4'
         run: |
-          pnpm --dir preview-source build:packages
-          pnpm --dir preview-source --filter @kyxos/render-playground build
-          mkdir -p site/preview/phase-04-deferred-traa-resolve/app
-          cp -R preview-source/apps/playground/dist/. site/preview/phase-04-deferred-traa-resolve/app/
+          pnpm build:packages
+          pnpm --filter @kyxos/render-playground build
+          mkdir -p ../site/preview/phase-04-deferred-traa-resolve/app
+          cp -R apps/playground/dist/. ../site/preview/phase-04-deferred-traa-resolve/app/
 
       - name: Add explicit checkpoint landing page
         env:
