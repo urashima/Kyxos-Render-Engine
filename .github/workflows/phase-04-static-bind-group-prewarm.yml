@@ -1,0 +1,196 @@
+name: Phase 4 Static Bind Group prewarm
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-static-bind-group-prewarm.yml
+
+permissions:
+  contents: write
+
+jobs:
+  implement-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CI: true
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v7
+        with:
+          ref: phase-04-static-bind-group-prewarm
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prewarm complete Static Accumulation Bind Group role space
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement target, found {count}')
+              file.write_text(text.replace(old, new), encoding='utf-8')
+
+          replace_once(
+              'packages/renderer/src/static-accumulation-pass.ts',
+              "export interface StaticAccumulationPassInput {\n  readonly currentColorTexture: BackendTextureHandle;\n  readonly frame: StaticAccumulationGpuFrame;\n}\n",
+              "export interface StaticAccumulationPassInput {\n  readonly alternateCurrentColorTexture?: BackendTextureHandle;\n  readonly currentColorTexture: BackendTextureHandle;\n  readonly frame: StaticAccumulationGpuFrame;\n}\n",
+          )
+
+          replace_once(
+              'packages/renderer/src/static-accumulation-pass.ts',
+              "    const bindGroup = this.#resolveBindGroup(\n      backend,\n      resources,\n      input.frame,\n      input.currentColorTexture,\n    );\n",
+              "    const bindGroup = this.#prewarmAndResolveBindGroup(backend, resources, input);\n",
+          )
+
+          resolve_anchor = "  #resolveBindGroup(\n"
+          prewarm_method = """  #prewarmAndResolveBindGroup(
+    backend: GraphicsBackend,
+    resources: StaticAccumulationPassResources,
+    input: StaticAccumulationPassInput,
+  ): BackendBindGroupHandle {
+    const current = this.#resolveBindGroup(
+      backend,
+      resources,
+      input.frame,
+      input.currentColorTexture,
+    );
+    const alternateCurrentColorTexture = input.alternateCurrentColorTexture;
+    if (alternateCurrentColorTexture === undefined) return current;
+
+    const alternateFrame = Object.freeze({
+      ...input.frame,
+      readColorTexture: input.frame.writeColorTexture,
+      writeColorTexture: input.frame.readColorTexture,
+    });
+    this.#resolveBindGroup(backend, resources, input.frame, alternateCurrentColorTexture);
+    this.#resolveBindGroup(backend, resources, alternateFrame, input.currentColorTexture);
+    this.#resolveBindGroup(backend, resources, alternateFrame, alternateCurrentColorTexture);
+    return current;
+  }
+
+"""
+          replace_once(
+              'packages/renderer/src/static-accumulation-pass.ts',
+              resolve_anchor,
+              prewarm_method + resolve_anchor,
+          )
+
+          replace_once(
+              'packages/renderer/src/temporal-pipeline-transaction.ts',
+              "          this.#staticPass.execute({\n            currentColorTexture: dynamicFrame.writeColorTexture,\n            frame: staticFrame,\n          }),\n",
+              "          this.#staticPass.execute({\n            alternateCurrentColorTexture: dynamicFrame.readColorTexture,\n            currentColorTexture: dynamicFrame.writeColorTexture,\n            frame: staticFrame,\n          }),\n",
+          )
+
+          path = Path('packages/renderer/test/static-accumulation-pass.test.ts')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              "    const current = currentTexture(backend);\n",
+              "    const current = currentTexture(backend);\n    const alternateCurrent = currentTexture(backend);\n",
+              1,
+          )
+          text = text.replace(
+              "    expect(pass.execute({ currentColorTexture: current, frame: first })).toEqual({\n",
+              "    expect(\n      pass.execute({\n        alternateCurrentColorTexture: alternateCurrent,\n        currentColorTexture: current,\n        frame: first,\n      }),\n    ).toEqual({\n",
+              1,
+          )
+          text = text.replace(
+              "    expect(createBindGroup).toHaveBeenLastCalledWith(\n",
+              "    expect(createBindGroup).toHaveBeenCalledWith(\n",
+              1,
+          )
+          text = text.replace(
+              "    pass.execute({ currentColorTexture: current, frame: first });\n    expect(createBindGroup).toHaveBeenCalledTimes(1);\n",
+              "    expect(createBindGroup).toHaveBeenCalledTimes(4);\n    pass.execute({\n      alternateCurrentColorTexture: alternateCurrent,\n      currentColorTexture: current,\n      frame: first,\n    });\n    expect(createBindGroup).toHaveBeenCalledTimes(4);\n",
+              1,
+          )
+          text = text.replace(
+              "    pass.execute({ currentColorTexture: current, frame: second });\n",
+              "    pass.execute({\n      alternateCurrentColorTexture: alternateCurrent,\n      currentColorTexture: current,\n      frame: second,\n    });\n",
+              1,
+          )
+          text = text.replace(
+              "    expect(createBindGroup).toHaveBeenCalledTimes(2);\n",
+              "    expect(createBindGroup).toHaveBeenCalledTimes(4);\n",
+              1,
+          )
+          text = text.replace(
+              "      activeBindGroupCount: 2,\n",
+              "      activeBindGroupCount: 4,\n",
+              1,
+          )
+          text = text.replace(
+              "    backend.destroyResource(current);\n    const resizedCurrent = currentTexture(backend, 3, 2);\n",
+              "    backend.destroyResource(current);\n    backend.destroyResource(alternateCurrent);\n    const resizedCurrent = currentTexture(backend, 3, 2);\n    const resizedAlternateCurrent = currentTexture(backend, 3, 2);\n",
+              1,
+          )
+          text = text.replace(
+              "    pass.execute({ currentColorTexture: resizedCurrent, frame: resized });\n    expect(createBindGroup).toHaveBeenCalledTimes(3);\n",
+              "    pass.execute({\n      alternateCurrentColorTexture: resizedAlternateCurrent,\n      currentColorTexture: resizedCurrent,\n      frame: resized,\n    });\n    expect(createBindGroup).toHaveBeenCalledTimes(8);\n",
+              1,
+          )
+          text = text.replace(
+              "      activeBindGroupCount: 1,\n      executionCount: 4,\n",
+              "      activeBindGroupCount: 4,\n      executionCount: 4,\n",
+              1,
+          )
+          text = text.replace(
+              "    backend.destroyResource(resizedCurrent);\n",
+              "    backend.destroyResource(resizedCurrent);\n    backend.destroyResource(resizedAlternateCurrent);\n",
+              1,
+          )
+          path.write_text(text, encoding='utf-8')
+
+          path = Path('packages/renderer/test/temporal-pipeline-transaction.test.ts')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('staticPass: { activeBindGroupCount: 1 }', 'staticPass: { activeBindGroupCount: 4 }')
+          text = text.replace('staticPass: { activeBindGroupCount: 2 }', 'staticPass: { activeBindGroupCount: 4 }')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          pnpm exec prettier \
+            packages/renderer/src/static-accumulation-pass.ts \
+            packages/renderer/src/temporal-pipeline-transaction.ts \
+            packages/renderer/test/static-accumulation-pass.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts \
+            --write
+
+      - name: Build packages for focused regressions
+        run: pnpm build
+
+      - name: Run focused Static Pass and Temporal Pipeline regressions
+        run: |
+          pnpm exec vitest run \
+            packages/renderer/test/static-accumulation-pass.test.ts \
+            packages/renderer/test/temporal-pipeline-transaction.test.ts
+
+      - name: Run complete verification pipeline
+        run: pnpm verify
+
+      - name: Commit verified prewarm repair and remove executor
+        run: |
+          rm .github/workflows/phase-04-static-bind-group-prewarm.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(phase-04): prewarm Static Bind Group role space"
+          git push origin HEAD:phase-04-static-bind-group-prewarm
