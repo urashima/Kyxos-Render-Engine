@@ -66,15 +66,17 @@ jobs:
 
           test_path = Path('packages/renderer/test/deferred-lighting-pass.test.ts')
           test_source = test_path.read_text(encoding='utf-8')
-          test_source = test_source.replace(
-              'const PARAMETERS = Object.freeze({',
-              'const PARAMETERS: DeferredLightingParameters = Object.freeze({',
-              1,
-          ).replace(
-              '}) satisfies DeferredLightingParameters;',
-              '});',
-              1,
+          replacements = (
+              ('const PARAMETERS = Object.freeze({', 'const PARAMETERS: DeferredLightingParameters = Object.freeze({'),
+              ('  cameraPosition: [1, 2, 3],', '  cameraPosition: [1, 2, 3] as const,'),
+              ('  lightColor: [0.8, 0.7, 0.6],', '  lightColor: [0.8, 0.7, 0.6] as const,'),
+              ('  lightDirection: [0.25, 0.5, 1],', '  lightDirection: [0.25, 0.5, 1] as const,'),
+              ('}) satisfies DeferredLightingParameters;', '});'),
           )
+          for before, after in replacements:
+              if before not in test_source:
+                  raise SystemExit(f'Expected Deferred Lighting test text was not found: {before}')
+              test_source = test_source.replace(before, after, 1)
           test_path.write_text(test_source, encoding='utf-8')
 
       - name: Format exact Deferred Lighting files
