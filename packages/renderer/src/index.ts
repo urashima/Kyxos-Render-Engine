@@ -11,6 +11,17 @@ export {
   type DeferredGBufferSize,
 } from './deferred-gbuffer.js';
 export {
+  DEFERRED_LIGHTING_UNIFORM_LAYOUT,
+  DeferredLightingPass,
+  packDeferredLightingUniforms,
+  type DeferredLightingExecutionResult,
+  type DeferredLightingFrame,
+  type DeferredLightingParameters,
+  type DeferredLightingPassDiagnostics,
+  type DeferredLightingPassInput,
+  type DeferredLightingPassOptions,
+} from './deferred-lighting-pass.js';
+export {
   DynamicTaaGpuHistory,
   type DynamicTaaGpuFrame,
   type DynamicTaaGpuHistoryDiagnostics,
