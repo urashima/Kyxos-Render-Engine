@@ -176,6 +176,7 @@ export class StaticAccumulationGpuHistory implements Disposable {
     }
 
     const historyValid = this.#history.isReusable(candidate);
+    if (!historyValid) this.#readIndex = 0;
     this.#frameSignature = candidate;
     const writeIndex = this.#readIndex === 0 ? 1 : 0;
     return Object.freeze({
