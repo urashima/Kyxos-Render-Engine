@@ -11,6 +11,7 @@ on:
 permissions:
   actions: write
   contents: read
+  pages: write
 
 jobs:
   stage:
@@ -48,6 +49,24 @@ jobs:
           pnpm --filter @kyxos/render-playground build
           test -f apps/playground/dist/index.html
           grep -F '/Kyxos-Render-Engine/preview/phase-04-deferred-traa-resolve/app/assets/' apps/playground/dist/index.html
+
+      - name: Cancel stale Pages deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.request('POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pages_deployment_id: '7596a09b47ceb41a67a1073387b43b5014115603',
+                headers: { 'X-GitHub-Api-Version': '2026-03-10' },
+              });
+              core.info('Cancelled stale Pages deployment 7596a09.');
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              core.info('Stale Pages deployment was already absent.');
+            }
+            await new Promise((resolve) => setTimeout(resolve, 5000));
 
       - name: Dispatch trusted Main Pages deployment
         uses: actions/github-script@v7
