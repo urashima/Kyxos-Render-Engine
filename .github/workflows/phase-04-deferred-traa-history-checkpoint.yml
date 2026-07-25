@@ -1,0 +1,107 @@
+name: Phase 4 Deferred TRAA History checkpoint
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-deferred-traa-history-checkpoint.yml
+  push:
+    branches:
+      - agent/phase-04-deferred-traa-rebuild
+    paths:
+      - .github/workflows/phase-04-deferred-traa-history-checkpoint.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-record:
+    name: Format and verify Deferred TRAA History
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/phase-04-deferred-traa-rebuild
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          pnpm --version
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Format exact Deferred TRAA History files
+        run: |
+          pnpm exec prettier --write \
+            packages/renderer/src/deferred-traa-history.ts \
+            packages/renderer/src/index.ts \
+            packages/renderer/test/deferred-traa-history.test.ts
+          pnpm exec eslint \
+            packages/renderer/src/deferred-traa-history.ts \
+            packages/renderer/src/index.ts \
+            packages/renderer/test/deferred-traa-history.test.ts \
+            --fix
+
+      - name: Enforce independent History boundary
+        shell: bash
+        run: |
+          if grep -E "dynamic-taa|static-accumulation|TemporalHistory|TemporalPipelineTransaction" \
+            packages/renderer/src/deferred-traa-history.ts; then
+            echo "Deferred TRAA History imported or referenced a legacy temporal owner." >&2
+            exit 1
+          fi
+
+      - name: Run focused compile and lifecycle gates
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-04/runtime
+          {
+            pnpm typecheck
+            pnpm test:unit
+            pnpm check:boundaries
+          } 2>&1 | tee test-results/phase-04/runtime/deferred-traa-history-focused.log
+
+      - name: Run complete verification
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee test-results/phase-04/runtime/deferred-traa-history-checkpoint.log
+
+      - name: Commit verified Deferred TRAA History checkpoint
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            packages/renderer/src/deferred-traa-history.ts \
+            packages/renderer/src/index.ts \
+            packages/renderer/test/deferred-traa-history.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "feat(phase-04): add independent Deferred TRAA History"
+          git push origin HEAD:agent/phase-04-deferred-traa-rebuild
+
+      - name: Upload verification logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: deferred-traa-history-checkpoint-${{ github.run_attempt }}
+          path: test-results/phase-04/runtime/
+          if-no-files-found: ignore
+          retention-days: 7
