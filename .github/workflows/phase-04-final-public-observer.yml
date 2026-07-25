@@ -1,0 +1,115 @@
+name: Phase 4 final public observer
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-04-final-public-observer.yml
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+
+jobs:
+  verify-final-public-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TARGET_SHA: 0a36ee51b5b40ae2d248f6643deda22090e37e81
+      PUBLIC_PLAYGROUND_URL: https://urashima.github.io/Kyxos-Render-Engine/
+      EXPECTED_COMMIT_SHA: 0a36ee51b5b40ae2d248f6643deda22090e37e81
+      PAGES_PHASES: 0,1,2,3,4
+      PAGES_LATEST_PHASE: "4"
+      CI: true
+    steps:
+      - name: Check out final deployment source
+        uses: actions/checkout@v7
+        with:
+          ref: 0a36ee51b5b40ae2d248f6643deda22090e37e81
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.14.0
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for exact main CI and Pages workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api() {
+            gh api -H 'Accept: application/vnd.github+json' "/repos/${GITHUB_REPOSITORY}$1"
+          }
+          wait_for_run() {
+            local name="$1"
+            local event="$2"
+            local output="$3"
+            for _ in $(seq 1 300); do
+              run="$(api "/actions/runs?head_sha=${TARGET_SHA}&per_page=100" | jq -c --arg name "$name" --arg event "$event" --arg sha "$TARGET_SHA" '[.workflow_runs[] | select(.name == $name and .event == $event and .head_sha == $sha)] | sort_by(.created_at) | reverse | .[0] // empty')"
+              if [ -n "$run" ]; then
+                status="$(printf '%s' "$run" | jq -r '.status')"
+                conclusion="$(printf '%s' "$run" | jq -r '.conclusion // "pending"')"
+                id="$(printf '%s' "$run" | jq -r '.id')"
+                echo "$name run $id: $status / $conclusion"
+                if [ "$status" = completed ]; then
+                  test "$conclusion" = success
+                  printf '%s' "$id" > "$output"
+                  return 0
+                fi
+              fi
+              sleep 10
+            done
+            return 1
+          }
+
+          wait_for_run 'Phase verification' 'push' /tmp/main-ci-run.txt
+          wait_for_run 'Deploy accepted Playgrounds' 'workflow_run' /tmp/pages-run.txt
+
+          main_ci="$(cat /tmp/main-ci-run.txt)"
+          pages_run="$(cat /tmp/pages-run.txt)"
+          jobs="$(api "/actions/runs/${pages_run}/jobs?per_page=100")"
+          build_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Build accepted phase history" and .conclusion == "success")][0].id // empty')"
+          deploy_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Deploy public Playground" and .conclusion == "success")][0].id // empty')"
+          public_job="$(printf '%s' "$jobs" | jq -r '[.jobs[] | select(.name == "Verify public interactions" and .conclusion == "success")][0].id // empty')"
+          test -n "$build_job"
+          test -n "$deploy_job"
+          test -n "$public_job"
+          deployment="$(api "/deployments?sha=${TARGET_SHA}&environment=github-pages&per_page=20" | jq -r '.[0].id // empty')"
+          test -n "$deployment"
+
+          jq -n \
+            --arg source "$TARGET_SHA" \
+            --arg mainCi "$main_ci" \
+            --arg pagesRun "$pages_run" \
+            --arg buildJob "$build_job" \
+            --arg deployJob "$deploy_job" \
+            --arg publicJob "$public_job" \
+            --arg deployment "$deployment" \
+            '{deploymentSourceSha:$source,mainCiRun:$mainCi,pagesRun:$pagesRun,buildJob:$buildJob,deployJob:$deployJob,publicInteractionJob:$publicJob,pagesDeployment:$deployment}' \
+            > /tmp/phase-04-final-public-evidence.json
+          cat /tmp/phase-04-final-public-evidence.json
+
+      - name: Independently rerun official public Chromium and WebGPU acceptance
+        run: pnpm exec playwright test --config playwright.pages.config.ts --reporter=list
+
+      - name: Upload final public evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-04-final-public-evidence
+          path: |
+            /tmp/phase-04-final-public-evidence.json
+            test-results/pages
+          if-no-files-found: ignore
